@@ -1,0 +1,13 @@
+{
+  "rewrites": [
+    { "source": "/", "destination": "/public/index.html" },
+    { "source": "/about.html", "destination": "/public/about.html" },
+    { "source": "/services.html", "destination": "/public/services.html" },
+    { "source": "/contact.html", "destination": "/public/contact.html" },
+    { "source": "/quote.html", "destination": "/public/quote.html" },
+    { "source": "/network.html", "destination": "/public/network.html" },
+    { "source": "/blog.html", "destination": "/public/blog.html" },
+    { "source": "/blog-post.html", "destination": "/public/blog-post.html" },
+    { "source": "/admin.html", "destination": "/public/admin.html" }
+  ]
+}
