@@ -1,0 +1,12 @@
+name = "ambara-artha-globaltrans"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "ambara-artha-db"
+database_id = "c6040762-0a3b-4b0b-9912-f4bed9adab14"
+
+[vars]
+EMAIL_FROM = "noreply@ambaraartha.com"
+EMAIL_TO = "cs@ambaraartha.com"
