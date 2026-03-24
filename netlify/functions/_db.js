@@ -1,0 +1,67 @@
+// Shared DB helper using Neon serverless
+const { neon } = require('@neondatabase/serverless');
+
+let _sql = null;
+function getDB() {
+  if (!_sql) _sql = neon(process.env.NETLIFY_DATABASE_URL);
+  return _sql;
+}
+
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Content-Type, x-admin-password, Authorization',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Content-Type': 'application/json'
+};
+
+function response(data, status = 200) {
+  return { statusCode: status, headers: CORS, body: JSON.stringify(data) };
+}
+
+function errorResponse(message, status = 400) {
+  return response({ error: message }, status);
+}
+
+function optionsResponse() {
+  return { statusCode: 200, headers: CORS, body: '' };
+}
+
+async function sendEmail(env, to, subject, html) {
+  if (!env.RESEND_API_KEY) return;
+  try {
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: `PT Ambara Artha Globaltrans <${env.EMAIL_FROM || 'noreply@ambaraartha.com'}>`, to: Array.isArray(to) ? to : [to], subject, html })
+    });
+  } catch (e) { console.error('Email error:', e.message); }
+}
+
+// Generate customer ID: CC-XXXXX
+function generateCustomerId(countryCode) {
+  const rand = Math.floor(10000 + Math.random() * 90000);
+  return `${countryCode.toUpperCase()}-${rand}`;
+}
+
+// Generate tracking number: AMBR + YY + CCCCC + XXXXXXX = 16 chars
+function generateTrackingNumber(customerNumericId) {
+  const year = new Date().getFullYear().toString().slice(-2);
+  const custPart = customerNumericId.toString().padStart(5, '0');
+  const rand = Math.floor(1000000 + Math.random() * 9000000).toString();
+  return `AMBR${year}${custPart}${rand}`.slice(0, 16);
+}
+
+// Verify staff JWT token
+function verifyToken(token, secret) {
+  try {
+    const jwt = require('jsonwebtoken');
+    return jwt.verify(token, secret || process.env.JWT_SECRET || 'ambara-secret-2025');
+  } catch { return null; }
+}
+
+function getAuthToken(event) {
+  const auth = event.headers?.authorization || event.headers?.Authorization || '';
+  return auth.startsWith('Bearer ') ? auth.slice(7) : null;
+}
+
+module.exports = { getDB, CORS, response, errorResponse, optionsResponse, sendEmail, generateCustomerId, generateTrackingNumber, verifyToken, getAuthToken };

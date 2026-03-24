@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /en/
+Allow: /id/
+Disallow: /admin
+Disallow: /.netlify/
+Disallow: /api/
+
+Sitemap: https://ambaraartha.com/sitemap.xml

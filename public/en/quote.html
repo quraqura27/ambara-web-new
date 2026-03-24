@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Get Air Freight Quote — PT Ambara Artha Globaltrans</title>
+  <meta name="description" content="Request a free air freight quote from Indonesia. Fast response within 2 hours. CGK-based freight forwarder serving 52+ countries.">
+  <link rel="canonical" href="https://ambaraartha.com/en/quote.html">
+  <link rel="alternate" hreflang="en" href="https://ambaraartha.com/en/quote.html">
+  <link rel="alternate" hreflang="id" href="https://ambaraartha.com/id/quote.html">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div id="navbar-mount"></div>
+
+<section style="padding-top:120px;padding-bottom:60px">
+  <div class="container" style="max-width:800px">
+    <div style="text-align:center;margin-bottom:48px">
+      <div class="section-label">Free Quote</div>
+      <h1 style="font-size:clamp(2rem,4vw,3rem);margin-bottom:16px">Request a Freight Quote</h1>
+      <p>Fill in your shipment details and we'll respond within 2 business hours with a competitive rate.</p>
+    </div>
+
+    <div class="card">
+      <form id="quote-form">
+        <!-- Shipment Details -->
+        <div style="font-family:var(--font-head);font-weight:800;font-size:1.125rem;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)">📦 Shipment Details</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="form-group">
+            <label class="form-label">Origin *</label>
+            <input type="text" class="form-control" name="origin" required placeholder="City, Country">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Destination *</label>
+            <input type="text" class="form-control" name="destination" required placeholder="City, Country">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="form-group">
+            <label class="form-label">Cargo Ready Date *</label>
+            <input type="date" class="form-control" name="readyDate" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Incoterms</label>
+            <select class="form-control" name="incoterms">
+              <option value="">Select Incoterms</option>
+              <option>EXW</option><option>FCA</option><option>CPT</option><option>CIP</option>
+              <option>DAP</option><option>DPU</option><option>DDP</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Cargo Info -->
+        <div style="font-family:var(--font-head);font-weight:800;font-size:1.125rem;margin:24px 0 20px;padding-bottom:16px;border-bottom:1px solid var(--border)">🏷️ Cargo Information</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="form-group">
+            <label class="form-label">Cargo Type *</label>
+            <select class="form-control" name="cargoType" required id="cargo-type-select">
+              <option value="">Select type</option>
+              <option value="general">General Cargo</option>
+              <option value="perishable">Perishable</option>
+              <option value="dangerous_goods">Dangerous Goods (DG)</option>
+              <option value="consolidated">Consolidated Shipment</option>
+            </select>
+          </div>
+          <div class="form-group" id="commodity-group">
+            <label class="form-label">Commodity</label>
+            <input type="text" class="form-control" name="commodity" placeholder="e.g. Electronics, Textiles">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Cargo Description *</label>
+          <textarea class="form-control" name="cargoDesc" required placeholder="Describe your cargo in detail..." rows="3"></textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+          <div class="form-group">
+            <label class="form-label">Weight (kg) *</label>
+            <input type="number" class="form-control" name="weight" required placeholder="0.00" min="0.1" step="0.1">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Volume (CBM)</label>
+            <input type="number" class="form-control" name="volume" placeholder="0.00" step="0.01">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Packages</label>
+            <input type="number" class="form-control" name="packages" placeholder="1" min="1">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="form-group">
+            <label class="form-label">Cargo Value (USD)</label>
+            <input type="number" class="form-control" name="cargoValue" placeholder="0.00" step="0.01">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Cargo Insurance</label>
+            <select class="form-control" name="insurance">
+              <option value="">Not required</option>
+              <option value="all_risk">All Risk</option>
+              <option value="basic">Basic Coverage</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Special Requirements</label>
+          <input type="text" class="form-control" name="special" placeholder="e.g. Temperature control, fragile, oversized">
+        </div>
+
+        <!-- Contact Info -->
+        <div style="font-family:var(--font-head);font-weight:800;font-size:1.125rem;margin:24px 0 20px;padding-bottom:16px;border-bottom:1px solid var(--border)">👤 Your Details</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="form-group">
+            <label class="form-label">Full Name *</label>
+            <input type="text" class="form-control" name="name" required placeholder="John Smith">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Company</label>
+            <input type="text" class="form-control" name="company" placeholder="Company Name">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="form-group">
+            <label class="form-label">Email *</label>
+            <input type="email" class="form-control" name="email" required placeholder="john@company.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone / WhatsApp *</label>
+            <input type="tel" class="form-control" name="phone" required placeholder="+1 234 567 890">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Additional Notes</label>
+          <textarea class="form-control" name="notes" placeholder="Any other information that helps us prepare an accurate quote..." rows="3"></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg" style="width:100%;justify-content:center" id="submit-btn">
+          Submit Quote Request →
+        </button>
+        <div id="form-result" style="margin-top:16px"></div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<div id="footer-mount"></div>
+<script src="/layout.js"></script>
+<script src="/app.js"></script>
+<script>
+document.getElementById('navbar-mount').innerHTML = AMBARA.getNavbar('');
+document.getElementById('footer-mount').innerHTML = AMBARA.getFooter();
+
+// Hide commodity when consolidated
+document.getElementById('cargo-type-select').addEventListener('change', function() {
+  document.getElementById('commodity-group').style.opacity = this.value === 'consolidated' ? '0.4' : '1';
+});
+
+document.getElementById('quote-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('submit-btn');
+  const result = document.getElementById('form-result');
+  btn.disabled = true; btn.textContent = 'Submitting...';
+
+  const data = Object.fromEntries(new FormData(e.target));
+  try {
+    const res = await fetch('/api/submit-quote', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+    const json = await res.json();
+    if (res.ok) {
+      result.innerHTML = `<div class="card" style="background:rgba(0,229,160,0.1);border-color:rgba(0,229,160,0.2);text-align:center;padding:24px"><div style="font-size:1.5rem;margin-bottom:8px">✅</div><div style="font-weight:700;color:var(--green);margin-bottom:8px">Quote Received!</div><div style="font-size:0.875rem;color:var(--text-muted)">Reference: <strong style="color:var(--blue-accent)">${json.reference}</strong><br>We'll reply within 2 business hours.</div></div>`;
+      e.target.reset();
+    } else { throw new Error(json.error); }
+  } catch (err) {
+    result.innerHTML = `<div class="card" style="background:rgba(255,68,102,0.1);border-color:rgba(255,68,102,0.2);color:var(--red);text-align:center;padding:16px">❌ ${err.message || 'Failed to submit. Please email cs@ambaraartha.com'}</div>`;
+  }
+  btn.disabled = false; btn.textContent = 'Submit Quote Request →';
+});
+</script>
+</body>
+</html>

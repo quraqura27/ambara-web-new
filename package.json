@@ -1,0 +1,14 @@
+{
+  "name": "ambara-artha-globaltrans",
+  "version": "2.0.0",
+  "description": "PT Ambara Artha Globaltrans - Air Freight Website",
+  "dependencies": {
+    "@neondatabase/serverless": "^0.9.0",
+    "@aws-sdk/client-s3": "^3.0.0",
+    "@aws-sdk/s3-request-presigner": "^3.0.0",
+    "resend": "^3.2.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.0",
+    "pdf-lib": "^1.17.1"
+  }
+}

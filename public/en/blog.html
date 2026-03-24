@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Air Freight Blog — Indonesia Shipping Guides | PT Ambara Artha Globaltrans</title>
+  <meta name="description" content="Expert guides on air freight, customs clearance, and shipping to/from Indonesia. Updated weekly by the Ambara Artha team.">
+  <link rel="canonical" href="https://ambaraartha.com/en/blog.html">
+  <link rel="alternate" hreflang="en" href="https://ambaraartha.com/en/blog.html">
+  <link rel="alternate" hreflang="id" href="https://ambaraartha.com/id/blog.html">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div id="navbar-mount"></div>
+
+<section style="padding-top:120px;padding-bottom:60px">
+  <div class="container">
+    <div style="text-align:center;max-width:640px;margin:0 auto">
+      <div class="section-label">Blog</div>
+      <h1 style="font-size:clamp(2rem,4vw,3rem);margin-bottom:16px">Air Freight Knowledge Hub</h1>
+      <p>Expert guides on shipping to and from Indonesia. Written for importers, exporters, and freight professionals worldwide.</p>
+    </div>
+    <!-- Category filter -->
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:32px" id="category-filters">
+      <button class="btn btn-sm category-btn active" data-cat="">All</button>
+      <button class="btn btn-sm category-btn btn-outline" data-cat="guides">Guides</button>
+      <button class="btn btn-sm category-btn btn-outline" data-cat="regulations">Regulations</button>
+      <button class="btn btn-sm category-btn btn-outline" data-cat="news">News</button>
+      <button class="btn btn-sm category-btn btn-outline" data-cat="general">General</button>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="padding-top:0">
+  <div class="container">
+    <div class="grid-3" id="blog-grid">
+      <div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--text-muted)">
+        <div style="width:32px;height:32px;border:3px solid var(--blue);border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px"></div>
+        Loading posts...
+      </div>
+    </div>
+    <div id="load-more-wrap" style="text-align:center;margin-top:48px;display:none">
+      <button id="load-more" class="btn btn-outline">Load More Posts</button>
+    </div>
+  </div>
+</section>
+
+<div id="footer-mount"></div>
+<script src="/layout.js"></script>
+<script src="/app.js"></script>
+<script>
+document.getElementById('navbar-mount').innerHTML = AMBARA.getNavbar('blog');
+document.getElementById('footer-mount').innerHTML = AMBARA.getFooter();
+
+let currentCat = '', offset = 0, total = 0;
+const LIMIT = 9;
+
+function renderPosts(posts, append = false) {
+  const grid = document.getElementById('blog-grid');
+  if (!posts.length && !append) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--text-muted)">No posts found.</div>';
+    return;
+  }
+  const html = posts.map(p => `
+    <div class="card animate-on-scroll">
+      ${p.cover_image_url ? `<img src="${p.cover_image_url}" alt="${p.title_en}" style="width:100%;height:200px;object-fit:cover;border-radius:12px;margin-bottom:20px">` : ''}
+      <div class="badge badge-blue" style="margin-bottom:16px">${p.category||'Guide'}</div>
+      <h3 style="font-size:1.125rem;margin-bottom:12px">${p.title_en}</h3>
+      <p style="font-size:0.875rem;margin-bottom:20px">${p.excerpt_en||''}</p>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto">
+        <span style="font-size:0.8125rem;color:var(--text-muted)">${new Date(p.published_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</span>
+        <a href="/en/blog-post.html?slug=${p.slug}" class="btn btn-sm btn-outline">Read →</a>
+      </div>
+    </div>`).join('');
+  if (append) grid.innerHTML += html;
+  else grid.innerHTML = html;
+}
+
+async function loadPosts(append = false) {
+  if (!append) offset = 0;
+  const url = `/api/blog-api?action=list&limit=${LIMIT}&offset=${offset}${currentCat?`&category=${currentCat}`:''}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  total = parseInt(data.total || 0);
+  renderPosts(data.posts || [], append);
+  offset += (data.posts||[]).length;
+  document.getElementById('load-more-wrap').style.display = offset < total ? 'block' : 'none';
+}
+
+loadPosts();
+
+document.querySelectorAll('.category-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.category-btn').forEach(b => { b.classList.remove('active'); b.classList.add('btn-outline'); });
+    btn.classList.add('active'); btn.classList.remove('btn-outline');
+    currentCat = btn.dataset.cat;
+    loadPosts();
+  });
+});
+
+document.getElementById('load-more').addEventListener('click', () => loadPosts(true));
+</script>
+</body>
+</html>
