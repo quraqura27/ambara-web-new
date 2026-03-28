@@ -7,36 +7,80 @@
   <link rel="canonical" href="https://ambaraartha.com/en/network">
   <link rel="alternate" hreflang="en" href="https://ambaraartha.com/en/network">
   <link rel="alternate" hreflang="id" href="https://ambaraartha.com/id/network">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/styles.css">
+  <style>
+    .globe-section { position: relative; overflow: hidden; padding: 0; }
+    .globe-container { width: 100%; height: 560px; position: relative; }
+    .globe-container canvas { display: block; }
+    .globe-overlay { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+    .globe-overlay .container { height: 100%; display: flex; align-items: center; }
+    .globe-stats { position: absolute; bottom: 32px; left: 0; right: 0; z-index: 3; }
+    .globe-stat { background: rgba(10,11,30,0.7); backdrop-filter: blur(12px); border: 1px solid rgba(159,167,255,0.15); border-radius: 12px; padding: 16px 20px; text-align: center; }
+    .globe-stat-number { font-family: var(--font-head); font-weight: 900; font-size: 1.5rem; color: var(--blue-accent); }
+    .globe-stat-label { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .hub-card { background: rgba(10,11,30,0.6); backdrop-filter: blur(16px); border: 1px solid rgba(159,167,255,0.12); border-radius: 16px; padding: 32px; transition: var(--transition); }
+    .hub-card:hover { border-color: rgba(159,167,255,0.3); transform: translateY(-2px); }
+    .hub-card.primary { border-color: var(--blue); box-shadow: 0 0 40px rgba(17,34,238,0.15); }
+    .hub-iata { font-family: var(--font-head); font-size: 3rem; font-weight: 900; color: var(--blue-accent); line-height: 1; }
+    .hub-city { font-size: 0.875rem; color: var(--text-muted); margin-top: 2px; }
+    .corridor-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; transition: var(--transition); }
+    .corridor-card:hover { border-color: rgba(159,167,255,0.3); }
+    .corridor-region { font-weight: 800; margin-bottom: 16px; color: var(--blue-accent); display: flex; align-items: center; gap: 10px; }
+    .corridor-route { display: flex; align-items: center; gap: 8px; padding: 8px 0; font-size: 0.9375rem; color: var(--text-muted); }
+    .corridor-route::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--blue-accent); flex-shrink: 0; }
+    @media (max-width: 768px) {
+      .globe-container { height: 380px; }
+      .hub-iata { font-size: 2rem; }
+    }
+  </style>
 </head>
 <body>
 <div id="navbar-mount"></div>
 
-<section style="padding-top:120px;padding-bottom:60px">
+<!-- HERO -->
+<section style="padding-top:120px;padding-bottom:40px">
   <div class="container">
-    <div style="text-align:center;max-width:640px;margin:0 auto">
+    <div style="text-align:center;max-width:680px;margin:0 auto">
       <div class="section-label">Our Network</div>
-      <h1 style="font-size:clamp(2rem,4vw,3.5rem);margin-bottom:20px">Indonesia's Air Freight Hubs</h1>
-      <p style="font-size:1.125rem">Operating from 3 major Indonesian airports, connecting your cargo to 52+ countries worldwide.</p>
+      <h1 style="font-size:clamp(2rem,4vw,3.5rem);margin-bottom:20px">Indonesia's Air Freight<br><span style="color:var(--blue-accent)">Global Reach</span></h1>
+      <p style="font-size:1.125rem">Operating from 3 major Indonesian airports, connecting your cargo to 52+ countries with animated precision.</p>
     </div>
   </div>
 </section>
 
-<section class="section" style="padding-top:0">
-  <div class="container">
-    <div style="display:flex;flex-direction:column;gap:32px">
+<!-- 3D GLOBE -->
+<section class="globe-section">
+  <div class="globe-container" id="globe-mount"></div>
+  <div class="globe-stats">
+    <div class="container">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+        <div class="globe-stat animate-on-scroll"><div class="globe-stat-number">52+</div><div class="globe-stat-label">Countries</div></div>
+        <div class="globe-stat animate-on-scroll"><div class="globe-stat-number">3</div><div class="globe-stat-label">Indonesian Hubs</div></div>
+        <div class="globe-stat animate-on-scroll"><div class="globe-stat-number">24/7</div><div class="globe-stat-label">Operations</div></div>
+        <div class="globe-stat animate-on-scroll"><div class="globe-stat-number">40+</div><div class="globe-stat-label">Years</div></div>
+      </div>
+    </div>
+  </div>
+</section>
 
-      <div class="card animate-on-scroll" style="border-left:4px solid var(--blue);padding:40px">
-        <div style="display:grid;grid-template-columns:auto 1fr auto;gap:32px;align-items:center;flex-wrap:wrap">
+<!-- HUBS -->
+<section class="section" style="padding-top:80px">
+  <div class="container">
+    <div style="display:flex;flex-direction:column;gap:24px">
+      <div class="hub-card primary animate-on-scroll">
+        <div style="display:grid;grid-template-columns:auto 1fr auto;gap:32px;align-items:center">
           <div style="text-align:center">
-            <div style="font-family:var(--font-head);font-size:3rem;font-weight:900;color:var(--blue-accent)">CGK</div>
-            <div style="font-size:0.875rem;color:var(--text-muted)">Jakarta</div>
+            <div class="hub-iata">CGK</div>
+            <div class="hub-city">Jakarta</div>
           </div>
           <div>
-            <div class="badge badge-blue" style="margin-bottom:12px">🏠 Home Base</div>
+            <div class="badge badge-blue" style="margin-bottom:12px">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              Home Base
+            </div>
             <h2 style="font-size:1.5rem;margin-bottom:8px">Soekarno-Hatta International Airport</h2>
             <p style="margin-bottom:16px">Indonesia's largest airport and primary international cargo hub. Our headquarters at the dedicated cargo terminal gives us direct access to all major airlines and fastest processing times.</p>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -53,39 +97,44 @@
         </div>
       </div>
 
-      <div class="card animate-on-scroll" style="border-left:4px solid rgba(159,167,255,0.5);padding:40px">
-        <div style="display:grid;grid-template-columns:auto 1fr;gap:32px;align-items:center">
-          <div style="text-align:center">
-            <div style="font-family:var(--font-head);font-size:3rem;font-weight:900;color:var(--blue-accent)">SUB</div>
-            <div style="font-size:0.875rem;color:var(--text-muted)">Surabaya</div>
-          </div>
-          <div>
-            <div class="badge badge-blue" style="margin-bottom:12px">🏭 East Java Node</div>
-            <h2 style="font-size:1.5rem;margin-bottom:8px">Juanda International Airport</h2>
-            <p style="margin-bottom:16px">Serving Indonesia's second largest city and East Java's industrial heartland. Key gateway for manufacturing exports from Java's eastern economic corridor.</p>
-            <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <span class="badge badge-blue">Manufacturing Hub</span>
-              <span class="badge badge-blue">Industrial Cargo</span>
-              <span class="badge badge-blue">East Java Coverage</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+        <div class="hub-card animate-on-scroll">
+          <div style="display:flex;gap:24px;align-items:center">
+            <div style="text-align:center">
+              <div class="hub-iata">SUB</div>
+              <div class="hub-city">Surabaya</div>
+            </div>
+            <div>
+              <div class="badge badge-blue" style="margin-bottom:12px">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+                East Java Node
+              </div>
+              <h3 style="font-size:1.125rem;margin-bottom:8px">Juanda International Airport</h3>
+              <p style="font-size:0.875rem">Serving Indonesia's second largest city and East Java's industrial heartland. Key gateway for manufacturing exports.</p>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px">
+                <span class="badge badge-blue" style="font-size:0.7rem">Manufacturing Hub</span>
+                <span class="badge badge-blue" style="font-size:0.7rem">Industrial Cargo</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-
-      <div class="card animate-on-scroll" style="border-left:4px solid rgba(159,167,255,0.5);padding:40px">
-        <div style="display:grid;grid-template-columns:auto 1fr;gap:32px;align-items:center">
-          <div style="text-align:center">
-            <div style="font-family:var(--font-head);font-size:3rem;font-weight:900;color:var(--blue-accent)">DPS</div>
-            <div style="font-size:0.875rem;color:var(--text-muted)">Bali</div>
-          </div>
-          <div>
-            <div class="badge badge-blue" style="margin-bottom:12px">🌺 Bali Node</div>
-            <h2 style="font-size:1.5rem;margin-bottom:8px">Ngurah Rai International Airport</h2>
-            <p style="margin-bottom:16px">Bali's gateway for artisan goods, handicrafts, fashion, and perishables including fresh produce and seafood. Serving Bali and Nusa Tenggara's export economy.</p>
-            <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <span class="badge badge-blue">Artisan Goods</span>
-              <span class="badge badge-blue">Perishables</span>
-              <span class="badge badge-blue">Fashion & Crafts</span>
+        <div class="hub-card animate-on-scroll">
+          <div style="display:flex;gap:24px;align-items:center">
+            <div style="text-align:center">
+              <div class="hub-iata">DPS</div>
+              <div class="hub-city">Bali</div>
+            </div>
+            <div>
+              <div class="badge badge-blue" style="margin-bottom:12px">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Bali Node
+              </div>
+              <h3 style="font-size:1.125rem;margin-bottom:8px">Ngurah Rai International Airport</h3>
+              <p style="font-size:0.875rem">Bali's gateway for artisan goods, handicrafts, fashion, and perishables including fresh produce and seafood.</p>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px">
+                <span class="badge badge-blue" style="font-size:0.7rem">Artisan Goods</span>
+                <span class="badge badge-blue" style="font-size:0.7rem">Perishables</span>
+              </div>
             </div>
           </div>
         </div>
@@ -94,6 +143,7 @@
   </div>
 </section>
 
+<!-- TRADE CORRIDORS -->
 <section class="section" style="background:var(--surface);border-top:1px solid var(--border)">
   <div class="container">
     <div style="text-align:center;margin-bottom:48px">
@@ -101,37 +151,44 @@
       <h2>Key Trade Corridors</h2>
     </div>
     <div class="grid-3">
-      <div class="card animate-on-scroll">
-        <div style="font-weight:800;margin-bottom:16px;color:var(--blue-accent)">🌏 Southeast Asia</div>
-        <div style="display:flex;flex-direction:column;gap:8px;font-size:0.9375rem;color:var(--text-muted)">
-          <span>CGK ↔ Singapore (SIN)</span>
-          <span>CGK ↔ Kuala Lumpur (KUL)</span>
-          <span>CGK ↔ Bangkok (BKK)</span>
-          <span>CGK ↔ Manila (MNL)</span>
+      <div class="corridor-card animate-on-scroll">
+        <div class="corridor-region">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          Southeast Asia
         </div>
+        <div class="corridor-route">CGK ↔ Singapore (SIN)</div>
+        <div class="corridor-route">CGK ↔ Kuala Lumpur (KUL)</div>
+        <div class="corridor-route">CGK ↔ Bangkok (BKK)</div>
+        <div class="corridor-route">CGK ↔ Manila (MNL)</div>
+        <div class="corridor-route">CGK ↔ Ho Chi Minh (SGN)</div>
       </div>
-      <div class="card animate-on-scroll">
-        <div style="font-weight:800;margin-bottom:16px;color:var(--blue-accent)">🌍 Middle East & Europe</div>
-        <div style="display:flex;flex-direction:column;gap:8px;font-size:0.9375rem;color:var(--text-muted)">
-          <span>CGK ↔ Dubai (DXB)</span>
-          <span>CGK ↔ Amsterdam (AMS)</span>
-          <span>CGK ↔ Frankfurt (FRA)</span>
-          <span>CGK ↔ London (LHR)</span>
+      <div class="corridor-card animate-on-scroll">
+        <div class="corridor-region">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          Middle East & Europe
         </div>
+        <div class="corridor-route">CGK ↔ Dubai (DXB)</div>
+        <div class="corridor-route">CGK ↔ Jeddah (JED)</div>
+        <div class="corridor-route">CGK ↔ Amsterdam (AMS)</div>
+        <div class="corridor-route">CGK ↔ Frankfurt (FRA)</div>
+        <div class="corridor-route">CGK ↔ London (LHR)</div>
       </div>
-      <div class="card animate-on-scroll">
-        <div style="font-weight:800;margin-bottom:16px;color:var(--blue-accent)">🌎 Asia Pacific & Americas</div>
-        <div style="display:flex;flex-direction:column;gap:8px;font-size:0.9375rem;color:var(--text-muted)">
-          <span>CGK ↔ Hong Kong (HKG)</span>
-          <span>CGK ↔ Tokyo (NRT)</span>
-          <span>CGK ↔ Sydney (SYD)</span>
-          <span>CGK ↔ Los Angeles (LAX)</span>
+      <div class="corridor-card animate-on-scroll">
+        <div class="corridor-region">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          Asia Pacific & Americas
         </div>
+        <div class="corridor-route">CGK ↔ Hong Kong (HKG)</div>
+        <div class="corridor-route">CGK ↔ Tokyo (NRT)</div>
+        <div class="corridor-route">CGK ↔ Shanghai (PVG)</div>
+        <div class="corridor-route">CGK ↔ Sydney (SYD)</div>
+        <div class="corridor-route">CGK ↔ Los Angeles (LAX)</div>
       </div>
     </div>
   </div>
 </section>
 
+<!-- CTA -->
 <section class="section">
   <div class="container" style="text-align:center">
     <h2 style="margin-bottom:16px">Ship From Any Indonesian Hub</h2>
@@ -147,5 +204,247 @@
 document.getElementById('navbar-mount').innerHTML = AMBARA.getNavbar('network');
 document.getElementById('footer-mount').innerHTML = AMBARA.getFooter();
 </script>
+
+<!-- THREE.JS GLOBE -->
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+<script>
+(function() {
+  const mount = document.getElementById('globe-mount');
+  if (!mount) return;
+
+  const W = mount.clientWidth, H = mount.clientHeight;
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 1000);
+  camera.position.set(0, 0.8, 3.2);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setSize(W, H);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x000000, 0);
+  mount.appendChild(renderer.domElement);
+
+  // Jakarta coords for centering
+  const CGK_LAT = -6.125, CGK_LON = 106.655;
+
+  function latLonToVec3(lat, lon, r) {
+    const phi = (90 - lat) * Math.PI / 180;
+    const theta = (lon + 180) * Math.PI / 180;
+    return new THREE.Vector3(
+      -r * Math.sin(phi) * Math.cos(theta),
+      r * Math.cos(phi),
+      r * Math.sin(phi) * Math.sin(theta)
+    );
+  }
+
+  // Globe sphere
+  const globeGeo = new THREE.SphereGeometry(1, 64, 64);
+  const globeMat = new THREE.MeshPhongMaterial({
+    color: 0x0a0b1e,
+    emissive: 0x050820,
+    specular: 0x1122ee,
+    shininess: 15,
+    transparent: true,
+    opacity: 0.92,
+  });
+  const globe = new THREE.Mesh(globeGeo, globeMat);
+  scene.add(globe);
+
+  // Wireframe overlay
+  const wireMat = new THREE.MeshBasicMaterial({ color: 0x1122ee, wireframe: true, transparent: true, opacity: 0.06 });
+  const wire = new THREE.Mesh(new THREE.SphereGeometry(1.002, 36, 36), wireMat);
+  scene.add(wire);
+
+  // Atmospheric glow
+  const glowGeo = new THREE.SphereGeometry(1.08, 64, 64);
+  const glowMat = new THREE.ShaderMaterial({
+    vertexShader: `varying vec3 vNormal; void main() { vNormal = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: `varying vec3 vNormal; void main() { float intensity = pow(0.65 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 3.0); gl_FragColor = vec4(0.07, 0.13, 0.93, 1.0) * intensity * 1.2; }`,
+    blending: THREE.AdditiveBlending,
+    side: THREE.BackSide,
+    transparent: true
+  });
+  scene.add(new THREE.Mesh(glowGeo, glowMat));
+
+  // Lights
+  const amb = new THREE.AmbientLight(0x404080, 0.6);
+  scene.add(amb);
+  const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+  dir.position.set(5, 3, 5);
+  scene.add(dir);
+  const point = new THREE.PointLight(0x1122ee, 1.2, 10);
+  point.position.set(-2, 2, 3);
+  scene.add(point);
+
+  // Hub points (pulsing dots)
+  const hubs = [
+    { lat: CGK_LAT, lon: CGK_LON, label: 'CGK' },
+    { lat: -7.38, lon: 112.787, label: 'SUB' },
+    { lat: -8.748, lon: 115.167, label: 'DPS' },
+  ];
+
+  hubs.forEach(h => {
+    const pos = latLonToVec3(h.lat, h.lon, 1.005);
+    // Core dot
+    const dotGeo = new THREE.SphereGeometry(0.018, 16, 16);
+    const dotMat = new THREE.MeshBasicMaterial({ color: 0x4466ff });
+    const dot = new THREE.Mesh(dotGeo, dotMat);
+    dot.position.copy(pos);
+    scene.add(dot);
+    // Pulse ring
+    const ringGeo = new THREE.RingGeometry(0.02, 0.035, 32);
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0x4466ff, transparent: true, opacity: 0.6, side: THREE.DoubleSide });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.position.copy(pos);
+    ring.lookAt(pos.clone().multiplyScalar(2));
+    ring.userData = { baseScale: 1, phase: Math.random() * Math.PI * 2 };
+    scene.add(ring);
+  });
+
+  // Destination airports [lat, lon]
+  const destinations = [
+    [1.35, 103.82],    // Singapore SIN
+    [3.14, 101.69],    // Kuala Lumpur KUL
+    [13.76, 100.5],    // Bangkok BKK
+    [14.6, 120.98],    // Manila MNL
+    [10.82, 106.65],   // Ho Chi Minh SGN
+    [25.276, 55.296],  // Dubai DXB
+    [21.485, 39.192],  // Jeddah JED
+    [52.31, 4.77],     // Amsterdam AMS
+    [50.11, 8.68],     // Frankfurt FRA
+    [51.47, -0.46],    // London LHR
+    [22.31, 114.17],   // Hong Kong HKG
+    [35.76, 140.39],   // Tokyo NRT
+    [31.14, 121.81],   // Shanghai PVG
+    [-33.95, 151.18],  // Sydney SYD
+    [33.94, -118.4],   // Los Angeles LAX
+    [37.57, 126.98],   // Seoul ICN
+    [25.08, 121.23],   // Taipei TPE
+    [1.36, 172.98],    // Pacific route marker
+    [40.64, -73.78],   // New York JFK
+    [48.35, 11.79],    // Munich MUC
+    [41.8, 12.25],     // Rome FCO
+    [41.01, 28.98],    // Istanbul IST
+    [19.09, 72.87],    // Mumbai BOM
+    [28.56, 77.1],     // Delhi DEL
+    [-1.32, 36.93],    // Nairobi NBO
+  ];
+
+  // Create animated arcs from CGK to each destination
+  function createArc(startLat, startLon, endLat, endLon, color, speed) {
+    const start = latLonToVec3(startLat, startLon, 1.005);
+    const end = latLonToVec3(endLat, endLon, 1.005);
+    const dist = start.distanceTo(end);
+    const mid = start.clone().add(end).multiplyScalar(0.5).normalize().multiplyScalar(1 + dist * 0.35);
+
+    const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
+    const points = curve.getPoints(64);
+    const geo = new THREE.BufferGeometry().setFromPoints(points);
+
+    const mat = new THREE.LineBasicMaterial({ color: color, transparent: true, opacity: 0.35 });
+    const line = new THREE.Line(geo, mat);
+    scene.add(line);
+
+    // Glowing moving particle
+    const particleGeo = new THREE.SphereGeometry(0.008, 8, 8);
+    const particleMat = new THREE.MeshBasicMaterial({ color: 0x88aaff });
+    const particle = new THREE.Mesh(particleGeo, particleMat);
+    particle.userData = { curve, t: Math.random(), speed: speed };
+    scene.add(particle);
+
+    // Small dot at destination
+    const destDot = new THREE.Mesh(new THREE.SphereGeometry(0.008, 8, 8), new THREE.MeshBasicMaterial({ color: 0x6688ff, transparent: true, opacity: 0.6 }));
+    destDot.position.copy(end);
+    scene.add(destDot);
+
+    return particle;
+  }
+
+  const particles = [];
+  destinations.forEach((d, i) => {
+    const color = i < 5 ? 0x4466ff : i < 10 ? 0x3355dd : 0x2244bb;
+    const speed = 0.002 + Math.random() * 0.003;
+    particles.push(createArc(CGK_LAT, CGK_LON, d[0], d[1], color, speed));
+  });
+
+  // Stars background
+  const starGeo = new THREE.BufferGeometry();
+  const starPositions = [];
+  for (let i = 0; i < 800; i++) {
+    starPositions.push((Math.random() - 0.5) * 20, (Math.random() - 0.5) * 20, (Math.random() - 0.5) * 20);
+  }
+  starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPositions, 3));
+  const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.02, transparent: true, opacity: 0.4 });
+  scene.add(new THREE.Points(starGeo, starMat));
+
+  // Initial rotation to center Jakarta
+  const phi0 = (90 - CGK_LAT) * Math.PI / 180;
+  const theta0 = (CGK_LON + 180) * Math.PI / 180;
+  globe.rotation.y = -theta0 + Math.PI + 0.3;
+  wire.rotation.y = globe.rotation.y;
+
+  // Mouse interaction
+  let mouseX = 0, mouseY = 0, targetRotY = globe.rotation.y;
+  let isDragging = false, lastMouseX = 0;
+
+  mount.addEventListener('mousedown', (e) => { isDragging = true; lastMouseX = e.clientX; });
+  window.addEventListener('mouseup', () => { isDragging = false; });
+  mount.addEventListener('mousemove', (e) => {
+    if (isDragging) {
+      const delta = (e.clientX - lastMouseX) * 0.005;
+      targetRotY += delta;
+      lastMouseX = e.clientX;
+    }
+  });
+  mount.addEventListener('touchstart', (e) => { isDragging = true; lastMouseX = e.touches[0].clientX; }, { passive: true });
+  window.addEventListener('touchend', () => { isDragging = false; });
+  mount.addEventListener('touchmove', (e) => {
+    if (isDragging) {
+      const delta = (e.touches[0].clientX - lastMouseX) * 0.005;
+      targetRotY += delta;
+      lastMouseX = e.touches[0].clientX;
+    }
+  }, { passive: true });
+
+  // Animation loop
+  function animate() {
+    requestAnimationFrame(animate);
+
+    // Auto-rotate slowly unless dragging
+    if (!isDragging) targetRotY += 0.0008;
+    globe.rotation.y += (targetRotY - globe.rotation.y) * 0.05;
+    wire.rotation.y = globe.rotation.y;
+
+    // Animate all children attached to globe
+    scene.children.forEach(child => {
+      if (child.geometry?.type === 'RingGeometry') {
+        const t = performance.now() * 0.002 + (child.userData.phase || 0);
+        const s = 1 + Math.sin(t) * 0.5;
+        child.scale.set(s, s, s);
+        child.material.opacity = 0.6 * (1 - (s - 1));
+      }
+    });
+
+    // Animate particles along arcs
+    particles.forEach(p => {
+      p.userData.t = (p.userData.t + p.userData.speed) % 1;
+      const pos = p.userData.curve.getPoint(p.userData.t);
+      p.position.copy(pos);
+    });
+
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  // Resize
+  window.addEventListener('resize', () => {
+    const w = mount.clientWidth, h = mount.clientHeight;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+  });
+})();
+</script>
 </body>
 </html>
+</CodeContent>
+<parameter name="Description">Complete rewrite of the network page with Three.js interactive 3D globe featuring animated flight arcs from CGK to 25 global destinations, pulsing hub markers, atmospheric glow, and mouse/touch drag interaction.

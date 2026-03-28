@@ -8,8 +8,18 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/styles.css">
+  <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
   <style>
     body { background: var(--bg); }
+    .ql-toolbar.ql-snow { border-color: var(--border) !important; border-radius: var(--radius) var(--radius) 0 0; background: var(--bg); }
+    .ql-container.ql-snow { border-color: var(--border) !important; border-radius: 0 0 var(--radius) var(--radius); background: var(--bg); min-height: 200px; font-family: var(--font-body); font-size: 0.9375rem; color: var(--text); }
+    .ql-editor { min-height: 200px; }
+    .ql-editor h2 { font-size: 1.5rem; margin: 20px 0 12px; }
+    .ql-editor h3 { font-size: 1.25rem; margin: 16px 0 10px; }
+    .ql-snow .ql-stroke { stroke: var(--text-muted) !important; }
+    .ql-snow .ql-fill { fill: var(--text-muted) !important; }
+    .ql-snow .ql-picker-label { color: var(--text-muted) !important; }
+    .ql-snow .ql-picker-options { background: var(--surface) !important; border-color: var(--border) !important; }
     .admin-layout { display: flex; min-height: 100vh; }
     .sidebar { width: 260px; background: var(--surface); border-right: 1px solid var(--border); padding: 24px 0; display: flex; flex-direction: column; position: fixed; height: 100vh; overflow-y: auto; z-index: 100; }
     .sidebar-logo { padding: 0 20px 24px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
@@ -448,8 +458,8 @@
         </div>
         <div class="form-group"><label class="form-label">Excerpt (EN)</label><textarea class="form-control" name="excerpt_en" rows="2" placeholder="Short description in English"></textarea></div>
         <div class="form-group"><label class="form-label">Excerpt (ID)</label><textarea class="form-control" name="excerpt_id" rows="2" placeholder="Deskripsi singkat dalam Bahasa Indonesia"></textarea></div>
-        <div class="form-group"><label class="form-label">Content (EN) — HTML supported</label><textarea class="form-control" name="content_en" rows="8" placeholder="<p>Article content in English...</p>"></textarea></div>
-        <div class="form-group"><label class="form-label">Content (ID) — HTML supported</label><textarea class="form-control" name="content_id" rows="8" placeholder="<p>Konten artikel dalam Bahasa Indonesia...</p>"></textarea></div>
+        <div class="form-group"><label class="form-label">Content (EN)</label><div id="quill-content-en"></div><input type="hidden" name="content_en" id="hidden-content-en"></div>
+        <div class="form-group"><label class="form-label">Content (ID)</label><div id="quill-content-id"></div><input type="hidden" name="content_id" id="hidden-content-id"></div>
         <div class="form-group"><label class="form-label">Scheduled Publish Date</label><input type="datetime-local" class="form-control" name="scheduled_at"></div>
       </div>
       <div id="tab-seo" style="display:none">
@@ -830,7 +840,7 @@ async function loadCustomers() {
       <td>${c.country}</td>
       <td style="font-size:0.8125rem">${c.phone}</td>
       <td>${c.shipment_count||0}</td>
-      <td><button class="btn btn-sm btn-outline" onclick="editCustomer(${c.id})">Edit</button></td>
+      <td><button class="btn btn-sm btn-outline" onclick="editCustomer(${c.id})">Edit</button><button class="btn btn-sm" style="background:rgba(17,34,238,0.1);color:var(--blue-accent);border:1px solid rgba(17,34,238,0.2)" onclick="setClientPassword(${c.id})">🔑 Portal</button></td>
     </tr>`).join('');
 }
 
@@ -1120,11 +1130,77 @@ function switchTab(tab) {
   document.getElementById('tab-seo').style.display = tab === 'seo' ? 'block' : 'none';
 }
 
+
+// ---- QUILL RICH TEXT EDITORS ----
+let quillEN = null, quillID = null;
+function initQuillEditors() {
+  if (quillEN) return; // already initialized
+  const toolbarOptions = [
+    [{ 'header': [2, 3, false] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+    ['blockquote', 'link'],
+    ['clean']
+  ];
+  quillEN = new Quill('#quill-content-en', { theme: 'snow', modules: { toolbar: toolbarOptions }, placeholder: 'Write your article in English...' });
+  quillID = new Quill('#quill-content-id', { theme: 'snow', modules: { toolbar: toolbarOptions }, placeholder: 'Tulis artikel dalam Bahasa Indonesia...' });
+}
+
+// Override the blog form submit to use Quill content
+const origBlogSubmit = document.getElementById('blog-form')._origListener;
+document.getElementById('blog-form').removeEventListener('submit', origBlogSubmit);
+
+document.getElementById('blog-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  // Sync Quill HTML to hidden inputs
+  if (quillEN) document.getElementById('hidden-content-en').value = quillEN.root.innerHTML;
+  if (quillID) document.getElementById('hidden-content-id').value = quillID.root.innerHTML;
+  
+  const data = Object.fromEntries(new FormData(e.target));
+  const action = data.id ? 'update' : 'create';
+  const res = await api('blog-api?action=' + action, 'POST', data);
+  if (res.success) { showToast('Post saved!'); closeModal('modal-blog'); loadBlog(); e.target.reset(); if(quillEN) quillEN.root.innerHTML=''; if(quillID) quillID.root.innerHTML=''; }
+  else showToast(res.error || 'Failed', 'error');
+});
+
+// Override editBlogPost to populate Quill
+const _origEditBlog = editBlogPost;
+editBlogPost = async function(id) {
+  initQuillEditors();
+  const post = await api('blog-api?action=admin-get&id=' + id);
+  const form = document.getElementById('blog-form');
+  Object.keys(post).forEach(k => { const el = form.querySelector('[name="' + k + '"]'); if (el && k !== 'content_en' && k !== 'content_id') el.value = post[k]||''; });
+  if (quillEN) quillEN.root.innerHTML = post.content_en || '';
+  if (quillID) quillID.root.innerHTML = post.content_id || '';
+  document.getElementById('hidden-content-en').value = post.content_en || '';
+  document.getElementById('hidden-content-id').value = post.content_id || '';
+  document.getElementById('blog-modal-title').textContent = 'Edit Blog Post';
+  openModal('modal-blog');
+};
+
+// Initialize Quill when blog modal opens
+const _origOpenModal = openModal;
+openModal = function(id) {
+  _origOpenModal(id);
+  if (id === 'modal-blog') initQuillEditors();
+};
+
+// ---- SET CLIENT PASSWORD ----
+async function setClientPassword(customerId) {
+  const password = prompt('Set a client portal password for this customer (min 8 characters):');
+  if (!password) return;
+  if (password.length < 8) { showToast('Password must be at least 8 characters', 'error'); return; }
+  const res = await api('client-api?action=set-password', 'POST', { customer_id: customerId, password });
+  if (res.success) showToast('Client portal password set!');
+  else showToast(res.error || 'Failed', 'error');
+}
+
 // Auto-slug from title
 document.querySelector('[name="title_en"]')?.addEventListener?.('input', function() {
   const slugEl = document.querySelector('[name="slug"]');
   if (slugEl && !slugEl.value) slugEl.value = this.value.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 });
 </script>
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
 </body>
 </html>

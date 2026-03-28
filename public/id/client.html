@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Client Portal — PT Ambara Artha Globaltrans</title>
+  <meta name="description" content="Secure client portal for PT Ambara Artha Globaltrans. Track shipments, view documents, and manage your cargo.">
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    .portal-login { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; background: var(--bg); }
+    .portal-app { display: none; min-height: 100vh; padding-top: 80px; }
+    .portal-app.active { display: block; }
+    .portal-header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 20px 0; margin-bottom: 32px; }
+    .portal-welcome { font-family: var(--font-head); font-weight: 800; font-size: 1.5rem; }
+    .portal-welcome span { color: var(--blue-accent); }
+    .shipment-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; transition: var(--transition); cursor: pointer; }
+    .shipment-card:hover { border-color: rgba(159,167,255,0.3); transform: translateY(-1px); }
+    .shipment-tracking { font-family: 'Courier New', monospace; font-weight: 800; font-size: 0.9375rem; color: var(--blue-accent); letter-spacing: 0.02em; }
+    .shipment-route { font-weight: 700; font-size: 1.125rem; margin: 8px 0; }
+    .shipment-meta { font-size: 0.8125rem; color: var(--text-muted); display: flex; gap: 16px; flex-wrap: wrap; }
+    .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+    .status-pending { background: rgba(255,170,0,0.15); color: #ffaa00; }
+    .status-in_transit { background: rgba(17,34,238,0.15); color: var(--blue-accent); }
+    .status-arrived_destination { background: rgba(0,200,150,0.15); color: #00c896; }
+    .status-customs_clearance { background: rgba(200,100,255,0.15); color: #c864ff; }
+    .status-out_for_delivery { background: rgba(255,150,50,0.15); color: #ff9632; }
+    .status-delivered { background: rgba(0,200,100,0.15); color: #00c864; }
+    .status-delayed { background: rgba(255,68,102,0.15); color: var(--red); }
+    .detail-panel { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; padding: 24px; }
+    .detail-panel.open { display: flex; }
+    .detail-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 32px; width: 100%; max-width: 700px; max-height: 90vh; overflow-y: auto; }
+    .timeline-item { display: flex; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--border); }
+    .timeline-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--blue); margin-top: 5px; flex-shrink: 0; }
+    .timeline-dot.latest { background: var(--blue-accent); box-shadow: 0 0 12px rgba(17,34,238,0.4); }
+    .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; margin-bottom: 32px; }
+    .portal-stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; text-align: center; }
+    .portal-stat-number { font-family: var(--font-head); font-weight: 900; font-size: 1.75rem; color: var(--blue-accent); }
+    .portal-stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; }
+    .empty-state { text-align: center; padding: 80px 24px; color: var(--text-muted); }
+    .empty-state svg { margin-bottom: 16px; opacity: 0.3; }
+  </style>
+</head>
+<body>
+
+<div id="navbar-mount"></div>
+
+<!-- LOGIN SCREEN -->
+<div class="portal-login" id="client-login">
+  <div class="card" style="width:100%;max-width:420px;padding:48px 40px">
+    <div style="text-align:center;margin-bottom:32px">
+      <div style="width:56px;height:56px;background:var(--blue);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+      <div style="font-family:var(--font-head);font-weight:900;font-size:1.25rem">Client Portal</div>
+      <div style="font-size:0.875rem;color:var(--text-muted);margin-top:4px">Track shipments & access documents</div>
+    </div>
+    <form id="client-login-form">
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="email" class="form-control" id="client-email" placeholder="your@company.com" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input type="password" class="form-control" id="client-password" placeholder="••••••••" required>
+      </div>
+      <div id="client-login-error" style="color:var(--red);font-size:0.875rem;margin-bottom:16px;display:none"></div>
+      <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center" id="client-login-btn">Sign In →</button>
+    </form>
+    <div style="text-align:center;margin-top:20px">
+      <a href="/en/contact" style="font-size:0.8125rem;color:var(--text-muted)">Need access? Contact us →</a>
+    </div>
+  </div>
+</div>
+
+<!-- PORTAL APP -->
+<div class="portal-app" id="client-app">
+  <div class="portal-header">
+    <div class="container" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px">
+      <div>
+        <div class="portal-welcome">Welcome, <span id="client-name">—</span></div>
+        <div style="font-size:0.875rem;color:var(--text-muted)" id="client-company">—</div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:center">
+        <div style="font-size:0.8125rem;color:var(--text-muted)" id="client-id-badge"></div>
+        <button onclick="clientLogout()" class="btn btn-sm btn-outline" style="border-color:rgba(255,68,102,0.3);color:var(--red)">Sign Out</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- STATS -->
+    <div class="stat-row" id="client-stats"></div>
+
+    <!-- SHIPMENTS LIST -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px">
+      <h2 style="margin:0">My Shipments</h2>
+      <div style="display:flex;gap:8px">
+        <select class="form-control" id="client-filter" onchange="filterClientShipments()" style="width:160px;padding:8px 12px;font-size:0.875rem">
+          <option value="">All Status</option>
+          <option value="pending">Pending</option>
+          <option value="in_transit">In Transit</option>
+          <option value="arrived_destination">Arrived</option>
+          <option value="customs_clearance">Customs</option>
+          <option value="delivered">Delivered</option>
+          <option value="delayed">Delayed</option>
+        </select>
+      </div>
+    </div>
+    <div id="client-shipments" style="display:flex;flex-direction:column;gap:16px;margin-bottom:60px"></div>
+  </div>
+</div>
+
+<!-- DETAIL PANEL -->
+<div class="detail-panel" id="detail-panel" onclick="if(event.target===this)closeDetail()">
+  <div class="detail-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+      <h3 id="detail-title">Shipment Detail</h3>
+      <button onclick="closeDetail()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.5rem">×</button>
+    </div>
+    <div id="detail-content"></div>
+  </div>
+</div>
+
+<div id="footer-mount"></div>
+<script src="/layout.js?v=2.1"></script>
+<script src="/app.js?v=2.1"></script>
+<script>
+document.getElementById('navbar-mount').innerHTML = AMBARA.getNavbar('');
+document.getElementById('footer-mount').innerHTML = AMBARA.getFooter();
+
+let clientToken = localStorage.getItem('ambara_client_token');
+let clientData = null;
+let allShipments = [];
+
+// LOGIN
+document.getElementById('client-login-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('client-login-btn');
+  const errEl = document.getElementById('client-login-error');
+  btn.disabled = true; btn.textContent = 'Signing in...';
+  errEl.style.display = 'none';
+
+  try {
+    const res = await fetch('/api/client-api?action=login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: document.getElementById('client-email').value,
+        password: document.getElementById('client-password').value
+      })
+    });
+    const data = await res.json();
+    if (res.ok && data.token) {
+      localStorage.setItem('ambara_client_token', data.token);
+      clientToken = data.token;
+      clientData = data.customer;
+      initPortal();
+    } else {
+      errEl.textContent = data.error || 'Invalid credentials';
+      errEl.style.display = 'block';
+    }
+  } catch {
+    errEl.textContent = 'Connection error. Please try again.';
+    errEl.style.display = 'block';
+  }
+  btn.disabled = false; btn.textContent = 'Sign In →';
+});
+
+function clientLogout() {
+  localStorage.removeItem('ambara_client_token');
+  location.reload();
+}
+
+async function verifyClientToken() {
+  if (!clientToken) return false;
+  try {
+    const res = await fetch('/api/client-api?action=verify', { headers: { 'Authorization': `Bearer ${clientToken}` } });
+    if (res.ok) {
+      const data = await res.json();
+      clientData = data.customer;
+      return true;
+    }
+  } catch {}
+  return false;
+}
+
+async function initPortal() {
+  document.getElementById('client-login').style.display = 'none';
+  document.getElementById('client-app').classList.add('active');
+  document.getElementById('client-name').textContent = clientData?.name || 'Client';
+  document.getElementById('client-company').textContent = clientData?.company || clientData?.country || '';
+  document.getElementById('client-id-badge').textContent = clientData?.customer_id || '';
+  loadClientShipments();
+}
+
+async function loadClientShipments() {
+  try {
+    const res = await fetch('/api/client-api?action=my-shipments', { headers: { 'Authorization': `Bearer ${clientToken}` } });
+    allShipments = await res.json();
+    renderStats();
+    filterClientShipments();
+  } catch {
+    document.getElementById('client-shipments').innerHTML = '<div class="empty-state"><p>Error loading shipments.</p></div>';
+  }
+}
+
+function renderStats() {
+  const total = allShipments.length;
+  const active = allShipments.filter(s => !['delivered','delayed'].includes(s.status)).length;
+  const delivered = allShipments.filter(s => s.status === 'delivered').length;
+  const totalKg = allShipments.reduce((sum, s) => sum + parseFloat(s.weight_kg || 0), 0);
+
+  document.getElementById('client-stats').innerHTML = `
+    <div class="portal-stat"><div class="portal-stat-number">${total}</div><div class="portal-stat-label">Total Shipments</div></div>
+    <div class="portal-stat"><div class="portal-stat-number">${active}</div><div class="portal-stat-label">Active</div></div>
+    <div class="portal-stat"><div class="portal-stat-number">${delivered}</div><div class="portal-stat-label">Delivered</div></div>
+    <div class="portal-stat"><div class="portal-stat-number">${totalKg.toLocaleString()} kg</div><div class="portal-stat-label">Total Weight</div></div>
+  `;
+}
+
+function filterClientShipments() {
+  const filterVal = document.getElementById('client-filter').value;
+  const filtered = filterVal ? allShipments.filter(s => s.status === filterVal) : allShipments;
+  const container = document.getElementById('client-shipments');
+
+  if (!filtered.length) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+        <p style="font-size:1.125rem;font-weight:600;margin-bottom:4px">No shipments found</p>
+        <p>You don't have any ${filterVal ? filterVal.replace('_',' ') + ' ' : ''}shipments yet.</p>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = filtered.map(s => `
+    <div class="shipment-card" onclick="viewDetail(${s.id})">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+        <div>
+          <div class="shipment-tracking">${s.tracking_number}</div>
+          <div class="shipment-route">${s.origin_iata || s.origin} → ${s.destination_iata || s.destination}</div>
+          <div class="shipment-meta">
+            <span>${s.cargo_type?.replace('_',' ') || 'General'}</span>
+            <span>${s.weight_kg} kg · ${s.total_pcs} pcs</span>
+            ${s.airline ? `<span>${s.airline}</span>` : ''}
+            <span>${new Date(s.created_at).toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'})}</span>
+          </div>
+        </div>
+        <div class="status-badge status-${s.status}">${statusIcon(s.status)} ${s.status.replace('_',' ')}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function statusIcon(s) {
+  const icons = {
+    pending: '⏳', in_transit: '✈️', arrived_destination: '📍', customs_clearance: '🏛',
+    out_for_delivery: '🚚', delivered: '✅', delayed: '⚠️'
+  };
+  return icons[s] || '📦';
+}
+
+async function viewDetail(id) {
+  document.getElementById('detail-content').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)"><div style="width:32px;height:32px;border:3px solid var(--blue);border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px"></div>Loading...</div>';
+  document.getElementById('detail-panel').classList.add('open');
+
+  try {
+    const res = await fetch(`/api/client-api?action=my-shipment&id=${id}`, { headers: { 'Authorization': `Bearer ${clientToken}` } });
+    const data = await res.json();
+    const s = data.shipment;
+
+    document.getElementById('detail-title').textContent = s.tracking_number;
+    document.getElementById('detail-content').innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px">
+        <div class="portal-stat" style="padding:16px"><div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">Route</div><div style="font-weight:700">${s.origin} → ${s.destination}</div></div>
+        <div class="portal-stat" style="padding:16px"><div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">Status</div><div><span class="status-badge status-${s.status}">${s.status.replace('_',' ')}</span></div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px">
+        <div class="portal-stat" style="padding:12px"><div style="font-weight:700">${s.weight_kg} kg</div><div style="font-size:0.7rem;color:var(--text-muted)">Weight</div></div>
+        <div class="portal-stat" style="padding:12px"><div style="font-weight:700">${s.total_pcs}</div><div style="font-size:0.7rem;color:var(--text-muted)">Pieces</div></div>
+        <div class="portal-stat" style="padding:12px"><div style="font-weight:700">${s.cargo_type?.replace('_',' ') || '—'}</div><div style="font-size:0.7rem;color:var(--text-muted)">Cargo</div></div>
+        <div class="portal-stat" style="padding:12px"><div style="font-weight:700">${s.airline || '—'}</div><div style="font-size:0.7rem;color:var(--text-muted)">Airline</div></div>
+      </div>
+
+      <div style="font-family:var(--font-head);font-weight:800;margin-bottom:16px">Tracking Timeline</div>
+      ${data.events.length ? data.events.map((e, i) => `
+        <div class="timeline-item">
+          <div class="timeline-dot ${i === 0 ? 'latest' : ''}"></div>
+          <div>
+            <div style="font-weight:600;font-size:0.9375rem">${e.label}</div>
+            <div style="font-size:0.8125rem;color:var(--text-muted)">${e.location ? e.location + ' · ' : ''}${new Date(e.event_time).toLocaleString()}</div>
+          </div>
+        </div>
+      `).join('') : '<div style="color:var(--text-muted);padding:20px 0">No tracking events yet. Your shipment will be updated shortly.</div>'}
+
+      ${data.documents?.length ? `
+        <div style="font-family:var(--font-head);font-weight:800;margin:24px 0 16px">Documents</div>
+        ${data.documents.map(d => `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)">
+            <div>
+              <div style="font-weight:600;font-size:0.875rem">${d.file_name}</div>
+              <div style="font-size:0.75rem;color:var(--text-muted)">${d.document_type} · ${new Date(d.uploaded_at).toLocaleDateString()}</div>
+            </div>
+          </div>
+        `).join('')}
+      ` : ''}
+    `;
+  } catch {
+    document.getElementById('detail-content').innerHTML = '<div style="text-align:center;color:var(--red);padding:40px">Error loading shipment details.</div>';
+  }
+}
+
+function closeDetail() { document.getElementById('detail-panel').classList.remove('open'); }
+
+// Auto-login check
+(async () => {
+  if (clientToken && await verifyClientToken()) initPortal();
+})();
+</script>
+</body>
+</html>
+</CodeContent>
+<parameter name="Description">Full client portal with login screen, JWT auth, scoped shipment listing with status filters, detailed tracking timeline view, document access, and personal stats dashboard. Completely self-contained single-page app.

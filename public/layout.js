@@ -108,6 +108,7 @@ AMBARA.getFooter = () => {
             <a href="${base}/contact" style="font-size:0.875rem;color:var(--text-muted)">${lang === 'id' ? 'Hubungi Kami' : 'Contact Us'}</a>
             <a href="${base}/faq" style="font-size:0.875rem;color:var(--text-muted)">FAQ</a>
             <a href="${base}/quote" style="font-size:0.875rem;color:var(--text-muted)">${lang === 'id' ? 'Minta Penawaran' : 'Get Quote'}</a>
+            <a href="${base}/client" style="font-size:0.875rem;color:var(--text-muted)">${lang === 'id' ? 'Portal Klien' : 'Client Portal'}</a>
           </div>
         </div>
       </div>
