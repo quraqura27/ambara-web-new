@@ -36,22 +36,22 @@
     <div id="partners-grid" class="grid-4">
       <!-- Loaded from DB or placeholder -->
       <div class="card animate-on-scroll" style="text-align:center;padding:32px 20px">
-        <div style="font-size:2.5rem;margin-bottom:12px">✈️</div>
+        <div style="font-size:2.5rem;margin-bottom:12px"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg></div>
         <div style="font-weight:700">Garuda Indonesia Cargo</div>
         <div style="font-size:0.8125rem;color:var(--text-muted);margin-top:4px">Airline</div>
       </div>
       <div class="card animate-on-scroll" style="text-align:center;padding:32px 20px">
-        <div style="font-size:2.5rem;margin-bottom:12px">✈️</div>
+        <div style="font-size:2.5rem;margin-bottom:12px"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg></div>
         <div style="font-weight:700">Singapore Airlines Cargo</div>
         <div style="font-size:0.8125rem;color:var(--text-muted);margin-top:4px">Airline</div>
       </div>
       <div class="card animate-on-scroll" style="text-align:center;padding:32px 20px">
-        <div style="font-size:2.5rem;margin-bottom:12px">✈️</div>
+        <div style="font-size:2.5rem;margin-bottom:12px"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg></div>
         <div style="font-weight:700">Emirates SkyCargo</div>
         <div style="font-size:0.8125rem;color:var(--text-muted);margin-top:4px">Airline</div>
       </div>
       <div class="card animate-on-scroll" style="text-align:center;padding:32px 20px">
-        <div style="font-size:2.5rem;margin-bottom:12px">✈️</div>
+        <div style="font-size:2.5rem;margin-bottom:12px"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg></div>
         <div style="font-weight:700">Cathay Pacific Cargo</div>
         <div style="font-size:0.8125rem;color:var(--text-muted);margin-top:4px">Airline</div>
       </div>
@@ -95,7 +95,7 @@ fetch('/api/content?type=partners').then(r=>r.json()).then(d=>{
   if (d.partners?.length) {
     if(d.length === 0) { document.getElementById('partners-grid').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--text-muted)">More partners coming soon.</div>'; return; } document.getElementById('partners-grid').innerHTML = d.partners.map(p=>`
       <div class="card animate-on-scroll" style="text-align:center;padding:32px 20px">
-        ${p.logo_url ? `<img src="${p.logo_url}" alt="${p.name}" style="height:60px;object-fit:contain;margin-bottom:16px">` : `<div style="font-size:2.5rem;margin-bottom:12px">✈️</div>`}
+        ${p.logo_url ? `<img src="${p.logo_url}" alt="${p.name}" style="height:60px;object-fit:contain;margin-bottom:16px">` : `<div style="font-size:2.5rem;margin-bottom:12px"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg></div>`}
         <div style="font-weight:700">${p.name}</div>
         <div style="font-size:0.8125rem;color:var(--text-muted);margin-top:4px">${p.category}</div>
       </div>`).join('');
