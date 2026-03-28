@@ -42,9 +42,13 @@ AMBARA.getNavbar = (active = '') => {
     </div>
   
       <div class="mobile-nav">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:32px;width:100%">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;width:100%">
           <div class="navbar-brand-text" style="color:white">AMBARA<span style="color:var(--blue-accent)">ARTHA</span></div>
           <button class="mobile-menu-btn" aria-label="Close" style="color:white;font-size:2rem">&times;</button>
+        </div>
+        <div class="lang-toggle" style="margin-bottom:32px;width:100%;display:flex;background:rgba(255,255,255,0.1);border-radius:8px">
+          <button data-lang="en" ${lang === 'en' ? 'class="active"' : ''} style="flex:1;color:white;border-color:transparent">EN</button>
+          <button data-lang="id" ${lang === 'id' ? 'class="active"' : ''} style="flex:1;color:white;border-color:transparent">ID</button>
         </div>
         <div style="display:flex;flex-direction:column;gap:24px;font-size:1.25rem;font-weight:600">
           ${links.map(l => `<a href="${l.href}" style="color:white;text-decoration:none">${l.label[lang]}</a>`).join('')}
