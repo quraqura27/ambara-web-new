@@ -78,7 +78,7 @@
       <a onclick="showSection('shipments')" data-section="shipments">📦 Shipments</a>
       <a onclick="showSection('customers')" data-section="customers">👥 Customers</a>
       <a onclick="showSection('quotes')" data-section="quotes">💬 Quotes</a>
-      <a onclick="showSection('messages')" data-section="messages">✉️ Messages</a>
+      <a onclick="showSection('messages')" data-section="messages"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;vertical-align:-3px"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Messages</a>
 
       <div class="sidebar-section">Content</div>
       <a onclick="showSection('blog')" data-section="blog">📝 Blog Posts</a>
@@ -592,7 +592,7 @@
   </div>
 </div>
 
-<script src="/app.js"></script>
+<script src="/app.js?v=2.1"></script>
 <script>
 let token = localStorage.getItem('ambara_token');
 let currentStaff = null;

@@ -11,11 +11,11 @@ AMBARA.getNavbar = (active = '') => {
   const base = `/${lang}`;
   const links = [
     { href: `${base}/`, label: { en: 'Home', id: 'Beranda' }, key: 'home' },
-    { href: `${base}/services.html`, label: { en: 'Services', id: 'Layanan' }, key: 'services' },
-    { href: `${base}/about.html`, label: { en: 'About', id: 'Tentang' }, key: 'about' },
-    { href: `${base}/network.html`, label: { en: 'Network', id: 'Jaringan' }, key: 'network' },
-    { href: `${base}/blog.html`, label: { en: 'Blog', id: 'Blog' }, key: 'blog' },
-    { href: `${base}/faq.html`, label: { en: 'FAQ', id: 'FAQ' }, key: 'faq' },
+    { href: `${base}/services`, label: { en: 'Services', id: 'Layanan' }, key: 'services' },
+    { href: `${base}/about`, label: { en: 'About', id: 'Tentang' }, key: 'about' },
+    { href: `${base}/network`, label: { en: 'Network', id: 'Jaringan' }, key: 'network' },
+    { href: `${base}/blog`, label: { en: 'Blog', id: 'Blog' }, key: 'blog' },
+    { href: `${base}/faq`, label: { en: 'FAQ', id: 'FAQ' }, key: 'faq' },
   ];
   return `
   <nav class="navbar">
@@ -34,11 +34,24 @@ AMBARA.getNavbar = (active = '') => {
           <button data-lang="en" ${lang === 'en' ? 'class="active"' : ''}>EN</button>
           <button data-lang="id" ${lang === 'id' ? 'class="active"' : ''}>ID</button>
         </div>
-        <a href="${base}/quote.html" class="btn btn-primary btn-sm">${lang === 'id' ? 'Minta Penawaran' : 'Get Quote'}</a>
+        <a href="${base}/quote" class="btn btn-primary btn-sm">${lang === 'id' ? 'Minta Penawaran' : 'Get Quote'}</a>
       </div>
       <button class="mobile-menu-btn" aria-label="Menu">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </button>
+    </div>
+  
+      <div class="mobile-nav">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:32px;width:100%">
+          <div class="navbar-brand-text" style="color:white">AMBARA<span style="color:var(--blue-accent)">ARTHA</span></div>
+          <button class="mobile-menu-btn" aria-label="Close" style="color:white;font-size:2rem">&times;</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:24px;font-size:1.25rem;font-weight:600">
+          ${links.map(l => `<a href="${l.href}" style="color:white;text-decoration:none">${l.label[lang]}</a>`).join('')}
+        </div>
+        <a href="${base}/quote" class="btn btn-primary" style="margin-top:auto;width:100%;justify-content:center">${lang === 'id' ? 'Minta Penawaran' : 'Get Quote'}</a>
+      </div>
+
     </div>
   </nav>`;
 };
@@ -47,8 +60,8 @@ AMBARA.getFooter = () => {
   const lang = AMBARA.getLang();
   const base = `/${lang}`;
   const t = {
-    en: { services: 'Services', company: 'Company', support: 'Support', copy: '© 2025 PT Ambara Artha Globaltrans. All rights reserved.' },
-    id: { services: 'Layanan', company: 'Perusahaan', support: 'Dukungan', copy: '© 2025 PT Ambara Artha Globaltrans. Hak cipta dilindungi.' }
+    en: { services: 'Services', company: 'Company', support: 'Support', copy: '© 2025–2026 PT Ambara Artha Globaltrans. All rights reserved.' },
+    id: { services: 'Layanan', company: 'Perusahaan', support: 'Dukungan', copy: '© 2025–2026 PT Ambara Artha Globaltrans. Hak cipta dilindungi.' }
   };
   const tx = t[lang];
   return `
@@ -62,35 +75,35 @@ AMBARA.getFooter = () => {
           </a>
           <p style="font-size:0.875rem;margin-bottom:20px">Your secure way for global delivery.</p>
           <div style="font-size:0.875rem;color:var(--text-muted)">
-            <div style="margin-bottom:8px">📍 CGK Cargo Terminal, Soekarno-Hatta</div>
-            <div style="margin-bottom:8px">📞 +62 821-2545-2800</div>
-            <div>✉️ cs@ambaraartha.com</div>
+            <div style="margin-bottom:8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;vertical-align:-3px"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>CGK Cargo Terminal, Soekarno-Hatta</div>
+            <div style="margin-bottom:8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;vertical-align:-3px"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>+62 821-2545-2800</div>
+            <div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;vertical-align:-3px"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>cs@ambaraartha.com</div>
           </div>
         </div>
         <div>
           <div style="font-weight:700;margin-bottom:20px;font-size:0.875rem;text-transform:uppercase;letter-spacing:0.05em">${tx.services}</div>
           <div style="display:flex;flex-direction:column;gap:12px">
-            <a href="${base}/services.html" style="font-size:0.875rem;color:var(--text-muted)">Air Freight</a>
-            <a href="${base}/services.html" style="font-size:0.875rem;color:var(--text-muted)">Customs Clearance</a>
-            <a href="${base}/services.html" style="font-size:0.875rem;color:var(--text-muted)">Land Transport</a>
-            <a href="${base}/services.html" style="font-size:0.875rem;color:var(--text-muted)">Cargo Insurance</a>
+            <a href="${base}/services" style="font-size:0.875rem;color:var(--text-muted)">Air Freight</a>
+            <a href="${base}/services" style="font-size:0.875rem;color:var(--text-muted)">Customs Clearance</a>
+            <a href="${base}/services" style="font-size:0.875rem;color:var(--text-muted)">Land Transport</a>
+            <a href="${base}/services" style="font-size:0.875rem;color:var(--text-muted)">Cargo Insurance</a>
           </div>
         </div>
         <div>
           <div style="font-weight:700;margin-bottom:20px;font-size:0.875rem;text-transform:uppercase;letter-spacing:0.05em">${tx.company}</div>
           <div style="display:flex;flex-direction:column;gap:12px">
-            <a href="${base}/about.html" style="font-size:0.875rem;color:var(--text-muted)">${lang === 'id' ? 'Tentang Kami' : 'About Us'}</a>
-            <a href="${base}/network.html" style="font-size:0.875rem;color:var(--text-muted)">${lang === 'id' ? 'Jaringan' : 'Network'}</a>
-            <a href="${base}/partners.html" style="font-size:0.875rem;color:var(--text-muted)">${lang === 'id' ? 'Mitra' : 'Partners'}</a>
-            <a href="${base}/blog.html" style="font-size:0.875rem;color:var(--text-muted)">Blog</a>
+            <a href="${base}/about" style="font-size:0.875rem;color:var(--text-muted)">${lang === 'id' ? 'Tentang Kami' : 'About Us'}</a>
+            <a href="${base}/network" style="font-size:0.875rem;color:var(--text-muted)">${lang === 'id' ? 'Jaringan' : 'Network'}</a>
+            <a href="${base}/partners" style="font-size:0.875rem;color:var(--text-muted)">${lang === 'id' ? 'Mitra' : 'Partners'}</a>
+            <a href="${base}/blog" style="font-size:0.875rem;color:var(--text-muted)">Blog</a>
           </div>
         </div>
         <div>
           <div style="font-weight:700;margin-bottom:20px;font-size:0.875rem;text-transform:uppercase;letter-spacing:0.05em">${tx.support}</div>
           <div style="display:flex;flex-direction:column;gap:12px">
-            <a href="${base}/contact.html" style="font-size:0.875rem;color:var(--text-muted)">${lang === 'id' ? 'Hubungi Kami' : 'Contact Us'}</a>
-            <a href="${base}/faq.html" style="font-size:0.875rem;color:var(--text-muted)">FAQ</a>
-            <a href="${base}/quote.html" style="font-size:0.875rem;color:var(--text-muted)">${lang === 'id' ? 'Minta Penawaran' : 'Get Quote'}</a>
+            <a href="${base}/contact" style="font-size:0.875rem;color:var(--text-muted)">${lang === 'id' ? 'Hubungi Kami' : 'Contact Us'}</a>
+            <a href="${base}/faq" style="font-size:0.875rem;color:var(--text-muted)">FAQ</a>
+            <a href="${base}/quote" style="font-size:0.875rem;color:var(--text-muted)">${lang === 'id' ? 'Minta Penawaran' : 'Get Quote'}</a>
           </div>
         </div>
       </div>

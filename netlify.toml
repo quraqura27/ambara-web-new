@@ -23,6 +23,17 @@
   to = "/en/"
   status = 302
 
+# Clean Blog URLs (Rewrite rule)
+[[redirects]]
+  from = "/en/blog/:slug"
+  to = "/en/blog-post.html?slug=:slug"
+  status = 200
+
+[[redirects]]
+  from = "/id/blog/:slug"
+  to = "/id/blog-post.html?slug=:slug"
+  status = 200
+
 # EN pages
 [[redirects]]
   from = "/en"

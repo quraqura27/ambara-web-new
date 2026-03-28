@@ -4,9 +4,9 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title id="page-title">Blog — PT Ambara Artha Globaltrans</title>
   <meta name="description" id="page-desc" content="Air freight insights from PT Ambara Artha Globaltrans">
-  <link rel="canonical" id="page-canonical" href="/id/blog-post.html">
-  <link rel="alternate" hreflang="en" id="alt-en" href="/id/blog-post.html">
-  <link rel="alternate" hreflang="id" id="alt-id" href="https://ambaraartha.com/id/blog-post.html">
+  <link rel="canonical" id="page-canonical" href="/id/blog-post">
+  <link rel="alternate" hreflang="en" id="alt-en" href="/id/blog-post">
+  <link rel="alternate" hreflang="id" id="alt-id" href="https://ambaraartha.com/id/blog-post">
   <script type="application/ld+json" id="article-schema"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -36,8 +36,8 @@
 </div>
 
 <div id="footer-mount"></div>
-<script src="/layout.js"></script>
-<script src="/app.js"></script>
+<script src="/layout.js?v=2.1"></script>
+<script src="/app.js?v=2.1"></script>
 <script>
 document.getElementById('navbar-mount').innerHTML = AMBARA.getNavbar('blog');
 document.getElementById('footer-mount').innerHTML = AMBARA.getFooter();
@@ -80,7 +80,7 @@ fetch(`/api/blog-api?action=post&slug=${slug}`).then(r => {
     <section style="padding:40px 0 60px">
       <div class="container" style="max-width:760px">
         <div style="margin-bottom:24px">
-          <a href="/id/blog.html" style="color:var(--text-muted);font-size:0.875rem">← Back to Blog</a>
+          <a href="/id/blog" style="color:var(--text-muted);font-size:0.875rem">← Back to Blog</a>
         </div>
         <div class="badge badge-blue" style="margin-bottom:20px">${post.category}</div>
         <h1 style="margin-bottom:20px">${post.title_en}</h1>
@@ -108,7 +108,7 @@ fetch(`/api/blog-api?action=post&slug=${slug}`).then(r => {
         <div class="card" style="text-align:center;background:linear-gradient(135deg,var(--surface),rgba(17,34,238,0.05))">
           <h3 style="margin-bottom:12px">Ready to Ship?</h3>
           <p style="margin-bottom:24px">Get a free quote from our team within 2 hours.</p>
-          <a href="/id/quote.html" class="btn btn-primary">Get Free Quote →</a>
+          <a href="/id/quote" class="btn btn-primary">Get Free Quote →</a>
         </div>
       </div>
     </section>`;
@@ -117,7 +117,7 @@ fetch(`/api/blog-api?action=post&slug=${slug}`).then(r => {
     <div style="text-align:center;padding:120px 24px">
       <h2 style="margin-bottom:16px">Post Not Found</h2>
       <p style="margin-bottom:24px">The article you're looking for doesn't exist.</p>
-      <a href="/id/blog.html" class="btn btn-primary">← Back to Blog</a>
+      <a href="/id/blog" class="btn btn-primary">← Back to Blog</a>
     </div>`;
 });
 </script>

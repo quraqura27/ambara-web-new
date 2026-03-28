@@ -30,18 +30,18 @@ exports.handler = async (event) => {
     const posts = await sql`SELECT slug, updated_at, published_at FROM blog_posts WHERE status = 'published' ORDER BY published_at DESC`;
     blogUrls = posts.map(p => `
   <url>
-    <loc>${BASE}/en/blog-post.html?slug=${p.slug}</loc>
+    <loc>${BASE}/en/blog/${p.slug}</loc>
     <lastmod>${new Date(p.updated_at || p.published_at).toISOString().split('T')[0]}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
-    <xhtml:link rel="alternate" hreflang="en" href="${BASE}/en/blog-post.html?slug=${p.slug}"/>
-    <xhtml:link rel="alternate" hreflang="id" href="${BASE}/id/blog-post.html?slug=${p.slug}"/>
+    <xhtml:link rel="alternate" hreflang="en" href="${BASE}/en/blog/${p.slug}"/>
+    <xhtml:link rel="alternate" hreflang="id" href="${BASE}/id/blog/${p.slug}"/>
   </url>`).join('');
   } catch {}
 
   const staticUrls = staticPages.map(p => `
   <url>
-    <loc>${BASE}${p.path}</loc>
+    <loc>${BASE}${p.path.replace('.html', '')}</loc>
     <changefreq>${p.changefreq}</changefreq>
     <priority>${p.priority}</priority>
   </url>`).join('');

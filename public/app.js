@@ -42,9 +42,9 @@ function initMobileMenu() {
   const btn = document.querySelector('.mobile-menu-btn');
   const nav = document.querySelector('.mobile-nav');
   if (!btn || !nav) return;
-  btn.addEventListener('click', () => {
+  document.querySelectorAll('.mobile-menu-btn').forEach(b => b.addEventListener('click', () => {
     nav.style.display = nav.style.display === 'flex' ? 'none' : 'flex';
-  });
+  }));
 }
 
 // Toast notifications
