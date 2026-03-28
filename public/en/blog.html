@@ -71,7 +71,7 @@ function renderPosts(posts, append = false) {
       <p style="font-size:0.875rem;margin-bottom:20px">${p.excerpt_en||''}</p>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto">
         <span style="font-size:0.8125rem;color:var(--text-muted)">${new Date(p.published_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</span>
-        <a href="/en/blog-post.html?slug=${p.slug}" class="btn btn-sm btn-outline">Read →</a>
+        <a href="/en/blog/${p.slug}" class="btn btn-sm btn-outline">Read →</a>
       </div>
     </div>`).join('');
   if (append) grid.innerHTML += html;
