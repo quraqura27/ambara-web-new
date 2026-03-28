@@ -61,15 +61,16 @@ exports.handler = async (event) => {
         Metadata: { 'original-size': buffer.length.toString(), 'compressed-size': compressed.length.toString(), 'doc-type': doc_type }
       }));
 
-      // Public URL
-      const fileUrl = `https://pub-${process.env.CF_ACCOUNT_ID}.r2.dev/${key}`;
-
-      // Save to DB
-      const result = await sql`INSERT INTO documents (shipment_id, doc_type, file_name, file_url, file_size, uploaded_by) VALUES (${shipment_id}, ${doc_type}, ${file_name}, ${fileUrl}, ${compressed.length}, ${decoded.id}) RETURNING *`;
+      // Save internal R2 key to DB instead of public URL
+      const result = await sql`INSERT INTO documents (shipment_id, doc_type, file_name, file_url, file_size, uploaded_by) VALUES (${shipment_id}, ${doc_type}, ${file_name}, ${key}, ${compressed.length}, ${decoded.id}) RETURNING *`;
 
       await sql`INSERT INTO activity_log (staff_id, staff_name, action, entity_type, entity_id) VALUES (${decoded.id}, ${decoded.name}, ${`Uploaded document: ${file_name} (${savings}% compressed)`}, ${'document'}, ${shipment_id.toString()})`;
 
-      return response({ ...result[0], compressed_savings: savings });
+      // Generate immediate 1-hour presigned URL for the response
+      const signedUrl = await getSignedUrl(r2, new GetObjectCommand({ Bucket: process.env.R2_BUCKET_NAME, Key: key }), { expiresIn: 3600 });
+      const returnDoc = { ...result[0], file_url: signedUrl };
+
+      return response({ ...returnDoc, compressed_savings: savings });
     }
 
     // LIST documents for shipment
@@ -77,7 +78,20 @@ exports.handler = async (event) => {
       const shipment_id = event.queryStringParameters?.shipment_id;
       if (!shipment_id) return errorResponse('shipment_id required');
       const docs = await sql`SELECT * FROM documents WHERE shipment_id = ${shipment_id} ORDER BY uploaded_at DESC`;
-      return response(docs);
+      
+      const r2 = getR2Client();
+      const signedDocs = await Promise.all(docs.map(async (doc) => {
+        let key = doc.file_url;
+        // Legacy support: extract key if it's an old public URL
+        if (key.includes('.dev/')) key = key.split('.dev/')[1];
+        
+        try {
+          const signedUrl = await getSignedUrl(r2, new GetObjectCommand({ Bucket: process.env.R2_BUCKET_NAME, Key: key }), { expiresIn: 3600 });
+          return { ...doc, file_url: signedUrl };
+        } catch (e) { return doc; }
+      }));
+
+      return response(signedDocs);
     }
 
     // DELETE document
@@ -89,7 +103,8 @@ exports.handler = async (event) => {
       // Delete from R2
       try {
         const r2 = getR2Client();
-        const key = doc[0].file_url.split('.dev/')[1];
+        let key = doc[0].file_url;
+        if (key.includes('.dev/')) key = key.split('.dev/')[1];
         await r2.send(new DeleteObjectCommand({ Bucket: process.env.R2_BUCKET_NAME, Key: key }));
       } catch (e) { console.error('R2 delete error:', e.message); }
 
