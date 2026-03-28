@@ -4,9 +4,9 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title id="page-title">Blog — PT Ambara Artha Globaltrans</title>
   <meta name="description" id="page-desc" content="Air freight insights from PT Ambara Artha Globaltrans">
-  <link rel="canonical" id="page-canonical" href="https://ambaraartha.com/en/blog-post">
-  <link rel="alternate" hreflang="en" id="alt-en" href="https://ambaraartha.com/en/blog-post">
-  <link rel="alternate" hreflang="id" id="alt-id" href="https://ambaraartha.com/id/blog-post">
+  <link rel="canonical" id="page-canonical" href="https://ambaraartha.com/en/blog">
+  <link rel="alternate" hreflang="en" id="alt-en" href="https://ambaraartha.com/en/blog">
+  <link rel="alternate" hreflang="id" id="alt-id" href="https://ambaraartha.com/id/blog">
   <script type="application/ld+json" id="article-schema"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,6 +23,7 @@
     .prose table { width: 100%; border-collapse: collapse; margin: 24px 0; }
     .prose th { background: var(--surface2); padding: 12px 16px; text-align: left; font-size: 0.875rem; }
     .prose td { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 0.9375rem; color: var(--text-muted); }
+    .prose img { max-width: 100%; height: auto; border-radius: 8px; margin: 32px 0; }
   </style>
 </head>
 <body>
@@ -36,94 +37,120 @@
 </div>
 
 <div id="footer-mount"></div>
-<script src="/layout.js?v=2.1"></script>
-<script src="/app.js?v=2.1"></script>
+<script src="/layout.js?v=2.2"></script>
+<script src="/app.js?v=2.2"></script>
 <script>
 document.getElementById('navbar-mount').innerHTML = AMBARA.getNavbar('blog');
 document.getElementById('footer-mount').innerHTML = AMBARA.getFooter();
 
+// Fix slug extraction
 let slug = new URLSearchParams(window.location.search).get('slug');
 if (!slug) {
   const parts = window.location.pathname.replace(/\/$/, '').split('/');
   slug = parts[parts.length - 1];
 }
-if (!slug || slug === 'blog' || slug === 'blog-post.html') window.location.href = '/en/blog';
 
-fetch(`/api/blog-api?action=post&slug=${slug}`).then(r => {
-  if (!r.ok) throw new Error('Not found');
-  return r.json();
-}).then(post => {
-  // Update SEO tags
-  document.getElementById('page-title').textContent = `${post.title_en} | PT Ambara Artha Globaltrans`;
-  document.getElementById('page-desc').content = post.meta_description_en || post.excerpt_en;
-  document.getElementById('page-canonical').href = `https://ambaraartha.com/en/blog/${slug}`;
-  document.getElementById('alt-en').href = `https://ambaraartha.com/en/blog/${slug}`;
-  document.getElementById('alt-id').href = `https://ambaraartha.com/id/blog/${slug}`;
+// Validation
+if (!slug || slug === 'blog' || slug === 'blog-post.html' || slug === 'index') {
+  window.location.href = '/en/blog';
+} else {
+  fetchBlogPost(slug);
+}
 
-  // Article schema
-  document.getElementById('article-schema').textContent = JSON.stringify({
-    "@context": "https://schema.org",
-    "@type": "Article",
-    "headline": post.title_en,
-    "description": post.excerpt_en,
-    "author": { "@type": "Organization", "name": "PT Ambara Artha Globaltrans" },
-    "publisher": { "@type": "Organization", "name": "PT Ambara Artha Globaltrans", "url": "https://ambaraartha.com" },
-    "datePublished": post.published_at,
-    "dateModified": post.updated_at || post.published_at,
-    "url": `https://ambaraartha.com/en/blog/${slug}`
-  });
+async function fetchBlogPost(slugStr) {
+  try {
+    const res = await fetch(`/api/blog-api?action=post&slug=${slugStr}`);
+    if (!res.ok) throw new Error('Post not found');
+    const post = await res.json();
+    
+    renderPost(post, slugStr);
+  } catch (err) {
+    console.error('Blog load error:', err);
+    document.getElementById('post-container').innerHTML = `
+      <div style="text-align:center;padding:120px 24px">
+        <h2 style="margin-bottom:16px">Post Not Found</h2>
+        <p style="margin-bottom:24px">The article you're looking for doesn't exist.</p>
+        <a href="/en/blog" class="btn btn-primary">← ${'en' === 'id' ? 'Kembali ke Blog' : 'Back to Blog'}</a>
+      </div>`;
+  }
+}
+
+function renderPost(post, slugStr) {
+  const isID = 'en' === 'id';
+  const title = isID ? (post.title_id || post.title_en) : post.title_en;
+  const content = isID ? (post.content_id || post.content_en) : post.content_en;
+  const excerpt = isID ? (post.excerpt_id || post.excerpt_en) : post.excerpt_en;
+  const metaDesc = isID ? (post.meta_description_id || post.meta_description_en) : post.meta_description_en;
+
+  // Update DOM Meta
+  document.title = `${title} | PT Ambara Artha Globaltrans`;
+  if(document.getElementById('page-title')) document.getElementById('page-title').textContent = `${title} | PT Ambara Artha Globaltrans`;
+  if(document.getElementById('page-desc')) document.getElementById('page-desc').content = metaDesc || excerpt;
+  if(document.getElementById('page-canonical')) document.getElementById('page-canonical').href = `https://ambaraartha.com/en/blog/${slugStr}`;
+
+  // Update Alts
+  if(document.getElementById('alt-en')) document.getElementById('alt-en').href = `https://ambaraartha.com/en/blog/${slugStr}`;
+  if(document.getElementById('alt-id')) document.getElementById('alt-id').href = `https://ambaraartha.com/id/blog/${slugStr}`;
+
+  // Schema
+  if(document.getElementById('article-schema')) {
+    document.getElementById('article-schema').textContent = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Article",
+      "headline": title,
+      "description": excerpt,
+      "author": { "@type": "Organization", "name": "PT Ambara Artha Globaltrans" },
+      "publisher": { "@type": "Organization", "name": "PT Ambara Artha Globaltrans", "url": "https://ambaraartha.com" },
+      "datePublished": post.published_at,
+      "dateModified": post.updated_at || post.published_at,
+      "url": `https://ambaraartha.com/en/blog/${slugStr}`
+    });
+  }
 
   const relatedHtml = (post.related||[]).map(r => `
     <a href="/en/blog/${r.slug}" class="card" style="display:block;text-decoration:none">
       <div class="badge badge-blue" style="margin-bottom:12px">${r.category}</div>
-      <div style="font-weight:700;font-size:0.9375rem;margin-bottom:8px">${r.title_en}</div>
-      <div style="font-size:0.8125rem;color:var(--text-muted)">${new Date(r.published_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
+      <div style="font-weight:700;font-size:0.9375rem;margin-bottom:8px">${isID ? (r.title_id || r.title_en) : r.title_en}</div>
+      <div style="font-size:0.8125rem;color:var(--text-muted)">${new Date(r.published_at).toLocaleDateString(isID ? 'id-ID' : 'en-US', {month:'short',day:'numeric',year:'numeric'})}</div>
     </a>`).join('');
 
   document.getElementById('post-container').innerHTML = `
     <section style="padding:40px 0 60px">
       <div class="container" style="max-width:760px">
         <div style="margin-bottom:24px">
-          <a href="/en/blog" style="color:var(--text-muted);font-size:0.875rem">← Back to Blog</a>
+          <a href="/en/blog" style="color:var(--text-muted);font-size:0.875rem">← ${isID ? 'Kembali' : 'Back to Blog'}</a>
         </div>
         <div class="badge badge-blue" style="margin-bottom:20px">${post.category}</div>
-        <h1 style="margin-bottom:20px">${post.title_en}</h1>
+        <h1 style="margin-bottom:20px">${title}</h1>
         <div style="display:flex;align-items:center;gap:16px;margin-bottom:40px;padding-bottom:24px;border-bottom:1px solid var(--border)">
-          <div style="width:40px;height:40px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-weight:800">A</div>
+          <div style="width:40px;height:40px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-weight:800;color:white">A</div>
           <div>
             <div style="font-weight:600">${post.author||'Ambara Artha Team'}</div>
-            <div style="font-size:0.8125rem;color:var(--text-muted)">${new Date(post.published_at).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</div>
+            <div style="font-size:0.8125rem;color:var(--text-muted)">${new Date(post.published_at).toLocaleDateString(isID ? 'id-ID' : 'en-US', {month:'long',day:'numeric',year:'numeric'})}</div>
           </div>
         </div>
-        ${post.cover_image_url ? `<img src="${post.cover_image_url}" alt="${post.title_en}" style="width:100%;border-radius:16px;margin-bottom:40px">` : ''}
-        <div class="prose">${post.content_en||''}</div>
+        ${post.cover_image_url ? `<img src="${post.cover_image_url}" alt="${title}" style="width:100%;border-radius:16px;margin-bottom:40px">` : ''}
+        <div class="prose">${content || ''}</div>
         ${post.tags ? `<div style="margin-top:40px;padding-top:24px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap">${post.tags.split(',').map(t=>`<span class="badge badge-blue">${t.trim()}</span>`).join('')}</div>` : ''}
       </div>
     </section>
     ${relatedHtml ? `
     <section class="section-sm" style="background:var(--surface);border-top:1px solid var(--border)">
       <div class="container">
-        <h3 style="margin-bottom:24px">Related Articles</h3>
+        <h3 style="margin-bottom:24px">${isID ? 'Artikel Terkait' : 'Related Articles'}</h3>
         <div class="grid-3">${relatedHtml}</div>
       </div>
     </section>` : ''}
     <section class="section-sm">
       <div class="container" style="max-width:760px">
         <div class="card" style="text-align:center;background:linear-gradient(135deg,var(--surface),rgba(17,34,238,0.05))">
-          <h3 style="margin-bottom:12px">Ready to Ship?</h3>
-          <p style="margin-bottom:24px">Get a free quote from our team within 2 hours.</p>
-          <a href="/en/quote" class="btn btn-primary">Get Free Quote →</a>
+          <h3 style="margin-bottom:12px">${isID ? 'Siap Mengirim?' : 'Ready to Ship?'}</h3>
+          <p style="margin-bottom:24px">${isID ? 'Dapatkan penawaran gratis dari tim kami dalam 2 jam.' : 'Get a free quote from our team within 2 hours.'}</p>
+          <a href="/en/quote" class="btn btn-primary">${isID ? 'Dapatkan Penawaran Gratis →' : 'Get Free Quote →'}</a>
         </div>
       </div>
     </section>`;
-}).catch(() => {
-  document.getElementById('post-container').innerHTML = `
-    <div style="text-align:center;padding:120px 24px">
-      <h2 style="margin-bottom:16px">Post Not Found</h2>
-      <p style="margin-bottom:24px">The article you're looking for doesn't exist.</p>
-      <a href="/en/blog" class="btn btn-primary">← Back to Blog</a>
-    </div>`;
-});
+}
 </script>
 </body>
 </html>
