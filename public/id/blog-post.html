@@ -131,7 +131,7 @@ function renderPost(post, slugStr) {
         </div>
         ${post.cover_image_url ? `<img src="${post.cover_image_url}" alt="${title}" style="width:100%;border-radius:16px;margin-bottom:40px">` : ''}
         <div class="prose">${content || ''}</div>
-        ${post.tags ? `<div style="margin-top:40px;padding-top:24px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap">${(Array.isArray(post.tags)?post.tags:post.tags.split(\',\')).map(t=>`<span class="badge badge-blue">${t.trim()}</span>`).join('')}</div>` : ''}
+        ${post.tags ? `<div style="margin-top:40px;padding-top:24px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap">${(Array.isArray(post.tags)?post.tags:post.tags.split(',')).map(t=>`<span class="badge badge-blue">${t.trim()}</span>`).join('')}</div>` : ''}
       </div>
     </section>
     ${relatedHtml ? `
