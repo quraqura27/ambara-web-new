@@ -64,4 +64,41 @@ function getAuthToken(event) {
   return auth.startsWith('Bearer ') ? auth.slice(7) : null;
 }
 
-module.exports = { getDB, CORS, response, errorResponse, optionsResponse, sendEmail, generateCustomerId, generateTrackingNumber, verifyToken, getAuthToken };
+// === V1 API Helpers ===
+
+// Role mapping: superadmin=Admin, operations=Ops, finance=Finance
+const ROLE_ADMIN = 'superadmin';
+const ROLE_OPS = 'operations';
+const ROLE_FINANCE = 'finance';
+
+function requireRole(decoded, ...allowedRoles) {
+  if (!decoded) return v1Error('UNAUTHORIZED', 'No valid session', 401);
+  if (!allowedRoles.includes(decoded.role)) return v1Error('FORBIDDEN', 'Insufficient role', 403);
+  return null; // null means authorized
+}
+
+function v1Response(data, status = 200) {
+  return {
+    statusCode: status,
+    headers: CORS,
+    body: JSON.stringify({ success: true, ...data })
+  };
+}
+
+function v1Error(code, message, status = 400) {
+  return {
+    statusCode: status,
+    headers: CORS,
+    body: JSON.stringify({ success: false, error: { code, message } })
+  };
+}
+
+// Extract path params like /api/v1/awbs/{id}/something
+function parsePathParam(event, prefix) {
+  const path = event.path || '';
+  const clean = path.replace('/.netlify/functions/', '').replace(prefix, '');
+  const parts = clean.split('/').filter(Boolean);
+  return parts[0] || event.queryStringParameters?.id || null;
+}
+
+module.exports = { getDB, CORS, response, errorResponse, optionsResponse, sendEmail, generateCustomerId, generateTrackingNumber, verifyToken, getAuthToken, requireRole, v1Response, v1Error, parsePathParam, ROLE_ADMIN, ROLE_OPS, ROLE_FINANCE };

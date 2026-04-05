@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Invoice Generator — Ambara Finance</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/finance/invoice.css">
+</head>
+<body>
+
+<div id="navbar-mount"></div>
+
+<div class="invoice-app">
+  <!-- LEFT PANEL: BUILDER -->
+  <div class="invoice-sidebar">
+    <div class="sidebar-header">
+      <h2 style="font-size:1.5rem;margin:0">Invoice Generator</h2>
+      <div style="font-size:0.875rem;color:var(--text-muted)">Create and generate PDF invoices</div>
+    </div>
+    
+    <div class="sidebar-content">
+      <div class="progress-tabs">
+        <div class="progress-tab active" id="tab-1">1. Customer</div>
+        <div class="progress-tab" id="tab-2">2. Build</div>
+        <div class="progress-tab" id="tab-3">3. Generate</div>
+      </div>
+
+      <!-- STEP 1: CUSTOMER -->
+      <div class="step-panel active" id="step-1">
+        <div class="form-group">
+          <label class="form-label">Search Customer (min. 2 chars)</label>
+          <input type="text" class="form-control" id="search-customer" placeholder="Company Name or Name..." autocomplete="off">
+        </div>
+        <div id="customer-results" style="margin-top:16px;"></div>
+      </div>
+
+      <!-- STEP 2: BUILD -->
+      <div class="step-panel" id="step-2">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div style="font-weight:700" id="selected-customer-name">Company Name</div>
+          <button class="btn btn-sm btn-outline" onclick="resetFlow()">Change</button>
+        </div>
+
+        <div class="divider" style="margin:20px 0"></div>
+
+        <!-- Meta Data -->
+        <h3 style="font-size:1rem;margin-bottom:12px;color:var(--blue-accent)">Invoice Details</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div>
+            <label class="form-label">Invoice No</label>
+            <input type="text" class="form-control" id="inv-no" placeholder="AAG/001/SNB/26" oninput="updatePreview(); validateInvNo()">
+            <div id="inv-no-error" style="color:var(--red);font-size:0.75rem;margin-top:4px;display:none">Format must be AAG/XXX/XXX/XX</div>
+          </div>
+          <div>
+            <label class="form-label">Date</label>
+            <input type="date" class="form-control" id="inv-date" onchange="updatePreview()">
+          </div>
+        </div>
+        
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div>
+            <label class="form-label">Currency</label>
+            <select class="form-control" id="inv-currency" onchange="updatePreview()">
+              <option value="IDR">IDR (Rupiah)</option>
+              <option value="USD">USD</option>
+              <option value="JPY">JPY</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Payment Terms</label>
+            <input type="text" class="form-control" id="inv-terms" value="CASH" oninput="updatePreview()">
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px">
+          <div>
+            <label class="form-label">Bank Account</label>
+            <select class="form-control" id="inv-bank" onchange="updatePreview()">
+              <option value="OCBC">Bank OCBC</option>
+              <option value="MANDIRI">Bank Mandiri</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Due Date (Optional)</label>
+            <input type="date" class="form-control" id="inv-due" onchange="updatePreview()">
+          </div>
+        </div>
+
+        <!-- AWBs -->
+        <h3 style="font-size:1rem;margin-bottom:12px;color:var(--blue-accent)">Select AWBs</h3>
+        <div id="awb-list" style="margin-bottom:24px;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden">
+          <!-- Populated dynamically -->
+        </div>
+
+        <!-- Services -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <h3 style="font-size:1rem;margin:0;color:var(--blue-accent)">Service Lines</h3>
+          <button class="btn btn-sm btn-outline" onclick="addServiceLine()">+ Add Service</button>
+        </div>
+        <div id="service-lines" style="margin-bottom:24px"></div>
+
+        <!-- Deductions -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <h3 style="font-size:1rem;margin:0;color:var(--blue-accent)">Deductions / Pengurangan</h3>
+          <button class="btn btn-sm btn-outline" onclick="addDeduction()">+ Add Deduction</button>
+        </div>
+        <div id="deduction-lines" style="margin-bottom:24px"></div>
+
+        <!-- Financial Summary Build -->
+        <div class="builder-summary">
+          <div class="summary-row"><span>Subtotal:</span> <span id="build-subtotal">Rp 0</span></div>
+          <div class="summary-row"><span>Deductions:</span> <span id="build-deductions">Rp 0</span></div>
+          <div class="summary-row"><span>Net Amount:</span> <span id="build-net">Rp 0</span></div>
+          
+          <div style="display:flex;justify-content:space-between;align-items:center;margin:12px 0">
+            <label style="display:flex;align-items:center;gap:8px;font-size:0.875rem"><input type="checkbox" id="inv-vat" onchange="updatePreview()"> Add VAT (1.1%)</label>
+            <span id="build-vat">Rp 0</span>
+          </div>
+          
+          <div class="summary-row">
+            <span style="display:flex;align-items:center;gap:8px">Deposit: <input type="number" class="form-control" style="width:120px;padding:4px 8px" id="inv-deposit" value="0" oninput="updatePreview()"></span>
+            <span id="build-deposit">Rp 0</span>
+          </div>
+          
+          <div class="summary-row total"><span>Amount Due:</span> <span id="build-due">Rp 0</span></div>
+        </div>
+      </div>
+
+      <!-- STEP 3: GENERATE -->
+      <div class="step-panel" id="step-3">
+        <div style="text-align:center;padding:40px 0">
+          <div style="width:64px;height:64px;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
+          </div>
+          <h2 style="font-size:1.5rem;margin-bottom:8px">Ready to Generate</h2>
+          <p style="margin-bottom:24px">This will save the invoice to the system and mark the selected AWBs as invoiced. A PDF will be downloaded.</p>
+          <div id="generate-error" style="color:var(--red);margin-bottom:16px;display:none;font-weight:600"></div>
+          <button class="btn btn-primary btn-lg" onclick="generateInvoice()" id="btn-generate">Save & Download PDF</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div style="display:flex;justify-content:space-between">
+        <button class="btn btn-outline" id="btn-back" onclick="prevStep()" disabled>Back</button>
+        <button class="btn btn-primary" id="btn-next" onclick="nextStep()" style="display:none">Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL: PREVIEW -->
+  <div class="invoice-preview-area">
+    <div class="a4-sheet" id="invoice-sheet">
+      <!-- HEADER -->
+      <div class="inv-header-grid">
+        <div class="inv-logo">
+          <img id="logo-img" src="" alt="Ambara Logo">
+        </div>
+        <div class="inv-company-address">
+          Jl. Cengkareng Golf Club, RT 001/010<br>
+          Pajang, Benda, Kota Tangerang<br>
+          Banten
+        </div>
+      </div>
+
+      <div class="inv-title">INVOICE</div>
+
+      <!-- INFO -->
+      <div class="inv-info-grid">
+        <div class="inv-bill-to">
+          <div style="font-size:8pt;margin-bottom:4px">BILL TO:</div>
+          <strong id="p-cust-name">CUSTOMER NAME</strong><br>
+          <span id="p-cust-addr1">Address 1</span><br>
+          <span id="p-cust-addr2">Address 2</span><br>
+          <span id="p-cust-city">City</span>
+        </div>
+        <div>
+          <table class="inv-meta-table">
+            <tr><td class="m-label">Invoice No</td><td id="p-inv-no"></td></tr>
+            <tr><td class="m-label">Date</td><td id="p-inv-date"></td></tr>
+            <tr><td class="m-label">Payment Terms</td><td id="p-inv-terms"></td></tr>
+            <tr id="tr-due-date" style="display:none"><td class="m-label">Due Date</td><td id="p-inv-due"></td></tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- ITEMS TABLE -->
+      <table class="inv-items-table" id="p-table">
+        <thead>
+          <tr>
+            <th style="width:25px">No</th>
+            <th style="width:35px">ORI</th>
+            <th style="width:35px">DES</th>
+            <th style="width:75px">Shipment Date</th>
+            <th>AWB No</th>
+            <th>Flight No</th>
+            <th style="width:30px">Pcs</th>
+            <th style="width:45px">CAW</th>
+            <th colspan="2">Price</th>
+            <th colspan="2">Total Amount</th>
+          </tr>
+        </thead>
+        <tbody id="p-tbody">
+          <!-- Rows -->
+        </tbody>
+        <tfoot id="p-tfoot">
+          <!-- Totals -->
+        </tfoot>
+      </table>
+
+      <!-- TERBILANG -->
+      <div class="inv-terbilang" id="p-terbilang"># nol rupiah</div>
+
+      <!-- FOOTER / BANK -->
+      <div class="inv-footer-grid">
+        <div class="inv-bank-info">
+          <table>
+            <tr><td>Bank Name</td><td>: <span id="p-bank-name">BANK OCBC</span></td></tr>
+            <tr><td>SWIFT</td><td>: <span id="p-bank-swift">NISPIDJA</span></td></tr>
+            <tr><td>Branch</td><td>: <span id="p-bank-branch">OCBC Tower</span></td></tr>
+            <tr><td>Name</td><td>: PT AMBARA ARTHA GLOBALTRANS</td></tr>
+            <tr><td>Account No</td><td>: <span id="p-bank-acc">5458-0012-2586</span></td></tr>
+            <tr><td>Currency</td><td>: <span id="p-bank-curr">IDR</span></td></tr>
+          </table>
+          <div class="inv-footer-note">If you have any question regarding this invoice, please contact to finance@ambaraartha.com</div>
+        </div>
+        
+        <div class="inv-signature">
+          <div id="p-city-date">Tangerang, 01 January 2026</div>
+          <div class="inv-signature-box">
+             <!-- Placeholder for stamp if we had one. Will just use text for now -->
+             <div style="font-family:serif;font-style:italic;font-size:14pt;color:#1122EE;opacity:0.6;border:2px solid #1122EE;border-radius:50%;width:100px;height:100px;display:flex;align-items:center;justify-content:center;transform:rotate(-15deg);margin:0 auto">AAG</div>
+          </div>
+          <div style="font-size:8pt">FINANCE DEPARTMENT</div>
+        </div>
+      </div>
+      
+      <div class="inv-bottom-id" id="p-bottom-id"></div>
+    </div>
+  </div>
+</div>
+
+<script src="/layout.js?v=2"></script>
+<script src="/app.js?v=2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<!-- We'll put the app logic in a separate file or inline -->
+<script src="/finance/invoice.js"></script>
+<script>
+  // Setup navbar
+  document.getElementById('navbar-mount').innerHTML = AMBARA.getNavbar('/finance/invoice.html');
+</script>
+</body>
+</html>

@@ -45,6 +45,18 @@
   to = "/id/index.html"
   status = 200
 
+# Finance route
+[[redirects]]
+  from = "/finance/*"
+  to = "/finance/:splat"
+  status = 200
+
+# V1 API routes
+[[redirects]]
+  from = "/api/v1/*"
+  to = "/.netlify/functions/v1-:splat"
+  status = 200
+
 # API routes
 [[redirects]]
   from = "/api/*"

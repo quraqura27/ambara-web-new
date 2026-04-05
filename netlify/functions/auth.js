@@ -65,6 +65,7 @@ exports.handler = async (event) => {
 
     const { full_name, email, password, role } = JSON.parse(event.body || '{}');
     if (!full_name || !email || !password || !role) return errorResponse('All fields required');
+    if (!['superadmin', 'operations', 'finance'].includes(role)) return errorResponse('Invalid role. Must be superadmin, operations, or finance');
 
     const hash = await bcrypt.hash(password, 10);
     const existing = await sql`SELECT id FROM staff_accounts WHERE email = ${email}`;
