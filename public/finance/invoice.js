@@ -66,7 +66,7 @@ async function searchCustomers(q) {
   const resCon = document.getElementById('customer-results');
   resCon.innerHTML = '<div style="color:var(--text-muted);font-size:0.875rem">Searching...</div>';
   try {
-    const res = await api(`customers/search?q=${encodeURIComponent(q)}`);
+    const res = await api(`customers-search?q=${encodeURIComponent(q)}`);
     if (!res.data.length) {
       resCon.innerHTML = '<div style="color:var(--text-muted);font-size:0.875rem">No customers found.</div>';
       return;
@@ -112,7 +112,7 @@ async function loadCustomerAwbs(customerId) {
   const list = document.getElementById('awb-list');
   list.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-muted)">Loading AWBs...</div>';
   try {
-    const res = await api(`customers/awbs?customer_id=${customerId}&invoiced=false`);
+    const res = await api(`customers-awbs?customer_id=${customerId}&invoiced=false`);
     currentAwbs = res.data;
     if (!currentAwbs.length) {
       list.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-muted)">No uninvoiced AWBs available for this customer.</div>';
@@ -534,7 +534,7 @@ async function generateInvoice() {
   };
 
   try {
-    const res = await api('awbs/mark-invoiced', 'PATCH', payload);
+    const res = await api('awbs-mark-invoiced', 'PATCH', payload);
     btn.textContent = 'Generating PDF...';
     
     // PDF Generation

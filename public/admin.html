@@ -1334,9 +1334,9 @@ document.querySelector('[name="title_en"]')?.addEventListener?.('input', functio
 let admin_notifications = [];
 async function loadNotifications() {
   try {
-    const data = await api('notifications');
-    admin_notifications = data.notifications || [];
-    const unread = data.unreadCount || 0;
+    const data = await api('v1/notifications');
+    admin_notifications = data.data || [];
+    const unread = data.unread_count || 0;
     const badge = document.getElementById('notif-badge');
     if (unread > 0) {
       badge.textContent = unread > 99 ? '99+' : unread;
@@ -1375,9 +1375,9 @@ function renderNotifications() {
   `).join('');
 }
 
-async function admin_markAllRead() {
+async function markAllNotificationsRead() {
   try {
-    await api('notifications?action=mark-all-read', 'POST');
+    await api('v1/notifications?action=read-all', 'POST');
     await loadNotifications();
     renderNotifications();
   } catch(e) { showToast(e.message, 'error'); }
@@ -1446,29 +1446,43 @@ document.getElementById('awb-upload-form').addEventListener('submit', async (e) 
     // Read user auth token
     const token = localStorage.getItem('ambara_token');
 
-    // Due to Netlify function 10sec limit, we might want to do standard form submit or XHR. Fetch is fine.
-    const formPayload = new FormData();
-    formPayload.append('customer_id', customer_id);
-    formPayload.append('awb_file', file);
-    
-    // api helper expects JSON by default if body is not FormData, let's use manual fetch
-    const res = await fetch('/api/v1/awbs/upload', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` },
-      body: formPayload
-    });
-    const d = await res.json();
-    
-    if (!d.success) throw new Error(d.error?.message || 'Upload failed');
-    
-    showToast('AWB Uploaded & Parsed!');
-    closeModal('modal-awb-upload');
-    loadAwbs();
-    e.target.reset();
+    const reader = new FileReader();
+    reader.onload = async function() {
+      try {
+        const base64Data = reader.result.split(',')[1];
+        const payload = {
+          customer_id: customer_id,
+          file_name: file.name,
+          file_data: base64Data
+        };
+
+        const res = await fetch('/api/v1/awbs-upload', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const d = await res.json();
+
+        if (res.ok) {
+          showToast(d.parse_status === 'success' ? 'Perfect! Parsed automatically.' : 'Partial parse. Please resolve missing fields.');
+          closeModal('modal-awb-upload');
+          loadAwbs();
+          e.target.reset();
+        } else {
+          errEl.textContent = d.error?.message || 'Server Error';
+          errEl.style.display = 'block';
+        }
+      } catch(fetchErr) {
+        errEl.textContent = 'Network or JSON Error: ' + fetchErr.message;
+        errEl.style.display = 'block';
+      }
+      btn.disabled = false; btn.textContent = 'Upload & Parse';
+    };
+    reader.readAsDataURL(file);
+
   } catch(err) {
-    errEl.style.display = 'block';
     errEl.textContent = err.message;
-  } finally {
+    errEl.style.display = 'block';
     btn.disabled = false; btn.textContent = 'Upload & Parse';
   }
 });
