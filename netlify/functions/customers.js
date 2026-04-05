@@ -53,10 +53,10 @@ exports.handler = async (event) => {
 
     // CREATE customer
     if (event.httpMethod === 'POST' && (!action || action === 'create')) {
-      const { type, full_name, company_name, email, phone, address, country, country_code } = body;
+      let { type, full_name, company_name, email, phone, address, country, country_code } = body;
       if (!type || !phone || !address || !country || !country_code) return errorResponse('Missing required fields');
-      if (type === 'retail' && !full_name) return errorResponse('Full name required for retail customer');
-      if (type === 'b2b' && !company_name) return errorResponse('Company name required for B2B customer');
+      if (type === 'retail') { if (!full_name) return errorResponse('Full name required'); company_name = null; }
+      if (type === 'b2b') { if (!company_name) return errorResponse('Company name required'); full_name = null; }
 
       // Generate unique customer ID
       let customer_id, attempts = 0;
@@ -75,7 +75,9 @@ exports.handler = async (event) => {
 
     // UPDATE customer
     if (event.httpMethod === 'POST' && action === 'update') {
-      const { id: cid, type, full_name, company_name, email, phone, address, country, country_code } = body;
+      let { id: cid, type, full_name, company_name, email, phone, address, country, country_code } = body;
+      if (type === 'retail') company_name = null;
+      if (type === 'b2b') full_name = null;
       await sql`UPDATE customers SET type=${type}, full_name=${full_name||null}, company_name=${company_name||null}, email=${email||null}, phone=${phone}, address=${address}, country=${country}, country_code=${country_code.toUpperCase()}, updated_at=NOW() WHERE id=${cid}`;
       await sql`INSERT INTO activity_log (staff_id, staff_name, action, entity_type, entity_id) VALUES (${decoded.id}, ${decoded.name}, ${`Updated customer: ${cid}`}, ${'customer'}, ${cid.toString()})`;
       return response({ success: true });
