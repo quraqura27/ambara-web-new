@@ -94,15 +94,25 @@ exports.handler = async (event) => {
     const pdfBuffer = Buffer.from(file_data, 'base64');
     if (pdfBuffer.length > 50 * 1024 * 1024) return v1Error('VALIDATION_ERROR', 'File too large (max 50MB)', 400);
 
-    // Upload to R2
-    const r2 = getR2Client();
-    const key = `awbs/${customer_id}/${Date.now()}-${file_name}`;
-    await r2.send(new PutObjectCommand({
-      Bucket: process.env.R2_BUCKET_NAME,
-      Key: key,
-      Body: pdfBuffer,
-      ContentType: 'application/pdf',
-    }));
+    // Upload to R2 if configured
+    let key = null;
+    if (process.env.R2_ACCESS_KEY_ID && process.env.R2_SECRET_ACCESS_KEY) {
+      try {
+        const r2 = getR2Client();
+        key = `awbs/${customer_id}/${Date.now()}-${file_name}`;
+        await r2.send(new PutObjectCommand({
+          Bucket: process.env.R2_BUCKET_NAME,
+          Key: key,
+          Body: pdfBuffer,
+          ContentType: 'application/pdf',
+        }));
+      } catch (err) {
+        console.error("R2 Upload Error: ", err);
+        // Continue parsing even if upload fails
+      }
+    } else {
+      console.warn("R2 credentials missing. Skipping PDF upload, proceeding with parsing...");
+    }
 
     // Attempt text extraction
     let extracted = { awb_number: null, carrier: null, origin: null, destination: null, flight_number: null, shipment_date: null, pieces: null, chargeable_weight: null, commodity: null };
