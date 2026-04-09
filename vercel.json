@@ -1,13 +1,14 @@
 {
   "outputDirectory": "public",
   "rewrites": [
-    { "source": "/", "destination": "/api/lang-redirect" },
-    { "source": "/api/v1/:path*", "destination": "/api/v1-:path*" },
+    { "source": "/", "destination": "/api/main" },
+    { "source": "/api/v1/:path*", "destination": "/api/main" },
+    { "source": "/api/:path*", "destination": "/api/main" },
     { "source": "/en/blog/:slug", "destination": "/en/blog-post.html?slug=:slug" },
     { "source": "/id/blog/:slug", "destination": "/id/blog-post.html?slug=:slug" },
     { "source": "/en", "destination": "/en/index.html" },
     { "source": "/id", "destination": "/id/index.html" },
-    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
+    { "source": "/sitemap.xml", "destination": "/api/main" },
     { "source": "/robots.txt", "destination": "/robots.txt" }
   ],
   "headers": [
@@ -33,7 +34,7 @@
     }
   ],
   "functions": {
-    "api/*.js": {
+    "api/main.js": {
       "maxDuration": 60
     }
   }
