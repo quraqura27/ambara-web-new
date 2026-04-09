@@ -33,16 +33,7 @@
     }
   ],
   "functions": {
-    "api/**/*.js": {
-      "maxDuration": 30
-    },
-    "api/v1-awbs-upload.js": {
-      "maxDuration": 60
-    },
-    "api/v1-awbs-parse.js": {
-      "maxDuration": 60
-    },
-    "api/v1-invoices-upload-pdf.js": {
+    "api/*.js": {
       "maxDuration": 60
     }
   }
