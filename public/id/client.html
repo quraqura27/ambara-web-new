@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Client Portal — PT Ambara Artha Globaltrans</title>
-  <meta name="description" content="Secure client portal for PT Ambara Artha Globaltrans. Track shipments, view documents, and manage your cargo.">
+  <meta name="description" content="Portal klien aman PT Ambara Artha Globaltrans. Lacak pengiriman, lihat dokumen, dan kelola kargo Anda.">
   <meta name="robots" content="noindex,nofollow">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -55,7 +55,7 @@
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       </div>
       <div style="font-family:var(--font-head);font-weight:900;font-size:1.25rem">Client Portal</div>
-      <div style="font-size:0.875rem;color:var(--text-muted);margin-top:4px">Track shipments & access documents</div>
+      <div style="font-size:0.875rem;color:var(--text-muted);margin-top:4px">Lacak pengiriman & akses dokumen</div>
     </div>
     <form id="client-login-form">
       <div class="form-group">
@@ -70,7 +70,7 @@
       <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center" id="client-login-btn">Sign In →</button>
     </form>
     <div style="text-align:center;margin-top:20px">
-      <a href="/en/contact" style="font-size:0.8125rem;color:var(--text-muted)">Need access? Contact us →</a>
+      <a href="/id/contact" style="font-size:0.8125rem;color:var(--text-muted)">Butuh akses? Hubungi kami →</a>
     </div>
   </div>
 </div>
@@ -80,12 +80,12 @@
   <div class="portal-header">
     <div class="container" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px">
       <div>
-        <div class="portal-welcome">Welcome, <span id="client-name">—</span></div>
+        <div class="portal-welcome">Selamat Datang, <span id="client-name">—</span></div>
         <div style="font-size:0.875rem;color:var(--text-muted)" id="client-company">—</div>
       </div>
       <div style="display:flex;gap:12px;align-items:center">
         <div style="font-size:0.8125rem;color:var(--text-muted)" id="client-id-badge"></div>
-        <button onclick="clientLogout()" class="btn btn-sm btn-outline" style="border-color:rgba(255,68,102,0.3);color:var(--red)">Sign Out</button>
+        <button onclick="clientLogout()" class="btn btn-sm btn-outline" style="border-color:rgba(255,68,102,0.3);color:var(--red)">Keluar</button>
       </div>
     </div>
   </div>
@@ -94,22 +94,46 @@
     <!-- STATS -->
     <div class="stat-row" id="client-stats"></div>
 
+    <!-- TABS -->
+    <div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:32px">
+      <button class="tab-btn active" id="tab-shipments" onclick="switchPortalTab('shipments')" style="background:none;border:none;padding:12px 24px;font-weight:700;color:var(--text);border-bottom:2px solid var(--blue-accent);cursor:pointer">Pengiriman</button>
+      <button class="tab-btn" id="tab-documents" onclick="switchPortalTab('documents')" style="background:none;border:none;padding:12px 24px;font-weight:700;color:var(--text-muted);border-bottom:2px solid transparent;cursor:pointer">Dokumen</button>
+    </div>
+
     <!-- SHIPMENTS LIST -->
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px">
-      <h2 style="margin:0">My Shipments</h2>
-      <div style="display:flex;gap:8px">
-        <select class="form-control" id="client-filter" onchange="filterClientShipments()" style="width:160px;padding:8px 12px;font-size:0.875rem">
-          <option value="">All Status</option>
-          <option value="pending">Pending</option>
-          <option value="in_transit">In Transit</option>
-          <option value="arrived_destination">Arrived</option>
-          <option value="customs_clearance">Customs</option>
-          <option value="delivered">Delivered</option>
-          <option value="delayed">Delayed</option>
-        </select>
+    <div id="view-shipments">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px">
+        <h2 style="margin:0">Pengiriman Terbaru</h2>
+        <div style="display:flex;gap:8px">
+          <select class="form-control" id="client-filter" onchange="filterClientShipments()" style="width:160px;padding:8px 12px;font-size:0.875rem">
+            <option value="">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="in_transit">In Transit</option>
+            <option value="arrived_destination">Arrived</option>
+            <option value="customs_clearance">Customs</option>
+            <option value="delivered">Delivered</option>
+            <option value="delayed">Delayed</option>
+          </select>
+        </div>
+      </div>
+      <div id="client-shipments" style="display:flex;flex-direction:column;gap:16px;margin-bottom:60px"></div>
+    </div>
+
+    <!-- DOCUMENTS LIST -->
+    <div id="view-documents" style="display:none">
+      <div style="margin-bottom:24px">
+        <h2 style="margin:0">Dokumen Saya</h2>
+        <p style="color:var(--text-muted);font-size:0.875rem">Akses Air Waybill dan Invoice Anda.</p>
+      </div>
+      <div class="card table-wrap" style="padding:0"><table>
+        <thead><tr><th>Document</th><th>Related AWB</th><th>Date</th><th>Type</th><th>Action</th></tr></thead>
+        <tbody id="client-docs-table"></tbody>
+      </table></div>
+      <div id="docs-empty" style="display:none;text-align:center;padding:60px 0;color:var(--text-muted)">
+         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:12px;opacity:0.4"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+         <p>No documents available yet.</p>
       </div>
     </div>
-    <div id="client-shipments" style="display:flex;flex-direction:column;gap:16px;margin-bottom:60px"></div>
   </div>
 </div>
 
@@ -255,6 +279,51 @@ function filterClientShipments() {
   `).join('');
 }
 
+async function renderDocumentsSection() {
+  const tbody = document.getElementById('client-docs-table');
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:24px">Loading documents...</td></tr>';
+  
+  try {
+    const res = await fetch('/api/client-api?action=my-documents', { headers: { 'Authorization': `Bearer ${clientToken}` } });
+    const docs = await res.json();
+    
+    if (!docs.length) {
+      document.getElementById('docs-empty').style.display = 'block';
+      tbody.closest('table').style.display = 'none';
+      return;
+    }
+    
+    document.getElementById('docs-empty').style.display = 'none';
+    tbody.closest('table').style.display = 'table';
+    tbody.innerHTML = docs.map(d => `
+      <tr>
+        <td style="font-weight:600">${d.file_name}</td>
+        <td style="font-family:monospace;font-size:0.8125rem">${d.tracking_number || '—'}</td>
+        <td style="font-size:0.8125rem">${new Date(d.uploaded_at).toLocaleDateString()}</td>
+        <td><span class="badge badge-blue" style="font-size:0.7rem">${d.doc_type || 'Document'}</span></td>
+        <td>
+          ${d.file_url ? `<a href="${d.file_url}" target="_blank" class="btn btn-sm btn-outline" style="padding:4px 10px">Download</a>` : `<span style="color:var(--text-muted);font-size:0.8125rem">—</span>`}
+        </td>
+      </tr>
+    `).join('');
+  } catch(err) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--red);padding:24px">Error loading documents.</td></tr>';
+  }
+}
+
+function switchPortalTab(tab) {
+  document.getElementById('view-shipments').style.display = tab === 'shipments' ? 'block' : 'none';
+  document.getElementById('view-documents').style.display = tab === 'documents' ? 'block' : 'none';
+  
+  document.getElementById('tab-shipments').style.borderBottomColor = tab === 'shipments' ? 'var(--blue-accent)' : 'transparent';
+  document.getElementById('tab-shipments').style.color = tab === 'shipments' ? 'var(--text)' : 'var(--text-muted)';
+  
+  document.getElementById('tab-documents').style.borderBottomColor = tab === 'documents' ? 'var(--blue-accent)' : 'transparent';
+  document.getElementById('tab-documents').style.color = tab === 'documents' ? 'var(--text)' : 'var(--text-muted)';
+  
+  if (tab === 'documents') renderDocumentsSection();
+}
+
 function statusIcon(s) {
   const icons = {
     pending: '⏳', in_transit: '✈️', arrived_destination: '📍', customs_clearance: '🏛',
@@ -302,8 +371,9 @@ async function viewDetail(id) {
           <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)">
             <div>
               <div style="font-weight:600;font-size:0.875rem">${d.file_name}</div>
-              <div style="font-size:0.75rem;color:var(--text-muted)">${d.document_type} · ${new Date(d.uploaded_at).toLocaleDateString()}</div>
+              <div style="font-size:0.75rem;color:var(--text-muted)">${d.doc_type || 'document'} · ${new Date(d.uploaded_at).toLocaleDateString()}</div>
             </div>
+            ${d.file_url ? `<a href="${d.file_url}" target="_blank" class="btn btn-sm btn-outline" style="padding:4px 10px">Download</a>` : ''}
           </div>
         `).join('')}
       ` : ''}
@@ -322,5 +392,3 @@ function closeDetail() { document.getElementById('detail-panel').classList.remov
 </script>
 </body>
 </html>
-</CodeContent>
-<parameter name="Description">Full client portal with login screen, JWT auth, scoped shipment listing with status filters, detailed tracking timeline view, document access, and personal stats dashboard. Completely self-contained single-page app.

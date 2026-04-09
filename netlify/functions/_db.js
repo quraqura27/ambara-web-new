@@ -3,7 +3,7 @@ const { neon } = require('@neondatabase/serverless');
 
 let _sql = null;
 function getDB() {
-  if (!_sql) _sql = neon(process.env.NETLIFY_DATABASE_URL);
+  if (!_sql) _sql = neon(process.env.DATABASE_URL || process.env.NETLIFY_DATABASE_URL);
   return _sql;
 }
 
@@ -96,7 +96,8 @@ function v1Error(code, message, status = 400) {
 // Extract path params like /api/v1/awbs/{id}/something
 function parsePathParam(event, prefix) {
   const path = event.path || '';
-  const clean = path.replace('/.netlify/functions/', '').replace(prefix, '');
+  // Support both Netlify (/.netlify/functions/) and Vercel (/api/) path formats
+  const clean = path.replace('/.netlify/functions/', '').replace('/api/', '').replace(prefix, '');
   const parts = clean.split('/').filter(Boolean);
   return parts[0] || event.queryStringParameters?.id || null;
 }

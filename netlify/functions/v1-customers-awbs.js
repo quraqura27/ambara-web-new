@@ -23,14 +23,16 @@ exports.handler = async (event) => {
     if (!customer.length) return v1Error('NOT_FOUND', 'Customer not found', 404);
 
     const awbs = await sql`
-      SELECT id, awb_number, carrier, origin, destination,
-             flight_number, shipment_date, pieces, chargeable_weight,
-             commodity, parse_status, invoiced, created_at
-      FROM awbs
-      WHERE customer_id = ${customerId}
-        AND invoiced = ${invoiced}
-        AND parse_status IN ('success', 'partial', 'manual')
-      ORDER BY shipment_date DESC NULLS LAST, created_at DESC
+      SELECT a.id, a.awb_number, a.carrier, a.origin, a.destination,
+             a.flight_number, a.shipment_date, a.pieces, a.chargeable_weight,
+             a.commodity, a.parse_status, a.invoiced, a.invoice_id, a.created_at,
+             i.invoice_number as linked_invoice_number
+      FROM awbs a
+      LEFT JOIN invoices i ON a.invoice_id = i.id
+      WHERE a.customer_id = ${customerId}
+        AND a.invoiced = ${invoiced}
+        AND a.parse_status IN ('success', 'partial', 'manual')
+      ORDER BY a.shipment_date DESC NULLS LAST, a.created_at DESC
       LIMIT ${perPage} OFFSET ${offset}
     `;
 

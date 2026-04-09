@@ -9,14 +9,14 @@ let logoBase64 = '';
 // Check auth and role
 document.addEventListener('DOMContentLoaded', async () => {
   const token = localStorage.getItem('ambara_token');
-  if (!token) { window.location.href = '/admin-login.html'; return; }
+  if (!token) { window.location.href = '/admin.html'; return; }
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
     if (payload.role !== 'superadmin' && payload.role !== 'finance') {
       alert('Access Denied: Invoice Generator is restricted to Finance/Admin.');
       window.location.href = '/admin.html';
     }
-  } catch(e) { window.location.href = '/admin-login.html'; }
+  } catch(e) { window.location.href = '/admin.html'; }
 
   // Load logo base64
   try {
@@ -551,15 +551,27 @@ async function generateInvoice() {
       el.style.display = 'none';
     });
 
+    const pdfFileName = `${payload.invoice_number.replace(/\//g,'_')}.pdf`;
     const opt = {
       margin:       0,
-      filename:     `${payload.invoice_number.replace(/\//g,'_')}.pdf`,
+      filename:     pdfFileName,
       image:        { type: 'jpeg', quality: 0.98 },
       html2canvas:  { scale: 2, useCORS: true },
       jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
     
-    await html2pdf().set(opt).from(element).save();
+    // Generate PDF blob for both download AND cloud upload
+    const pdfBlob = await html2pdf().set(opt).from(element).outputPdf('blob');
+    
+    // Trigger browser download
+    const downloadUrl = URL.createObjectURL(pdfBlob);
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    a.download = pdfFileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(downloadUrl);
 
     // Restore inputs
     placeholders.forEach(p => {
@@ -567,17 +579,44 @@ async function generateInvoice() {
       p.span.remove();
     });
 
+    // Upload PDF to cloud storage (non-blocking)
+    btn.textContent = 'Saving to cloud...';
+    try {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64 = reader.result.split(',')[1];
+        await api('invoices-upload-pdf', 'POST', {
+          invoice_id: res.invoice_id,
+          file_name: pdfFileName,
+          file_data: base64
+        });
+      };
+      reader.readAsDataURL(pdfBlob);
+    } catch(uploadErr) {
+      console.warn('Cloud upload failed (PDF saved locally):', uploadErr);
+    }
+
     btn.textContent = 'Success!';
     btn.classList.add('btn-outline');
     btn.classList.remove('btn-primary');
     btn.style.borderColor = 'var(--green)';
     btn.style.color = 'var(--green)';
     
-    setTimeout(() => {
-      if(confirm('PDF Generated and Data Saved. Create another invoice?')) {
-        window.location.reload();
-      }
-    }, 1000);
+    // Show success screen
+    const step3 = document.getElementById('step-3');
+    step3.innerHTML = `
+      <div style="text-align:center;padding:40px 0">
+        <div style="width:64px;height:64px;background:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h2 style="font-size:1.5rem;margin-bottom:8px">Invoice Generated!</h2>
+        <p style="margin-bottom:32px;color:var(--text-muted)">Invoice <strong>${payload.invoice_number}</strong> has been saved to your system and cloud storage. PDF downloaded.</p>
+        <div style="display:flex;flex-direction:column;gap:12px;max-width:240px;margin:0 auto">
+          <button class="btn btn-primary" onclick="window.location.reload()">+ Create Another</button>
+          <a href="/admin.html" class="btn btn-outline">Go to Dashboard</a>
+        </div>
+      </div>
+    `;
 
   } catch(err) {
     errEl.textContent = 'Save Failed: ' + err.message;

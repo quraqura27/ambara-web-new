@@ -1,8 +1,29 @@
 const { getDB, CORS, response, errorResponse, optionsResponse, verifyToken, getAuthToken } = require('./_db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'ambara-secret-2025';
+
+function getR2Client() {
+  return new S3Client({
+    region: 'auto',
+    endpoint: process.env.R2_ENDPOINT,
+    credentials: { accessKeyId: process.env.R2_ACCESS_KEY_ID, secretAccessKey: process.env.R2_SECRET_ACCESS_KEY },
+  });
+}
+
+async function signDocUrl(doc) {
+  if (!process.env.R2_ACCESS_KEY_ID) return doc;
+  try {
+    const r2 = getR2Client();
+    let key = doc.file_url;
+    if (key.includes('.dev/')) key = key.split('.dev/')[1];
+    const signedUrl = await getSignedUrl(r2, new GetObjectCommand({ Bucket: process.env.R2_BUCKET_NAME, Key: key }), { expiresIn: 3600 });
+    return { ...doc, file_url: signedUrl };
+  } catch { return doc; }
+}
 
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return optionsResponse();
@@ -86,10 +107,11 @@ exports.handler = async (event) => {
 
     const events = await sql`SELECT id, label, location, event_time FROM tracking_events WHERE shipment_id = ${id} ORDER BY event_time DESC`;
 
-    // Get documents (presigned URLs) — reuse the presigned URL pattern from documents.js
+    // Get documents with presigned download URLs
     let documents = [];
     try {
-      documents = await sql`SELECT id, file_name, document_type, uploaded_at FROM shipment_documents WHERE shipment_id = ${id} ORDER BY uploaded_at DESC`;
+      const rawDocs = await sql`SELECT id, file_name, doc_type, file_url, uploaded_at FROM documents WHERE shipment_id = ${id} ORDER BY uploaded_at DESC`;
+      documents = await Promise.all(rawDocs.map(signDocUrl));
     } catch {} // Table may not exist yet
 
     return response({ shipment: shipment[0], events, documents });
@@ -112,6 +134,27 @@ exports.handler = async (event) => {
     await sql`INSERT INTO activity_log (staff_id, staff_name, action, entity_type, entity_id) VALUES (${decoded.id}, ${decoded.name}, ${'Set client portal password for customer #' + customer_id}, ${'customer'}, ${customer_id.toString()})`;
 
     return response({ success: true });
+  }
+
+  // GET ALL MY DOCUMENTS — aggregates docs across all shipments
+  if (action === 'my-documents' && event.httpMethod === 'GET') {
+    const token = getAuthToken(event);
+    const decoded = verifyToken(token, JWT_SECRET);
+    if (!decoded || decoded.role !== 'client') return errorResponse('Unauthorized', 401);
+
+    try {
+      const rawDocs = await sql`
+        SELECT d.id, d.file_name, d.doc_type, d.file_url, d.file_size, d.uploaded_at,
+               s.tracking_number, s.origin_iata, s.destination_iata
+        FROM documents d
+        JOIN shipments s ON d.shipment_id = s.id
+        WHERE s.customer_id = ${decoded.id}
+        ORDER BY d.uploaded_at DESC
+        LIMIT 100
+      `;
+      const signedDocs = await Promise.all(rawDocs.map(signDocUrl));
+      return response(signedDocs);
+    } catch (err) { return errorResponse(err.message, 500); }
   }
 
   return errorResponse('Not found', 404);

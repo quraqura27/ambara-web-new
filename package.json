@@ -1,7 +1,13 @@
 {
   "name": "ambara-artha-globaltrans",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "PT Ambara Artha Globaltrans - Air Freight Website",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "vercel-build": "echo 'Static site — no build step'"
+  },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.0.0",
     "@aws-sdk/s3-request-presigner": "^3.0.0",

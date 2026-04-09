@@ -1,0 +1,49 @@
+{
+  "outputDirectory": "public",
+  "rewrites": [
+    { "source": "/", "destination": "/api/lang-redirect" },
+    { "source": "/api/v1/:path*", "destination": "/api/v1-:path*" },
+    { "source": "/en/blog/:slug", "destination": "/en/blog-post.html?slug=:slug" },
+    { "source": "/id/blog/:slug", "destination": "/id/blog-post.html?slug=:slug" },
+    { "source": "/en", "destination": "/en/index.html" },
+    { "source": "/id", "destination": "/id/index.html" },
+    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
+    { "source": "/robots.txt", "destination": "/robots.txt" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+      ]
+    },
+    {
+      "source": "/en/(.*)",
+      "headers": [
+        { "key": "Content-Language", "value": "en" }
+      ]
+    },
+    {
+      "source": "/id/(.*)",
+      "headers": [
+        { "key": "Content-Language", "value": "id" }
+      ]
+    }
+  ],
+  "functions": {
+    "api/**/*.js": {
+      "maxDuration": 30
+    },
+    "api/v1-awbs-upload.js": {
+      "maxDuration": 60
+    },
+    "api/v1-awbs-parse.js": {
+      "maxDuration": 60
+    },
+    "api/v1-invoices-upload-pdf.js": {
+      "maxDuration": 60
+    }
+  }
+}

@@ -92,6 +92,8 @@
       <a onclick="showSection('messages')" data-section="messages"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;vertical-align:-3px"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Messages</a>
 
       <div class="sidebar-section">Finance</div>
+      <a onclick="showSection('invoices')" data-section="invoices">📋 Invoice History</a>
+      <a onclick="showSection('finance-audit')" data-section="finance-audit" id="finance-audit-nav" style="display:none">🔒 Finance Audit</a>
       <a href="/finance/invoice.html" target="_blank" style="color:var(--blue-accent)">🖨️ Invoice Generator</a>
 
       <div class="sidebar-section">Content</div>
@@ -296,6 +298,29 @@
       <div class="card table-wrap"><table>
         <thead><tr><th>Staff</th><th>Action</th><th>Type</th><th>Time</th></tr></thead>
         <tbody id="activity-table"></tbody>
+      </table></div>
+    </div>
+
+    <!-- INVOICES -->
+    <div id="section-invoices" class="section-content">
+      <div class="topbar">
+        <div><h2>Invoice History</h2></div>
+        <div style="display:flex;gap:12px">
+           <input type="text" class="form-control" id="search-invoices" placeholder="Search invoice # or customer..." style="width:260px" oninput="loadInvoices()">
+        </div>
+      </div>
+      <div class="card table-wrap"><table>
+        <thead><tr><th>Invoice #</th><th>Customer</th><th>Date</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="invoices-table"></tbody>
+      </table></div>
+    </div>
+
+    <!-- FINANCE AUDIT -->
+    <div id="section-finance-audit" class="section-content">
+      <div class="topbar"><h2>Finance Audit Log</h2></div>
+      <div class="card table-wrap"><table>
+        <thead><tr><th>Time</th><th>Action</th><th>Entity</th><th>Staff</th><th>Details</th></tr></thead>
+        <tbody id="finance-audit-table"></tbody>
       </table></div>
     </div>
   </main>
@@ -758,6 +783,10 @@ async function initAdmin() {
     document.getElementById('superadmin-section').style.display = 'block';
     document.getElementById('staff-nav').style.display = 'flex';
     document.getElementById('activity-nav').style.display = 'flex';
+    document.getElementById('finance-audit-nav').style.display = 'flex';
+  }
+  if (currentStaff?.role === 'finance') {
+    document.getElementById('finance-audit-nav').style.display = 'flex';
   }
 
   // Clock
@@ -789,7 +818,7 @@ function showSection(name) {
   document.getElementById(`section-${name}`)?.classList.add('active');
   document.querySelector(`[data-section="${name}"]`)?.classList.add('active');
 
-  const loaders = { shipments: loadShipments, customers: loadCustomers, quotes: loadQuotes, messages: loadMessages, blog: loadBlog, faq: loadFAQ, testimonials: loadTestimonials, partners: loadPartners, staff: loadStaff, activity: loadActivity, dashboard: loadDashboard };
+  const loaders = { invoices: loadInvoices, 'finance-audit': loadFinanceAudit, shipments: loadShipments, customers: loadCustomers, quotes: loadQuotes, messages: loadMessages, blog: loadBlog, faq: loadFAQ, testimonials: loadTestimonials, partners: loadPartners, staff: loadStaff, activity: loadActivity, dashboard: loadDashboard };
   loaders[name]?.();
 }
 
@@ -1412,6 +1441,7 @@ async function loadAwbs() {
         <td><span class="badge ${a.is_invoiced?'badge-green':'badge-blue'}">${a.is_invoiced?'Invoiced':'Pending'}</span></td>
         <td>
           <button class="btn btn-sm btn-outline" onclick="editAwb(${a.id})">Edit</button>
+          ${a.invoiced && currentStaff?.role === 'superadmin' ? `<button class="btn btn-sm" style="background:rgba(255,68,102,0.1);color:var(--red);border:1px solid rgba(255,68,102,0.2);margin-left:4px" onclick="unmarkAwb('${a.id}')">Unmark</button>` : ''}
           ${a.pdf_url ? `<a href="${a.pdf_url}" target="_blank" class="btn btn-sm" style="margin-left:4px">PDF</a>` : ''}
         </td>
       </tr>`).join('');
@@ -1558,8 +1588,94 @@ const _origShowSection = showSection;
 showSection = function(id) {
   _origShowSection(id);
   if (id === 'awbs') loadAwbs();
+  if (id === 'invoices') loadInvoices();
   if (id === 'dashboard') loadNotifications();
 };
+
+// ---------- INVOICE HISTORY ----------
+async function loadInvoices() {
+  const search = document.getElementById('search-invoices')?.value || '';
+  let url = 'v1/invoices?';
+  if (search) url += `search=${encodeURIComponent(search)}`;
+  
+  try {
+    const data = await api(url);
+    const invoices = data.data || [];
+    const tbody = document.getElementById('invoices-table');
+    if (!invoices.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted)">No invoices found</td></tr>'; return; }
+    
+    tbody.innerHTML = invoices.map(i => `
+      <tr>
+        <td><span style="font-family:monospace;font-weight:700;color:var(--blue-accent)">${i.invoice_number}</span></td>
+        <td>${i.company_name || i.customer_name}</td>
+        <td>${new Date(i.invoice_date).toLocaleDateString()}</td>
+        <td style="font-weight:600">${i.currency} ${Number(i.amount_due).toLocaleString()}</td>
+        <td><span class="badge ${i.archived ? 'badge-red' : 'badge-green'}">${i.archived ? 'Archived' : 'Active'}</span></td>
+        <td>
+           <button class="btn btn-sm btn-outline" onclick="viewInvoiceDetail('${i.id}')">View</button>
+        </td>
+      </tr>`).join('');
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+async function viewInvoiceDetail(id) {
+  try {
+    const data = await api(`v1/invoices?id=${id}`);
+    // For now, show a summary toast. A full modal could be built later.
+    const inv = data.data;
+    if (inv) {
+      showToast(`${inv.invoice_number} — ${inv.currency} ${Number(inv.amount_due).toLocaleString()} | ${inv.company_name || inv.customer_name}`);
+    } else {
+      showToast('Invoice details loaded.', 'info');
+    }
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+async function loadFinanceAudit() {
+  try {
+    const data = await api('v1/invoices?audit=true');
+    const logs = data.data || [];
+    const tbody = document.getElementById('finance-audit-table');
+    if (!logs.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">No audit entries yet</td></tr>'; return; }
+    
+    tbody.innerHTML = logs.map(l => {
+      let meta = '';
+      try { const m = typeof l.metadata === 'string' ? JSON.parse(l.metadata) : l.metadata; meta = Object.entries(m||{}).map(([k,v])=>`${k}: ${v}`).join(', '); } catch {}
+      return `
+      <tr>
+        <td style="font-size:0.8125rem;white-space:nowrap">${new Date(l.performed_at).toLocaleString()}</td>
+        <td><span style="font-weight:600">${l.action}</span></td>
+        <td><span style="font-family:monospace;font-size:0.8125rem">${l.entity_type}/${l.entity_id?.substring(0,8)}...</span></td>
+        <td>${l.staff_name || 'System'} <span style="color:var(--text-muted);font-size:0.75rem">(${l.staff_role || '—'})</span></td>
+        <td style="font-size:0.8125rem;color:var(--text-muted);max-width:300px;overflow:hidden;text-overflow:ellipsis">${meta}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+async function unmarkAwb(id) {
+  const reason = prompt('Reason for unmarking this AWB?');
+  if (!reason || !reason.trim()) return;
+  
+  try {
+    const res = await api(`v1/awbs-unmark?id=${id}`, 'POST', { reason });
+    if (res.success) {
+      showToast('AWB unmarked successfully. It is now available for new invoices.');
+      loadAwbs();
+    } else {
+      showToast(res.error?.message || 'Failed to unmark AWB', 'error');
+    }
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+function showToast(msg, type = 'success') {
+  // Simple toast fallback
+  const toast = document.createElement('div');
+  toast.style.cssText = `position:fixed;bottom:24px;right:24px;padding:12px 24px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);z-index:9999;box-shadow:0 8px 30px rgba(0,0,0,0.3);color:${type==='error'?'var(--red)':'var(--blue-accent)'}`;
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 4000);
+}
 
 </script>
 <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
