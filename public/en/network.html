@@ -12,8 +12,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/styles.css">
   <style>
-    .globe-section { position: relative; overflow: hidden; padding: 0; }
-    .globe-container { width: 100%; height: 560px; position: relative; }
+    .globe-section { position: relative; overflow: hidden; padding: 0; background: radial-gradient(ellipse at bottom, rgba(17,34,238,0.1) 0%, transparent 80%); }
+    .globe-container { width: 100%; height: 75vh; min-height: 560px; max-height: 900px; position: relative; -webkit-mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent); mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent); }
     .globe-container canvas { display: block; }
     .globe-overlay { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
     .globe-overlay .container { height: 100%; display: flex; align-items: center; }
@@ -205,7 +205,7 @@ document.getElementById('navbar-mount').innerHTML = AMBARA.getNavbar('network');
 document.getElementById('footer-mount').innerHTML = AMBARA.getFooter();
 </script>
 
-<!-- THREE.JS GLOBE -->
+<!-- THREE.JS GLOBE SETUP -->
 <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
 <script>
 (function() {
@@ -215,7 +215,7 @@ document.getElementById('footer-mount').innerHTML = AMBARA.getFooter();
   const W = mount.clientWidth, H = mount.clientHeight;
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 1000);
-  camera.position.set(0, 0.8, 3.2);
+  camera.position.set(0, 0.2, 2.2);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setSize(W, H);
@@ -223,7 +223,11 @@ document.getElementById('footer-mount').innerHTML = AMBARA.getFooter();
   renderer.setClearColor(0x000000, 0);
   mount.appendChild(renderer.domElement);
 
-  // Jakarta coords for centering
+  const globeGroup = new THREE.Group();
+  scene.add(globeGroup);
+
+  // Constants
+  const GLOBE_RADIUS = 1;
   const CGK_LAT = -6.125, CGK_LON = 106.655;
 
   function latLonToVec3(lat, lon, r) {
@@ -236,206 +240,319 @@ document.getElementById('footer-mount').innerHTML = AMBARA.getFooter();
     );
   }
 
-  // Globe sphere
-  const globeGeo = new THREE.SphereGeometry(1, 64, 64);
-  const globeMat = new THREE.MeshPhongMaterial({
-    color: 0x0a0b1e,
-    emissive: 0x050820,
-    specular: 0x1122ee,
-    shininess: 15,
-    transparent: true,
-    opacity: 0.92,
+  // --- DOTTED GLOBE MASK ---
+  // Load the pre-generated mask Image and generate points based on dark vs light pixels.
+  const imageLoader = new THREE.ImageLoader();
+  imageLoader.load('/earth-mask.png', (image) => {
+    const cvs = document.createElement('canvas');
+    cvs.width = image.width;
+    cvs.height = image.height;
+    const ctx = cvs.getContext('2d');
+    ctx.drawImage(image, 0, 0);
+    const imgData = ctx.getImageData(0, 0, cvs.width, cvs.height).data;
+
+    const dotPoints = [];
+    // Increase step to reduce point count if performance is a concern (4 is dense, 8 is sparse)
+    const step = 8; 
+
+    for (let y = 0; y < cvs.height; y += step) {
+      for (let x = 0; x < cvs.width; x += step) {
+        const i = (y * cvs.width + x) * 4;
+        // Check if pixel is white-ish (land)
+        if (imgData[i] > 128) {
+          // Convert x,y coordinate to lat/lon roughly
+          const lon = (x / cvs.width) * 360 - 180;
+          const lat = -((y / cvs.height) * 180 - 90);
+          dotPoints.push(latLonToVec3(lat, lon, GLOBE_RADIUS));
+        }
+      }
+    }
+
+    const dotGeo = new THREE.BufferGeometry().setFromPoints(dotPoints);
+    const dotMat = new THREE.PointsMaterial({
+      color: 0x4455aa,
+      size: 0.015,
+      transparent: true,
+      opacity: 0.8
+    });
+    const dots = new THREE.Points(dotGeo, dotMat);
+    globeGroup.add(dots);
   });
-  const globe = new THREE.Mesh(globeGeo, globeMat);
-  scene.add(globe);
 
-  // Wireframe overlay
-  const wireMat = new THREE.MeshBasicMaterial({ color: 0x1122ee, wireframe: true, transparent: true, opacity: 0.06 });
-  const wire = new THREE.Mesh(new THREE.SphereGeometry(1.002, 36, 36), wireMat);
-  scene.add(wire);
+  // Solid inner sphere to hide dots on the back
+  const innerSphere = new THREE.Mesh(
+    new THREE.SphereGeometry(GLOBE_RADIUS * 0.99, 32, 32),
+    new THREE.MeshBasicMaterial({ color: 0x0a0b1e })
+  );
+  globeGroup.add(innerSphere);
 
-  // Atmospheric glow
-  const glowGeo = new THREE.SphereGeometry(1.08, 64, 64);
+  // Atmospheric Glow (Fresnel/Rim Light)
   const glowMat = new THREE.ShaderMaterial({
-    vertexShader: `varying vec3 vNormal; void main() { vNormal = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-    fragmentShader: `varying vec3 vNormal; void main() { float intensity = pow(0.65 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 3.0); gl_FragColor = vec4(0.07, 0.13, 0.93, 1.0) * intensity * 1.2; }`,
+    vertexShader: `
+      varying vec3 vNormal;
+      void main() {
+        vNormal = normalize(normalMatrix * normal);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      varying vec3 vNormal;
+      void main() {
+        float intensity = pow(0.7 - dot(vNormal, vec3(0, 0, 1.0)), 4.0);
+        gl_FragColor = vec4(0.07, 0.13, 0.93, 1.0) * intensity * 1.5;
+      }
+    `,
     blending: THREE.AdditiveBlending,
     side: THREE.BackSide,
     transparent: true
   });
-  scene.add(new THREE.Mesh(glowGeo, glowMat));
+  const glow = new THREE.Mesh(new THREE.SphereGeometry(GLOBE_RADIUS * 1.15, 64, 64), glowMat);
+  scene.add(glow);
 
-  // Lights
-  const amb = new THREE.AmbientLight(0x404080, 0.6);
-  scene.add(amb);
-  const dir = new THREE.DirectionalLight(0xffffff, 0.8);
-  dir.position.set(5, 3, 5);
-  scene.add(dir);
-  const point = new THREE.PointLight(0x1122ee, 1.2, 10);
-  point.position.set(-2, 2, 3);
-  scene.add(point);
-
-  // Hub points (pulsing dots)
+  // Hub rings
   const hubs = [
-    { lat: CGK_LAT, lon: CGK_LON, label: 'CGK' },
-    { lat: -7.38, lon: 112.787, label: 'SUB' },
-    { lat: -8.748, lon: 115.167, label: 'DPS' },
+    { lat: CGK_LAT, lon: CGK_LON },
+    { lat: -7.38, lon: 112.787 },
+    { lat: -8.748, lon: 115.167 }
   ];
 
   hubs.forEach(h => {
-    const pos = latLonToVec3(h.lat, h.lon, 1.005);
-    // Core dot
-    const dotGeo = new THREE.SphereGeometry(0.018, 16, 16);
-    const dotMat = new THREE.MeshBasicMaterial({ color: 0x4466ff });
-    const dot = new THREE.Mesh(dotGeo, dotMat);
+    const pos = latLonToVec3(h.lat, h.lon, GLOBE_RADIUS * 1.01);
+    
+    // Solid Center
+    const dot = new THREE.Mesh(new THREE.SphereGeometry(0.015, 16, 16), new THREE.MeshBasicMaterial({ color: 0x9FA7FF }));
     dot.position.copy(pos);
-    scene.add(dot);
-    // Pulse ring
-    const ringGeo = new THREE.RingGeometry(0.02, 0.035, 32);
-    const ringMat = new THREE.MeshBasicMaterial({ color: 0x4466ff, transparent: true, opacity: 0.6, side: THREE.DoubleSide });
-    const ring = new THREE.Mesh(ringGeo, ringMat);
+    globeGroup.add(dot);
+
+    // Animated Ring
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(0.02, 0.035, 32),
+      new THREE.MeshBasicMaterial({ color: 0x9FA7FF, transparent: true, opacity: 0.8, side: THREE.DoubleSide })
+    );
     ring.position.copy(pos);
     ring.lookAt(pos.clone().multiplyScalar(2));
-    ring.userData = { baseScale: 1, phase: Math.random() * Math.PI * 2 };
-    scene.add(ring);
+    ring.userData = { phase: Math.random() * Math.PI * 2 };
+    globeGroup.add(ring);
   });
 
-  // Destination airports [lat, lon]
+  // Destinations List
   const destinations = [
-    [1.35, 103.82],    // Singapore SIN
-    [3.14, 101.69],    // Kuala Lumpur KUL
-    [13.76, 100.5],    // Bangkok BKK
-    [14.6, 120.98],    // Manila MNL
-    [10.82, 106.65],   // Ho Chi Minh SGN
-    [25.276, 55.296],  // Dubai DXB
-    [21.485, 39.192],  // Jeddah JED
-    [52.31, 4.77],     // Amsterdam AMS
-    [50.11, 8.68],     // Frankfurt FRA
-    [51.47, -0.46],    // London LHR
-    [22.31, 114.17],   // Hong Kong HKG
-    [35.76, 140.39],   // Tokyo NRT
-    [31.14, 121.81],   // Shanghai PVG
-    [-33.95, 151.18],  // Sydney SYD
-    [33.94, -118.4],   // Los Angeles LAX
-    [37.57, 126.98],   // Seoul ICN
-    [25.08, 121.23],   // Taipei TPE
-    [1.36, 172.98],    // Pacific route marker
-    [40.64, -73.78],   // New York JFK
-    [48.35, 11.79],    // Munich MUC
-    [41.8, 12.25],     // Rome FCO
-    [41.01, 28.98],    // Istanbul IST
-    [19.09, 72.87],    // Mumbai BOM
-    [28.56, 77.1],     // Delhi DEL
-    [-1.32, 36.93],    // Nairobi NBO
+    [1.35, 103.82], [3.14, 101.69], [13.76, 100.5], [14.6, 120.98], [10.82, 106.65],
+    [25.276, 55.296], [21.485, 39.192], [52.31, 4.77], [50.11, 8.68], [51.47, -0.46],
+    [22.31, 114.17], [35.76, 140.39], [31.14, 121.81], [-33.95, 151.18], [33.94, -118.4],
+    [37.57, 126.98], [25.08, 121.23], [1.36, 172.98], [40.64, -73.78], [48.35, 11.79],
+    [41.8, 12.25], [41.01, 28.98], [19.09, 72.87], [28.56, 77.1], [-1.32, 36.93]
   ];
 
-  // Create animated arcs from CGK to each destination
-  function createArc(startLat, startLon, endLat, endLon, color, speed) {
-    const start = latLonToVec3(startLat, startLon, 1.005);
-    const end = latLonToVec3(endLat, endLon, 1.005);
+  const arcShader = {
+    uniforms: {
+      time: { value: 0 },
+      color: { value: new THREE.Color(0x9FA7FF) },
+      dashSize: { value: 0.1 },
+      gapSize: { value: 0.5 },
+    },
+    vertexShader: `
+      uniform float time;
+      varying float vProgress;
+      void main() {
+        vProgress = uv.x;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform float time;
+      uniform vec3 color;
+      uniform float dashSize;
+      uniform float gapSize;
+      varying float vProgress;
+      void main() {
+        float totalSize = dashSize + gapSize;
+        float progressMod = mod(vProgress - time * 0.3, totalSize);
+        float alpha = step(progressMod, dashSize);
+        // Create soft tail
+        float tail = smoothstep(0.0, dashSize, progressMod) * alpha;
+        
+        gl_FragColor = vec4(color, tail * 0.6 + 0.1); 
+      }
+    `
+  };
+
+  const arcs = [];
+  destinations.forEach((d) => {
+    const start = latLonToVec3(CGK_LAT, CGK_LON, GLOBE_RADIUS * 1.01);
+    const end = latLonToVec3(d[0], d[1], GLOBE_RADIUS * 1.01);
     const dist = start.distanceTo(end);
-    const mid = start.clone().add(end).multiplyScalar(0.5).normalize().multiplyScalar(1 + dist * 0.35);
+    // Arc height relative to distance
+    const mid = start.clone().lerp(end, 0.5).normalize().multiplyScalar(1 + dist * 0.4);
 
     const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
-    const points = curve.getPoints(64);
-    const geo = new THREE.BufferGeometry().setFromPoints(points);
+    const pts = curve.getPoints(50);
+    
+    // Calculate UVs manually based on distance along curve for the shader
+    const geometry = new THREE.BufferGeometry().setFromPoints(pts);
+    const uvs = new Float32Array(pts.length * 2);
+    for (let i = 0; i < pts.length; i++) {
+      uvs[i * 2] = i / (pts.length - 1); 
+      uvs[i * 2 + 1] = 0;
+    }
+    geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
 
-    const mat = new THREE.LineBasicMaterial({ color: color, transparent: true, opacity: 0.35 });
-    const line = new THREE.Line(geo, mat);
-    scene.add(line);
+    const material = new THREE.ShaderMaterial({
+      uniforms: THREE.UniformsUtils.clone(arcShader.uniforms),
+      vertexShader: arcShader.vertexShader,
+      fragmentShader: arcShader.fragmentShader,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    
+    // Vary dash offset initially so they don't all look identical
+    material.uniforms.time.value = Math.random() * 5.0;
 
-    // Glowing moving particle
-    const particleGeo = new THREE.SphereGeometry(0.008, 8, 8);
-    const particleMat = new THREE.MeshBasicMaterial({ color: 0x88aaff });
-    const particle = new THREE.Mesh(particleGeo, particleMat);
-    particle.userData = { curve, t: Math.random(), speed: speed };
-    scene.add(particle);
+    const line = new THREE.Line(geometry, material);
+    globeGroup.add(line);
+    arcs.push({ material: material, speed: 0.5 + Math.random() * 0.5 });
 
-    // Small dot at destination
-    const destDot = new THREE.Mesh(new THREE.SphereGeometry(0.008, 8, 8), new THREE.MeshBasicMaterial({ color: 0x6688ff, transparent: true, opacity: 0.6 }));
-    destDot.position.copy(end);
-    scene.add(destDot);
-
-    return particle;
-  }
-
-  const particles = [];
-  destinations.forEach((d, i) => {
-    const color = i < 5 ? 0x4466ff : i < 10 ? 0x3355dd : 0x2244bb;
-    const speed = 0.002 + Math.random() * 0.003;
-    particles.push(createArc(CGK_LAT, CGK_LON, d[0], d[1], color, speed));
+    // Destination target dot
+    const targetBase = new THREE.Mesh(new THREE.SphereGeometry(0.008, 8, 8), new THREE.MeshBasicMaterial({ color: 0x9FA7FF, transparent: true, opacity: 0.5 }));
+    targetBase.position.copy(end);
+    globeGroup.add(targetBase);
   });
 
-  // Stars background
-  const starGeo = new THREE.BufferGeometry();
-  const starPositions = [];
-  for (let i = 0; i < 800; i++) {
-    starPositions.push((Math.random() - 0.5) * 20, (Math.random() - 0.5) * 20, (Math.random() - 0.5) * 20);
+  // Background Stars
+  const starsGeo = new THREE.BufferGeometry();
+  const starsPts = [];
+  for(let i=0; i<600; i++) {
+    starsPts.push((Math.random() - 0.5)*15, (Math.random() - 0.5)*15, (Math.random() - 0.5)*15 - 5);
   }
-  starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPositions, 3));
-  const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.02, transparent: true, opacity: 0.4 });
-  scene.add(new THREE.Points(starGeo, starMat));
+  starsGeo.setAttribute('position', new THREE.Float32BufferAttribute(starsPts, 3));
+  const starsMat = new THREE.PointsMaterial({color: 0xffffff, size: 0.02, transparent: true, opacity: 0.3});
+  scene.add(new THREE.Points(starsGeo, starsMat));
 
-  // Initial rotation to center Jakarta
-  const phi0 = (90 - CGK_LAT) * Math.PI / 180;
+  // Initial Alignment (Center on Indonesia)
   const theta0 = (CGK_LON + 180) * Math.PI / 180;
-  globe.rotation.y = -theta0 + Math.PI + 0.3;
-  wire.rotation.y = globe.rotation.y;
+  const homeRotationY = -theta0 + Math.PI + 0.3;
+  globeGroup.rotation.y = homeRotationY;
+  globeGroup.rotation.x = 0.1;
 
-  // Mouse interaction
-  let mouseX = 0, mouseY = 0, targetRotY = globe.rotation.y;
-  let isDragging = false, lastMouseX = 0;
+  // Interactions & Inertial Physics
+  let isDragging = false;
+  let previousMousePosition = { x: 0, y: 0 };
+  let momentum = { x: 0, y: 0 };
+  const friction = 0.95; 
 
-  mount.addEventListener('mousedown', (e) => { isDragging = true; lastMouseX = e.clientX; });
-  window.addEventListener('mouseup', () => { isDragging = false; });
+  // Reset logic
+  let inactivityTimer = null;
+  let returningHome = false;
+  function markActive() {
+    clearTimeout(inactivityTimer);
+    returningHome = false;
+    inactivityTimer = setTimeout(() => { returningHome = true; }, 4000);
+  }
+  markActive();
+
+  mount.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    previousMousePosition = { x: e.offsetX, y: e.offsetY };
+    momentum = { x: 0, y: 0 }; // Stop existing momentum
+    markActive();
+  });
+
+  window.addEventListener('mouseup', () => { isDragging = false; markActive(); });
+  window.addEventListener('mouseleave', () => { isDragging = false; markActive(); });
+
   mount.addEventListener('mousemove', (e) => {
     if (isDragging) {
-      const delta = (e.clientX - lastMouseX) * 0.005;
-      targetRotY += delta;
-      lastMouseX = e.clientX;
+      const deltaMove = {
+        x: e.offsetX - previousMousePosition.x,
+        y: e.offsetY - previousMousePosition.y
+      };
+
+      // Set momentum
+      momentum.x = deltaMove.x * 0.005;
+      momentum.y = deltaMove.y * 0.005;
+
+      globeGroup.rotation.y += momentum.x;
+      globeGroup.rotation.x += momentum.y;
+
+      previousMousePosition = { x: e.offsetX, y: e.offsetY };
+      markActive();
     }
   });
-  mount.addEventListener('touchstart', (e) => { isDragging = true; lastMouseX = e.touches[0].clientX; }, { passive: true });
-  window.addEventListener('touchend', () => { isDragging = false; });
+
+  // Touch support
+  mount.addEventListener('touchstart', (e) => {
+    isDragging = true;
+    previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    momentum = { x: 0, y: 0 };
+    markActive();
+  }, { passive: true });
+
+  window.addEventListener('touchend', () => { isDragging = false; markActive(); });
   mount.addEventListener('touchmove', (e) => {
     if (isDragging) {
-      const delta = (e.touches[0].clientX - lastMouseX) * 0.005;
-      targetRotY += delta;
-      lastMouseX = e.touches[0].clientX;
+      const deltaMove = {
+        x: e.touches[0].clientX - previousMousePosition.x,
+        y: e.touches[0].clientY - previousMousePosition.y
+      };
+      momentum.x = deltaMove.x * 0.005;
+      momentum.y = deltaMove.y * 0.005;
+      globeGroup.rotation.y += momentum.x;
+      globeGroup.rotation.x += momentum.y;
+      previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      markActive();
     }
   }, { passive: true });
 
-  // Animation loop
+  const clock = new THREE.Clock();
+
   function animate() {
     requestAnimationFrame(animate);
+    const dt = clock.getDelta();
 
-    // Auto-rotate slowly unless dragging
-    if (!isDragging) targetRotY += 0.0008;
-    globe.rotation.y += (targetRotY - globe.rotation.y) * 0.05;
-    wire.rotation.y = globe.rotation.y;
+    // Apply Momentum (Inertia)
+    if (!isDragging) {
+      globeGroup.rotation.y += momentum.x;
+      globeGroup.rotation.x += momentum.y;
+      
+      // Decay momentum
+      momentum.x *= friction;
+      momentum.y *= friction;
 
-    // Animate all children attached to globe
-    scene.children.forEach(child => {
+      // Limit vertical rotation to avoid flipping
+      globeGroup.rotation.x = Math.max(-Math.PI/3, Math.min(Math.PI/3, globeGroup.rotation.x));
+
+      // Auto return home
+      if (returningHome && Math.abs(momentum.x) < 0.001 && Math.abs(momentum.y) < 0.001) {
+        let diffY = (homeRotationY - globeGroup.rotation.y) % (Math.PI * 2);
+        if (diffY > Math.PI) diffY -= Math.PI * 2;
+        if (diffY < -Math.PI) diffY += Math.PI * 2;
+        
+        globeGroup.rotation.y += diffY * 0.015;
+        globeGroup.rotation.x += (0.1 - globeGroup.rotation.x) * 0.015;
+      }
+    }
+
+    // Animate Rings
+    const currentT = performance.now() * 0.002;
+    globeGroup.children.forEach(child => {
       if (child.geometry?.type === 'RingGeometry') {
-        const t = performance.now() * 0.002 + (child.userData.phase || 0);
-        const s = 1 + Math.sin(t) * 0.5;
+        const s = 1 + Math.sin(currentT + child.userData.phase) * 0.4;
         child.scale.set(s, s, s);
-        child.material.opacity = 0.6 * (1 - (s - 1));
+        child.material.opacity = 0.8 * (1 - (s - 1));
       }
     });
 
-    // Animate particles along arcs
-    particles.forEach(p => {
-      p.userData.t = (p.userData.t + p.userData.speed) % 1;
-      const pos = p.userData.curve.getPoint(p.userData.t);
-      p.position.copy(pos);
+    // Animate Arc Flows
+    arcs.forEach(arc => {
+      arc.material.uniforms.time.value += dt * arc.speed;
     });
 
     renderer.render(scene, camera);
   }
   animate();
 
-  // Resize
+  // Handle Resize
   window.addEventListener('resize', () => {
     const w = mount.clientWidth, h = mount.clientHeight;
     camera.aspect = w / h;
@@ -446,5 +563,3 @@ document.getElementById('footer-mount').innerHTML = AMBARA.getFooter();
 </script>
 </body>
 </html>
-</CodeContent>
-<parameter name="Description">Complete rewrite of the network page with Three.js interactive 3D globe featuring animated flight arcs from CGK to 25 global destinations, pulsing hub markers, atmospheric glow, and mouse/touch drag interaction.
