@@ -31,8 +31,12 @@
     .corridor-region { font-weight: 800; margin-bottom: 16px; color: var(--blue-accent); display: flex; align-items: center; gap: 10px; }
     .corridor-route { display: flex; align-items: center; gap: 8px; padding: 8px 0; font-size: 0.9375rem; color: var(--text-muted); }
     .corridor-route::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--blue-accent); flex-shrink: 0; }
+    .globe-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    @media (max-width: 1024px) {
+      .globe-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    }
     @media (max-width: 768px) {
-      .globe-container { height: 380px; }
+      .globe-container { height: 60vh; min-height: 380px; max-height: 600px; -webkit-mask-image: linear-gradient(to bottom, transparent, black 10%, black 85%, transparent); mask-image: linear-gradient(to bottom, transparent, black 10%, black 85%, transparent); }
       .hub-iata { font-size: 2rem; }
     }
   </style>
@@ -56,7 +60,7 @@
   <div class="globe-container" id="globe-mount"></div>
   <div class="globe-stats">
     <div class="container">
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+      <div class="globe-stats-grid">
         <div class="globe-stat animate-on-scroll"><div class="globe-stat-number">52+</div><div class="globe-stat-label">Negara</div></div>
         <div class="globe-stat animate-on-scroll"><div class="globe-stat-number">3</div><div class="globe-stat-label">Hub Indonesia</div></div>
         <div class="globe-stat animate-on-scroll"><div class="globe-stat-number">24/7</div><div class="globe-stat-label">Operasi</div></div>

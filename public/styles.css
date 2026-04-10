@@ -128,7 +128,13 @@ textarea.form-control { resize: vertical; min-height: 120px; }
 
 /* MOBILE MENU */
 .mobile-menu-btn { display: none; background: none; border: none; cursor: pointer; padding: 8px; }
-.mobile-nav { display: none; position: fixed; inset: 0; z-index: 999; background: var(--bg); padding: 24px; flex-direction: column; }
+.mobile-nav { display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(11,14,20,0.98); backdrop-filter: blur(20px); padding: 24px; flex-direction: column; opacity: 0; transform: translateY(-10px); transition: opacity 0.3s ease, transform 0.3s ease; }
+.mobile-nav.open { opacity: 1; transform: translateY(0); }
+body.menu-open { overflow: hidden; }
+
+/* CONTACT GRID HELPERS */
+.contact-grid { display: grid; grid-template-columns: 1fr 1.5fr; gap: 60px; align-items: start; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
 /* GRID HELPERS */
 .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
@@ -155,6 +161,12 @@ textarea.form-control { resize: vertical; min-height: 120px; }
   .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
   .footer-grid { grid-template-columns: 1fr; gap: 32px; }
   .section { padding: 64px 0; }
+  
+  .contact-grid { grid-template-columns: 1fr; gap: 40px; }
+  .form-row { grid-template-columns: 1fr; }
+  
+  .whatsapp-fab { bottom: 20px; right: 20px; width: 50px; height: 50px; }
+  .whatsapp-fab svg { width: 24px; height: 24px; }
 }
 
 /* ANIMATIONS */

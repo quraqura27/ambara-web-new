@@ -39,11 +39,25 @@ function initNavbar() {
 
 // Mobile menu
 function initMobileMenu() {
-  const btn = document.querySelector('.mobile-menu-btn');
   const nav = document.querySelector('.mobile-nav');
-  if (!btn || !nav) return;
+  if (!nav) return;
+  
+  // Detach and append to body to avoid backdrop-filter containing block issues from navbar
+  if (nav.parentElement) nav.parentElement.removeChild(nav);
+  document.body.appendChild(nav);
+
   document.querySelectorAll('.mobile-menu-btn').forEach(b => b.addEventListener('click', () => {
-    nav.style.display = nav.style.display === 'flex' ? 'none' : 'flex';
+    const isOpen = nav.classList.contains('open');
+    if (isOpen) {
+      nav.classList.remove('open');
+      document.body.classList.remove('menu-open');
+      setTimeout(() => nav.style.display = 'none', 300);
+    } else {
+      nav.style.display = 'flex';
+      nav.offsetHeight; // trigger reflow
+      nav.classList.add('open');
+      document.body.classList.add('menu-open');
+    }
   }));
 }
 
