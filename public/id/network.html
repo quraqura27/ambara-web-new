@@ -430,10 +430,9 @@ document.getElementById('footer-mount').innerHTML = AMBARA.getFooter();
   scene.add(new THREE.Points(starsGeo, starsMat));
 
   // Initial Alignment (Center on Indonesia)
-  const theta0 = (CGK_LON + 180) * Math.PI / 180;
-  const homeRotationY = -theta0 + Math.PI + 0.3;
+  const homeRotationY = 3.65;
   globeGroup.rotation.y = homeRotationY;
-  globeGroup.rotation.x = 0.1;
+  globeGroup.rotation.x = 0.05;
 
   const clock = new THREE.Clock();
 
