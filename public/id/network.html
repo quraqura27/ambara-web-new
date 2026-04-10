@@ -435,103 +435,11 @@ document.getElementById('footer-mount').innerHTML = AMBARA.getFooter();
   globeGroup.rotation.y = homeRotationY;
   globeGroup.rotation.x = 0.1;
 
-  // Interactions & Inertial Physics
-  let isDragging = false;
-  let previousMousePosition = { x: 0, y: 0 };
-  let momentum = { x: 0, y: 0 };
-  const friction = 0.95; 
-
-  // Reset logic
-  let inactivityTimer = null;
-  let returningHome = false;
-  function markActive() {
-    clearTimeout(inactivityTimer);
-    returningHome = false;
-    inactivityTimer = setTimeout(() => { returningHome = true; }, 4000);
-  }
-  markActive();
-
-  mount.addEventListener('mousedown', (e) => {
-    isDragging = true;
-    previousMousePosition = { x: e.offsetX, y: e.offsetY };
-    momentum = { x: 0, y: 0 }; // Stop existing momentum
-    markActive();
-  });
-
-  window.addEventListener('mouseup', () => { isDragging = false; markActive(); });
-  window.addEventListener('mouseleave', () => { isDragging = false; markActive(); });
-
-  mount.addEventListener('mousemove', (e) => {
-    if (isDragging) {
-      const deltaMove = {
-        x: e.offsetX - previousMousePosition.x,
-        y: e.offsetY - previousMousePosition.y
-      };
-
-      // Set momentum
-      momentum.x = deltaMove.x * 0.005;
-      momentum.y = deltaMove.y * 0.005;
-
-      globeGroup.rotation.y += momentum.x;
-      globeGroup.rotation.x += momentum.y;
-
-      previousMousePosition = { x: e.offsetX, y: e.offsetY };
-      markActive();
-    }
-  });
-
-  // Touch support
-  mount.addEventListener('touchstart', (e) => {
-    isDragging = true;
-    previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    momentum = { x: 0, y: 0 };
-    markActive();
-  }, { passive: true });
-
-  window.addEventListener('touchend', () => { isDragging = false; markActive(); });
-  mount.addEventListener('touchmove', (e) => {
-    if (isDragging) {
-      const deltaMove = {
-        x: e.touches[0].clientX - previousMousePosition.x,
-        y: e.touches[0].clientY - previousMousePosition.y
-      };
-      momentum.x = deltaMove.x * 0.005;
-      momentum.y = deltaMove.y * 0.005;
-      globeGroup.rotation.y += momentum.x;
-      globeGroup.rotation.x += momentum.y;
-      previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-      markActive();
-    }
-  }, { passive: true });
-
   const clock = new THREE.Clock();
 
   function animate() {
     requestAnimationFrame(animate);
     const dt = clock.getDelta();
-
-    // Apply Momentum (Inertia)
-    if (!isDragging) {
-      globeGroup.rotation.y += momentum.x;
-      globeGroup.rotation.x += momentum.y;
-      
-      // Decay momentum
-      momentum.x *= friction;
-      momentum.y *= friction;
-
-      // Limit vertical rotation to avoid flipping
-      globeGroup.rotation.x = Math.max(-Math.PI/3, Math.min(Math.PI/3, globeGroup.rotation.x));
-
-      // Auto return home
-      if (returningHome && Math.abs(momentum.x) < 0.001 && Math.abs(momentum.y) < 0.001) {
-        let diffY = (homeRotationY - globeGroup.rotation.y) % (Math.PI * 2);
-        if (diffY > Math.PI) diffY -= Math.PI * 2;
-        if (diffY < -Math.PI) diffY += Math.PI * 2;
-        
-        globeGroup.rotation.y += diffY * 0.015;
-        globeGroup.rotation.x += (0.1 - globeGroup.rotation.x) * 0.015;
-      }
-    }
 
     // Animate Rings
     const currentT = performance.now() * 0.002;
