@@ -17,15 +17,116 @@
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "Organization",
-    "name": "PT Ambara Artha Globaltrans",
-    "url": "https://ambaraartha.com",
-    "logo": "https://ambaraartha.com/logo.png",
-    "description": "Indonesia's trusted air freight forwarder based at CGK Cargo Terminal",
-    "address": { "@type": "PostalAddress", "addressLocality": "Jakarta", "addressCountry": "ID" },
-    "telephone": "+62821-2545-2800",
-    "email": "cs@ambaraartha.com",
-    "sameAs": []
+    "@graph": [
+      {
+        "@type": ["Organization", "LocalBusiness"],
+        "@id": "https://ambaraartha.com/#organization",
+        "name": "PT Ambara Artha Globaltrans",
+        "alternateName": "Ambara Artha",
+        "url": "https://ambaraartha.com",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://ambaraartha.com/logo.png"
+        },
+        "image": "https://ambaraartha.com/og-image.jpg",
+        "description": "Indonesia's trusted air freight forwarder and licensed PPJK customs clearance agent based at Soekarno-Hatta International Airport (CGK) Cargo Terminal, Jakarta. Specialist in regulated items, dangerous goods, and complex Indonesian customs procedures with 40+ years of combined leadership expertise.",
+        "foundingDate": "2025",
+        "numberOfEmployees": {"@type": "QuantitativeValue", "minValue": 10, "maxValue": 50},
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "Soekarno-Hatta International Airport Cargo Terminal",
+          "addressLocality": "Tangerang",
+          "addressRegion": "Banten",
+          "postalCode": "19120",
+          "addressCountry": "ID"
+        },
+        "geo": {
+          "@type": "GeoCoordinates",
+          "latitude": -6.1256,
+          "longitude": 106.6558
+        },
+        "telephone": "+62821-2545-2800",
+        "email": "cs@ambaraartha.com",
+        "areaServed": [
+          {"@type": "Country", "name": "Indonesia"},
+          {"@type": "Country", "name": "Singapore"},
+          {"@type": "Country", "name": "United Arab Emirates"},
+          {"@type": "Country", "name": "China"},
+          {"@type": "Country", "name": "Japan"},
+          {"@type": "Country", "name": "South Korea"},
+          {"@type": "Country", "name": "United States"},
+          {"@type": "Country", "name": "Australia"}
+        ],
+        "knowsAbout": [
+          "Air Freight Indonesia",
+          "Customs Clearance Indonesia",
+          "PPJK Licensed Agent",
+          "Regulated Items (Lartas)",
+          "Dangerous Goods Shipping",
+          "BPOM Import Permits",
+          "CGK Cargo Terminal",
+          "Undername Import Export Indonesia"
+        ],
+        "hasCredential": [
+          {
+            "@type": "EducationalOccupationalCredential",
+            "credentialCategory": "Government License",
+            "name": "PPJK License — Customs Clearance Agent",
+            "recognizedBy": {
+              "@type": "Organization",
+              "name": "Directorate General of Customs and Excise (DJBC), Republic of Indonesia"
+            }
+          }
+        ],
+        "makesOffer": [
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "International Air Freight",
+              "description": "Export and import air cargo connecting Indonesia to 52+ countries via CGK hub"
+            }
+          },
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "Customs Clearance (DDP & DDU)",
+              "description": "Licensed PPJK customs brokerage for regulated items, Lartas, BPOM, and Kemendag permits"
+            }
+          },
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "Undername Import/Export",
+              "description": "Importer of record services for foreign companies without an Indonesian legal entity"
+            }
+          },
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "Dangerous Goods Handling",
+              "description": "Certified IATA dangerous goods handling, packaging, and documentation"
+            }
+          }
+        ]
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://ambaraartha.com/#website",
+        "url": "https://ambaraartha.com",
+        "name": "PT Ambara Artha Globaltrans",
+        "publisher": {"@id": "https://ambaraartha.com/#organization"},
+        "inLanguage": ["en", "id"],
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://ambaraartha.com/en/?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      }
+    ]
   }
   </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
