@@ -39,6 +39,8 @@
 <div id="footer-mount"></div>
 <script src="/layout.js?v=2.2"></script>
 <script src="/app.js?v=2.2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="/pdf-generator.js?v=1.0"></script>
 <script>
 document.getElementById('navbar-mount').innerHTML = AMBARA.getNavbar('blog');
 document.getElementById('footer-mount').innerHTML = AMBARA.getFooter();
@@ -120,8 +122,16 @@ function renderPost(post, slugStr) {
         <div style="margin-bottom:24px">
           <a href="/en/blog" style="color:var(--text-muted);font-size:0.875rem">← ${isID ? 'Kembali' : 'Back to Blog'}</a>
         </div>
-        <div class="badge badge-blue" style="margin-bottom:20px">${post.category}</div>
-        <h1 style="margin-bottom:20px">${title}</h1>
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; flex-wrap:wrap; gap:16px">
+          <div>
+            <div class="badge badge-blue" style="margin-bottom:20px">${post.category}</div>
+            <h1 style="margin:0">${title}</h1>
+          </div>
+          <button id="pdf-btn" onclick="downloadBlogPDF()" class="btn btn-primary" style="display:flex; align-items:center; gap:8px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            ${isID ? 'Unduh PDF Studi Kasus' : 'Download PDF Case Study'}
+          </button>
+        </div>
         <div style="display:flex;align-items:center;gap:16px;margin-bottom:40px;padding-bottom:24px;border-bottom:1px solid var(--border)">
           <div style="width:40px;height:40px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-weight:800;color:white">A</div>
           <div>

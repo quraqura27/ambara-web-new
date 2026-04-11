@@ -7,9 +7,33 @@ function getDB() {
   return _sql;
 }
 
+const ALLOWED_ORIGINS = [
+  'https://ambaraartha.com',
+  'https://www.ambaraartha.com'
+];
+
+function getCorsOrigin(event) {
+  const origin = event?.headers?.origin || event?.headers?.Origin || '';
+  if (ALLOWED_ORIGINS.includes(origin)) return origin;
+  // In development, allow localhost
+  if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) return origin;
+  return ALLOWED_ORIGINS[0]; // Default to primary domain
+}
+
+function getCorsHeaders(event) {
+  return {
+    'Access-Control-Allow-Origin': getCorsOrigin(event),
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Credentials': 'true',
+    'Content-Type': 'application/json'
+  };
+}
+
+// Legacy static CORS object for backward compatibility in simple responses
 const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, x-admin-password, Authorization',
+  'Access-Control-Allow-Origin': 'https://ambaraartha.com',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'Content-Type': 'application/json'
 };
@@ -55,7 +79,9 @@ function generateTrackingNumber(customerNumericId) {
 function verifyToken(token, secret) {
   try {
     const jwt = require('jsonwebtoken');
-    return jwt.verify(token, secret || process.env.JWT_SECRET || 'ambara-secret-2025');
+    const jwtSecret = secret || process.env.JWT_SECRET;
+    if (!jwtSecret) throw new Error('JWT_SECRET environment variable is not configured');
+    return jwt.verify(token, jwtSecret);
   } catch { return null; }
 }
 
@@ -102,4 +128,4 @@ function parsePathParam(event, prefix) {
   return parts[0] || event.queryStringParameters?.id || null;
 }
 
-module.exports = { getDB, CORS, response, errorResponse, optionsResponse, sendEmail, generateCustomerId, generateTrackingNumber, verifyToken, getAuthToken, requireRole, v1Response, v1Error, parsePathParam, ROLE_ADMIN, ROLE_OPS, ROLE_FINANCE };
+module.exports = { getDB, CORS, getCorsHeaders, getCorsOrigin, ALLOWED_ORIGINS, response, errorResponse, optionsResponse, sendEmail, generateCustomerId, generateTrackingNumber, verifyToken, getAuthToken, requireRole, v1Response, v1Error, parsePathParam, ROLE_ADMIN, ROLE_OPS, ROLE_FINANCE };

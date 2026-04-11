@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'ambara-secret-2025';
+const JWT_SECRET = process.env.JWT_SECRET;\nif (!JWT_SECRET) {\n  console.error('FATAL: JWT_SECRET environment variable is not set. Client auth will fail.');\n}
 
 function getR2Client() {
   return new S3Client({

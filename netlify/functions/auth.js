@@ -2,7 +2,7 @@ const { getDB, CORS, response, errorResponse, optionsResponse, verifyToken, getA
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'ambara-secret-2025';
+const JWT_SECRET = process.env.JWT_SECRET;\r\nif (!JWT_SECRET) {\r\n  console.error('FATAL: JWT_SECRET environment variable is not set. Authentication will fail.');\r\n}
 
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return optionsResponse();
