@@ -1,19 +1,22 @@
-import dispatcher from "../../server/legacy-api/lib/dispatcher";
-import adapter from "../../server/legacy-api/lib/adapter";
+const dispatcher = require("../../server/legacy-api/lib/dispatcher");
+const adapter = require("../../server/legacy-api/lib/adapter");
 
 /**
- * UNIVERSAL API GATEWAY (Native Next.js Version)
+ * UNIVERSAL API GATEWAY (CommonJS Version)
  * This unified function routes all incoming /api requests to their
  * respective legacy handlers while staying under Vercel Hobby plan limits.
  */
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
+  // Extract path from query (Next.js provides this for both Pages and App Router)
   const { path } = req.query;
   
   // Extract the function name from the path if provided as an array (Next.js catch-all)
   // or use the last segment of the URL
-  const pathArray = Array.isArray(path) ? path : [path];
+  const pathArray = Array.isArray(path) ? path : (path ? [path] : []);
   const lastSegment = pathArray[pathArray.length - 1] || "";
   
+  console.log(`[Gateway] Incoming request for: ${lastSegment}`);
+
   // Resolve the handler from the static manifest
   const legacyHandler = dispatcher[lastSegment];
 
@@ -22,7 +25,7 @@ export default async function handler(req, res) {
     return res.status(404).json({ 
       error: "Handler not found", 
       path: lastSegment,
-      available: Object.keys(dispatcher)
+      available_endpoints: Object.keys(dispatcher)
     });
   }
 
@@ -32,6 +35,10 @@ export default async function handler(req, res) {
     return await wrapped(req, res);
   } catch (error) {
     console.error(`[Gateway Error] ${lastSegment}:`, error);
-    return res.status(500).json({ error: "Internal Gateway Error", message: error.message });
+    return res.status(500).json({ 
+      error: "Internal Gateway Error", 
+      message: error.message,
+      handler: lastSegment
+    });
   }
-}
+};
