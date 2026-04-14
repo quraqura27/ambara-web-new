@@ -1,0 +1,58 @@
+{
+  "name": "ambara-artha-globaltrans",
+  "version": "5.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1029.0",
+    "@aws-sdk/s3-request-presigner": "^3.0.0",
+    "@clerk/nextjs": "^7.0.12",
+    "@clerk/themes": "^2.4.57",
+    "@neondatabase/serverless": "^1.0.2",
+    "bcryptjs": "^2.4.3",
+    "bwip-js": "^4.9.2",
+    "canvas": "^3.2.3",
+    "clsx": "^2.1.1",
+    "d3-array": "^3.2.4",
+    "d3-geo": "^3.1.1",
+    "drizzle-orm": "^0.45.2",
+    "framer-motion": "^12.38.0",
+    "geojson": "^0.5.0",
+    "jsonwebtoken": "^9.0.0",
+    "lucide-react": "^1.8.0",
+    "next": "16.2.3",
+    "pdf-lib": "^1.17.1",
+    "pdf-parse": "^2.4.5",
+    "pdfjs-dist": "^4.10.38",
+    "qrcode": "^1.5.4",
+    "react": "19.2.4",
+    "react-barcode": "^1.6.1",
+    "react-dom": "19.2.4",
+    "react-dropzone": "^15.0.0",
+    "recharts": "^3.8.1",
+    "resend": "^3.2.0",
+    "tailwind-merge": "^3.5.0",
+    "topojson-client": "^3.1.0",
+    "url-toolkit": "^2.2.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "dotenv": "^17.4.2",
+    "drizzle-kit": "^0.31.10",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.3",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

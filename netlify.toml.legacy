@@ -1,0 +1,92 @@
+[build]
+  functions = "netlify/functions"
+  publish = "public"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+# Language detection redirect
+[[redirects]]
+  from = "/"
+  to = "/en/"
+  status = 302
+  conditions = {Language = ["en", "en-US", "en-GB"]}
+
+[[redirects]]
+  from = "/"
+  to = "/id/"
+  status = 302
+  conditions = {Language = ["id", "id-ID"]}
+
+[[redirects]]
+  from = "/"
+  to = "/en/"
+  status = 302
+
+# Clean Blog URLs (Rewrite rule)
+[[redirects]]
+  from = "/en/blog/:slug"
+  to = "/en/blog-post.html?slug=:slug"
+  status = 200
+
+[[redirects]]
+  from = "/id/blog/:slug"
+  to = "/id/blog-post.html?slug=:slug"
+  status = 200
+
+# EN pages
+[[redirects]]
+  from = "/en"
+  to = "/en/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/id"
+  to = "/id/index.html"
+  status = 200
+
+# Finance route
+[[redirects]]
+  from = "/finance/*"
+  to = "/finance/:splat"
+  status = 200
+
+# V1 API routes
+[[redirects]]
+  from = "/api/v1/*"
+  to = "/.netlify/functions/v1-:splat"
+  status = 200
+
+# API routes
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+# Sitemap
+[[redirects]]
+  from = "/sitemap.xml"
+  to = "/.netlify/functions/sitemap"
+  status = 200
+
+[[redirects]]
+  from = "/robots.txt"
+  to = "/robots.txt"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/en/*"
+  [headers.values]
+    Content-Language = "en"
+
+[[headers]]
+  for = "/id/*"
+  [headers.values]
+    Content-Language = "id"

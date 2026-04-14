@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Our Partners & Clients — PT Ambara Artha Globaltrans</title>
+  <meta name="description" content="Trusted airline and logistics partners, and valued clients of PT Ambara Artha Globaltrans. Building global freight networks together.">
+  <link rel="canonical" href="/id/partners">
+  <link rel="alternate" hreflang="en" href="/id/partners">
+  <link rel="alternate" hreflang="id" href="https://ambaraartha.com/id/partners">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div id="navbar-mount"></div>
+
+<section style="padding-top:120px;padding-bottom:60px">
+  <div class="container">
+    <div style="text-align:center;max-width:640px;margin:0 auto">
+      <div class="section-label">Jaringan</div>
+      <h1 style="font-size:clamp(2rem,4vw,3rem);margin-bottom:16px">Our Partners & Clients</h1>
+      <p>We work with world-class airlines, logistics partners, and trusted clients to deliver your cargo reliably to any corner of the globe.</p>
+    </div>
+  </div>
+</section>
+
+<!-- PARTNERS -->
+<section class="section" style="padding-top:0">
+  <div class="container">
+    <div style="margin-bottom:48px">
+      <div class="section-label">Airline & Vendor Partners</div>
+      <h2 style="font-size:1.75rem;margin-bottom:16px">Our Trusted Partners</h2>
+      <p>We work with leading airlines and logistics vendors to ensure reliable, global coverage.</p>
+    </div>
+    <div id="partners-grid" class="grid-4">
+      <!-- Loaded from DB or placeholder -->
+      <div class="card animate-on-scroll" style="text-align:center;padding:32px 20px">
+        <div style="font-size:2.5rem;margin-bottom:12px"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg></div>
+        <div style="font-weight:700">Garuda Indonesia Cargo</div>
+        <div style="font-size:0.8125rem;color:var(--text-muted);margin-top:4px">Airline</div>
+      </div>
+      <div class="card animate-on-scroll" style="text-align:center;padding:32px 20px">
+        <div style="font-size:2.5rem;margin-bottom:12px"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg></div>
+        <div style="font-weight:700">Singapore Airlines Cargo</div>
+        <div style="font-size:0.8125rem;color:var(--text-muted);margin-top:4px">Airline</div>
+      </div>
+      <div class="card animate-on-scroll" style="text-align:center;padding:32px 20px">
+        <div style="font-size:2.5rem;margin-bottom:12px"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg></div>
+        <div style="font-weight:700">Emirates SkyCargo</div>
+        <div style="font-size:0.8125rem;color:var(--text-muted);margin-top:4px">Airline</div>
+      </div>
+      <div class="card animate-on-scroll" style="text-align:center;padding:32px 20px">
+        <div style="font-size:2.5rem;margin-bottom:12px"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg></div>
+        <div style="font-weight:700">Cathay Pacific Cargo</div>
+        <div style="font-size:0.8125rem;color:var(--text-muted);margin-top:4px">Airline</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CLIENTS -->
+<section class="section" style="background:var(--surface);border-top:1px solid var(--border)">
+  <div class="container">
+    <div style="margin-bottom:48px">
+      <div class="section-label">Valued Clients</div>
+      <h2 style="font-size:1.75rem;margin-bottom:16px">Companies That Trust Us</h2>
+      <p>From SMEs to multinational corporations, we serve businesses of all sizes shipping to and from Indonesia.</p>
+    </div>
+    <div id="clients-grid" class="grid-4">
+      <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">Loading clients...</div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section">
+  <div class="container">
+    <div class="card" style="text-align:center;background:linear-gradient(135deg,var(--surface),rgba(17,34,238,0.05));padding:60px">
+      <h2 style="margin-bottom:16px">Become Our Client</h2>
+      <p style="margin-bottom:32px">Join hundreds of businesses that trust Ambara Artha for their Indonesia freight needs.</p>
+      <a href="/id/quote" class="btn btn-primary btn-lg">Dapatkan Penawaran Gratis →</a>
+    </div>
+  </div>
+</section>
+
+<div id="footer-mount"></div>
+<script src="/layout.js?v=2.1"></script>
+<script src="/app.js?v=2.1"></script>
+<script>
+document.getElementById('navbar-mount').innerHTML = AMBARA.getNavbar('');
+document.getElementById('footer-mount').innerHTML = AMBARA.getFooter();
+
+fetch('/api/content?type=partners').then(r=>r.json()).then(d=>{
+  if (d.partners?.length) {
+    if(d.length === 0) { document.getElementById('partners-grid').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--text-muted)">More partners coming soon.</div>'; return; } document.getElementById('partners-grid').innerHTML = d.partners.map(p=>`
+      <div class="card animate-on-scroll" style="text-align:center;padding:32px 20px">
+        ${p.logo_url ? `<img src="${p.logo_url}" alt="${p.name}" style="height:60px;object-fit:contain;margin-bottom:16px">` : `<div style="font-size:2.5rem;margin-bottom:12px"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg></div>`}
+        <div style="font-weight:700">${p.name}</div>
+        <div style="font-size:0.8125rem;color:var(--text-muted);margin-top:4px">${p.category}</div>
+      </div>`).join('');
+  }
+  if (d.clients?.length) {
+    document.getElementById('clients-grid').innerHTML = d.clients.map(c=>`
+      <div class="card animate-on-scroll" style="text-align:center;padding:24px">
+        ${c.logo_url ? `<img src="${c.logo_url}" alt="${c.name}" style="height:50px;object-fit:contain;margin-bottom:12px">` : `<div style="width:50px;height:50px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-weight:800;margin:0 auto 12px">${c.name[0]}</div>`}
+        <div style="font-weight:700;font-size:0.9375rem">${c.name}</div>
+        <div style="font-size:0.8125rem;color:var(--text-muted);margin-top:4px">${c.country||''}</div>
+      </div>`).join('');
+  } else {
+    document.getElementById('clients-grid').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">Client list coming soon.</div>';
+  }
+}).catch(()=>{});
+</script>
+</body>
+</html>

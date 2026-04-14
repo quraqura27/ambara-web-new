@@ -1,0 +1,1686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — PT Ambara Artha Globaltrans</title>
+  <meta name="robots" content="noindex,nofollow">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
+  <style>
+    body { background: var(--bg); }
+    .ql-toolbar.ql-snow { border-color: var(--border) !important; border-radius: var(--radius) var(--radius) 0 0; background: var(--bg); }
+    .ql-container.ql-snow { border-color: var(--border) !important; border-radius: 0 0 var(--radius) var(--radius); background: var(--bg); min-height: 200px; font-family: var(--font-body); font-size: 0.9375rem; color: var(--text); }
+    .ql-editor { min-height: 200px; }
+    .ql-editor h2 { font-size: 1.5rem; margin: 20px 0 12px; }
+    .ql-editor h3 { font-size: 1.25rem; margin: 16px 0 10px; }
+    .ql-snow .ql-stroke { stroke: var(--text-muted) !important; }
+    .ql-snow .ql-fill { fill: var(--text-muted) !important; }
+    .ql-snow .ql-picker-label { color: var(--text-muted) !important; }
+    .ql-snow .ql-picker-options { background: var(--surface) !important; border-color: var(--border) !important; }
+    .admin-layout { display: flex; min-height: 100vh; }
+    .sidebar { width: 260px; background: var(--surface); border-right: 1px solid var(--border); padding: 24px 0; display: flex; flex-direction: column; position: fixed; height: 100vh; overflow-y: auto; z-index: 100; }
+    .sidebar-logo { padding: 0 20px 24px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+    .sidebar-nav a { display: flex; align-items: center; gap: 12px; padding: 10px 20px; font-size: 0.875rem; font-weight: 500; color: var(--text-muted); border-radius: 0; transition: var(--transition); cursor: pointer; text-decoration: none; }
+    .sidebar-nav a:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+    .sidebar-nav a.active { background: rgba(17,34,238,0.1); color: var(--blue-accent); border-right: 2px solid var(--blue); }
+    .sidebar-section { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); padding: 16px 20px 8px; }
+    .main-content { margin-left: 260px; flex: 1; padding: 32px; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 12px 16px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+    td { padding: 14px 16px; font-size: 0.875rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    .section-content { display: none; }
+    .section-content.active { display: block; }
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; padding: 24px; }
+    .modal.open { display: flex; }
+    .modal-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 32px; width: 100%; max-width: 640px; max-height: 90vh; overflow-y: auto; }
+    .tab-btn { padding: 8px 20px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; font-family: var(--font-head); font-weight: 700; font-size: 0.875rem; border-bottom: 2px solid transparent; }
+    .tab-btn.active { color: var(--blue-accent); border-bottom-color: var(--blue-accent); }
+    #login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="card" style="width:100%;max-width:400px;padding:48px 40px">
+    <div style="text-align:center;margin-bottom:32px">
+      <div style="width:56px;height:56px;background:var(--blue);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" stroke="white" stroke-width="2" stroke-linejoin="round"/></svg>
+      </div>
+      <div style="font-family:var(--font-head);font-weight:900;font-size:1.25rem">AMBARA<span style="color:var(--blue-accent)">ARTHA</span></div>
+      <div style="font-size:0.875rem;color:var(--text-muted);margin-top:4px">Admin Dashboard</div>
+    </div>
+    <form id="login-form">
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="email" class="form-control" id="login-email" placeholder="admin@ambaraartha.com" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input type="password" class="form-control" id="login-password" placeholder="••••••••" required>
+      </div>
+      <div id="login-error" style="color:var(--red);font-size:0.875rem;margin-bottom:16px;display:none"></div>
+      <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center" id="login-btn">Sign In →</button>
+    </form>
+  </div>
+</div>
+
+<!-- ADMIN LAYOUT -->
+<div class="admin-layout" id="admin-app" style="display:none">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div style="font-family:var(--font-head);font-weight:900;font-size:1rem">AMBARA<span style="color:var(--blue-accent)">ARTHA</span></div>
+      <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px" id="staff-role-badge">Admin</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section">Overview</div>
+      <a onclick="showSection('dashboard')" class="active" data-section="dashboard">📊 Dashboard</a>
+
+      <div class="sidebar-section">Operations</div>
+      <a onclick="showSection('awbs')" data-section="awbs">📄 AWBs</a>
+      <a onclick="showSection('shipments')" data-section="shipments">📦 Shipments</a>
+      <a onclick="showSection('customers')" data-section="customers">👥 Customers</a>
+      <a onclick="showSection('quotes')" data-section="quotes">💬 Quotes</a>
+      <a onclick="showSection('messages')" data-section="messages"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;vertical-align:-3px"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Messages</a>
+
+      <div class="sidebar-section">Finance</div>
+      <a onclick="showSection('invoices')" data-section="invoices">📋 Invoice History</a>
+      <a onclick="showSection('finance-audit')" data-section="finance-audit" id="finance-audit-nav" style="display:none">🔒 Finance Audit</a>
+      <a href="/finance/invoice.html" target="_blank" style="color:var(--blue-accent)">🖨️ Invoice Generator</a>
+
+      <div class="sidebar-section">Content</div>
+      <a onclick="showSection('blog')" data-section="blog">📝 Blog Posts</a>
+      <a onclick="showSection('faq')" data-section="faq">❓ FAQ</a>
+      <a onclick="showSection('testimonials')" data-section="testimonials">⭐ Testimonials</a>
+      <a onclick="showSection('partners')" data-section="partners">🤝 Partners</a>
+
+      <div class="sidebar-section" id="superadmin-section" style="display:none">Staff</div>
+      <a onclick="showSection('staff')" data-section="staff" id="staff-nav" style="display:none">👤 Staff Accounts</a>
+      <a onclick="showSection('activity')" data-section="activity" id="activity-nav" style="display:none">📋 Activity Log</a>
+
+      <div style="margin-top:auto;padding:20px">
+        <a href="/" target="_blank" class="btn btn-outline btn-sm" style="width:100%;justify-content:center;margin-bottom:8px">View Site →</a>
+        <button onclick="logout()" class="btn btn-sm" style="width:100%;justify-content:center;background:rgba(255,68,102,0.1);color:var(--red);border:1px solid rgba(255,68,102,0.2)">Sign Out</button>
+      </div>
+    </nav>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content" style="position:relative">
+    <!-- NOTIFICATION BELL -->
+    <div id="notifications-widget" style="position:absolute; top:32px; right:32px; z-index:90">
+      <button onclick="toggleNotifications()" style="background:var(--surface); border:1px solid var(--border); padding:8px; border-radius:var(--radius); cursor:pointer; position:relative; width:40px; height:40px; display:flex; align-items:center; justify-content:center">
+        🔔 <span id="notif-badge" style="background:var(--red); color:white; font-size:0.7rem; font-weight:bold; padding:2px 6px; border-radius:10px; position:absolute; top:-6px; right:-6px; display:none">0</span>
+      </button>
+      <div id="notif-dropdown" class="card" style="display:none; position:absolute; top:48px; right:0; width:320px; max-height:400px; overflow-y:auto; box-shadow:0 10px 30px rgba(0,0,0,0.2); padding:0">
+        <div style="padding:12px 16px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; background:var(--surface2)">
+          <strong style="font-size:0.875rem">Notifications</strong>
+          <button onclick="admin_markAllRead()" class="btn btn-outline" style="padding:4px 8px; font-size:0.75rem; border:none; color:var(--blue-accent)">Mark all read</button>
+        </div>
+        <div id="notif-list" style="padding:8px"></div>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="section-dashboard" class="section-content active">
+      <div class="topbar">
+        <div><h2 style="margin-bottom:4px">Dashboard</h2><p style="font-size:0.875rem">Welcome back, <span id="staff-name">—</span></p></div>
+        <div style="font-size:0.875rem;color:var(--text-muted)" id="current-time"></div>
+      </div>
+      <div class="grid-4" style="margin-bottom:32px">
+        <div class="stat-card"><div class="stat-label">Total Shipments</div><div class="stat-number" id="d-shipments">—</div></div>
+        <div class="stat-card"><div class="stat-label">Total Customers</div><div class="stat-number" id="d-customers">—</div></div>
+        <div class="stat-card"><div class="stat-label">On-Time Rate</div><div class="stat-number" id="d-ontime">—</div></div>
+        <div class="stat-card"><div class="stat-label">Total Weight</div><div class="stat-number" id="d-weight">—</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div style="font-weight:800;margin-bottom:16px">Popular Routes</div>
+          <div id="d-routes"><div style="color:var(--text-muted)">Loading...</div></div>
+        </div>
+        <div class="card">
+          <div style="font-weight:800;margin-bottom:16px">Recent Activity</div>
+          <div id="d-activity" style="max-height:300px;overflow-y:auto"><div style="color:var(--text-muted)">Loading...</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AWBs -->
+    <div id="section-awbs" class="section-content">
+      <div class="topbar" style="margin-right:60px">
+        <div><h2>Air Waybills (AWB)</h2></div>
+        <button class="btn btn-primary" onclick="openModal('modal-awb-upload')">+ Upload PDF</button>
+      </div>
+      <div class="card" style="margin-bottom:20px">
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <input type="text" class="form-control" id="search-awbs" placeholder="Search customer name or AWB no..." style="flex:1" oninput="loadAwbs()">
+          <select class="form-control" id="filter-awb-status" style="width:160px" onchange="loadAwbs()">
+            <option value="">All Parse Status</option>
+            <option value="success">Success</option><option value="partial">Partial</option><option value="failed">Failed</option><option value="manual">Manual Editing</option>
+          </select>
+        </div>
+      </div>
+      <div class="card table-wrap"><table>
+        <thead><tr><th>Customer</th><th>AWB No</th><th>Date</th><th>Origin → Dest</th><th>Chargeable Wt</th><th>Parse Status</th><th>Invoiced</th><th>Actions</th></tr></thead>
+        <tbody id="awbs-table"></tbody>
+      </table></div>
+    </div>
+
+    <!-- SHIPMENTS -->
+    <div id="section-shipments" class="section-content">
+      <div class="topbar">
+        <div><h2>Shipments</h2></div>
+        <button class="btn btn-primary" onclick="openModal('modal-shipment')">+ New Shipment</button>
+      </div>
+      <div class="card" style="margin-bottom:20px">
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <input type="text" class="form-control" id="search-shipments" placeholder="Search tracking number or customer..." style="flex:1;min-width:200px" oninput="loadShipments()">
+          <select class="form-control" id="filter-status" style="width:160px" onchange="loadShipments()">
+            <option value="">All Status</option>
+            <option>pending</option><option>in_transit</option><option>arrived_destination</option><option>delivered</option><option>delayed</option>
+          </select>
+        </div>
+      </div>
+      <div class="card table-wrap"><table>
+        <thead><tr><th>Tracking #</th><th>Customer</th><th>Route</th><th>Cargo Type</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+        <tbody id="shipments-table"></tbody>
+      </table></div>
+    </div>
+
+    <!-- CUSTOMERS -->
+    <div id="section-customers" class="section-content">
+      <div class="topbar">
+        <div><h2>Customers</h2></div>
+        <button class="btn btn-primary" onclick="openNewCustomerModal()">+ New Customer</button>
+      </div>
+      <div class="card" style="margin-bottom:20px">
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <input type="text" class="form-control" id="search-customers" placeholder="Search name, company, or customer ID..." style="flex:1" oninput="loadCustomers()">
+          <select class="form-control" id="filter-customer-type" style="width:140px" onchange="loadCustomers()">
+            <option value="">All Types</option>
+            <option value="retail">Retail</option>
+            <option value="b2b">B2B</option>
+          </select>
+        </div>
+      </div>
+      <div class="card table-wrap"><table>
+        <thead><tr><th>Customer ID</th><th>Name/Company</th><th>Type</th><th>Country</th><th>Phone</th><th>Shipments</th><th>Actions</th></tr></thead>
+        <tbody id="customers-table"></tbody>
+      </table></div>
+    </div>
+
+    <!-- QUOTES -->
+    <div id="section-quotes" class="section-content">
+      <div class="topbar"><h2>Quote Requests</h2></div>
+      <div class="card table-wrap"><table>
+        <thead><tr><th>Reference</th><th>Company</th><th>Route</th><th>Weight</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+        <tbody id="quotes-table"></tbody>
+      </table></div>
+    </div>
+
+    <!-- MESSAGES -->
+    <div id="section-messages" class="section-content">
+      <div class="topbar"><h2>Contact Messages</h2></div>
+      <div class="card table-wrap"><table>
+        <thead><tr><th>Name</th><th>Company</th><th>Topic</th><th>Email</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+        <tbody id="messages-table"></tbody>
+      </table></div>
+    </div>
+
+    <!-- BLOG -->
+    <div id="section-blog" class="section-content">
+      <div class="topbar">
+        <div><h2>Blog Posts</h2></div>
+        <button class="btn btn-primary" onclick="openModal('modal-blog')">+ New Post</button>
+      </div>
+      <div class="card table-wrap"><table>
+        <thead><tr><th>Title (EN)</th><th>Category</th><th>Status</th><th>Published</th><th>Actions</th></tr></thead>
+        <tbody id="blog-table"></tbody>
+      </table></div>
+    </div>
+
+    <!-- FAQ -->
+    <div id="section-faq" class="section-content">
+      <div class="topbar">
+        <div><h2>FAQ Management</h2></div>
+        <button class="btn btn-primary" onclick="openModal('modal-faq')">+ New FAQ</button>
+      </div>
+      <div class="card table-wrap"><table>
+        <thead><tr><th>Question (EN)</th><th>Category</th><th>Active</th><th>Actions</th></tr></thead>
+        <tbody id="faq-table"></tbody>
+      </table></div>
+    </div>
+
+    <!-- TESTIMONIALS -->
+    <div id="section-testimonials" class="section-content">
+      <div class="topbar">
+        <div><h2>Testimonials</h2></div>
+        <button class="btn btn-primary" onclick="openModal('modal-testimonial')">+ Add Testimonial</button>
+      </div>
+      <div class="grid-3" id="testimonials-grid"></div>
+    </div>
+
+    <!-- PARTNERS -->
+    <div id="section-partners" class="section-content">
+      <div class="topbar">
+        <div><h2>Partners & Clients</h2></div>
+        <button class="btn btn-primary" onclick="openModal('modal-partner')">+ Add Partner/Client</button>
+      </div>
+      <div class="card table-wrap"><table>
+        <thead><tr><th>Name</th><th>Type</th><th>Category</th><th>Country</th><th>Active</th><th>Actions</th></tr></thead>
+        <tbody id="partners-table"></tbody>
+      </table></div>
+    </div>
+
+    <!-- STAFF -->
+    <div id="section-staff" class="section-content">
+      <div class="topbar">
+        <div><h2>Staff Accounts</h2></div>
+        <button class="btn btn-primary" onclick="openModal('modal-staff')">+ Add Staff</button>
+      </div>
+      <div class="card table-wrap"><table>
+        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Last Login</th><th>Actions</th></tr></thead>
+        <tbody id="staff-table"></tbody>
+      </table></div>
+    </div>
+
+    <!-- ACTIVITY LOG -->
+    <div id="section-activity" class="section-content">
+      <div class="topbar"><h2>Activity Log</h2></div>
+      <div class="card table-wrap"><table>
+        <thead><tr><th>Staff</th><th>Action</th><th>Type</th><th>Time</th></tr></thead>
+        <tbody id="activity-table"></tbody>
+      </table></div>
+    </div>
+
+    <!-- INVOICES -->
+    <div id="section-invoices" class="section-content">
+      <div class="topbar">
+        <div><h2>Invoice History</h2></div>
+        <div style="display:flex;gap:12px">
+           <input type="text" class="form-control" id="search-invoices" placeholder="Search invoice # or customer..." style="width:260px" oninput="loadInvoices()">
+        </div>
+      </div>
+      <div class="card table-wrap"><table>
+        <thead><tr><th>Invoice #</th><th>Customer</th><th>Date</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="invoices-table"></tbody>
+      </table></div>
+    </div>
+
+    <!-- FINANCE AUDIT -->
+    <div id="section-finance-audit" class="section-content">
+      <div class="topbar"><h2>Finance Audit Log</h2></div>
+      <div class="card table-wrap"><table>
+        <thead><tr><th>Time</th><th>Action</th><th>Entity</th><th>Staff</th><th>Details</th></tr></thead>
+        <tbody id="finance-audit-table"></tbody>
+      </table></div>
+    </div>
+  </main>
+</div>
+
+<!-- MODALS -->
+<!-- Shipment Modal -->
+<div class="modal" id="modal-shipment">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+      <h3 id="shipment-modal-title">New Shipment</h3>
+      <button onclick="closeModal('modal-shipment')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.5rem">×</button>
+    </div>
+    <form id="shipment-form">
+      <!-- Customer toggle -->
+      <div class="form-group">
+        <label class="form-label">Customer</label>
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <button type="button" class="btn btn-sm customer-toggle active" data-mode="existing" onclick="toggleCustomerMode('existing')">Existing Customer</button>
+          <button type="button" class="btn btn-sm btn-outline customer-toggle" data-mode="new" onclick="toggleCustomerMode('new')">New Customer</button>
+        </div>
+        <div id="existing-customer-wrap">
+          <input type="text" class="form-control" id="customer-search-input" placeholder="Search customer by name or ID..." oninput="searchCustomers(this.value)">
+          <div id="customer-suggestions" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;margin-top:4px;display:none;max-height:200px;overflow-y:auto"></div>
+          <input type="hidden" name="customer_id" id="selected-customer-id">
+          <div id="selected-customer-display" style="margin-top:8px;display:none" class="badge badge-blue"></div>
+        </div>
+        <div id="new-customer-wrap" style="display:none">
+          <p style="font-size:0.8125rem;color:var(--text-muted)">A new customer record will be created. <a href="#" onclick="showSection('customers')" style="color:var(--blue-accent)">Or manage customers here →</a></p>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label class="form-label">Origin *</label>
+          <input type="text" class="form-control" name="origin" required placeholder="e.g. Jakarta">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Destination *</label>
+          <input type="text" class="form-control" name="destination" required placeholder="e.g. Singapore">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label class="form-label">Origin IATA</label>
+          <input type="text" class="form-control" name="origin_iata" placeholder="CGK" maxlength="3" style="text-transform:uppercase">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Destination IATA</label>
+          <input type="text" class="form-control" name="destination_iata" placeholder="SIN" maxlength="3" style="text-transform:uppercase">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label class="form-label">Cargo Type *</label>
+          <select class="form-control" name="cargo_type" required>
+            <option value="general">General Cargo</option>
+            <option value="perishable">Perishable</option>
+            <option value="dangerous_goods">Dangerous Goods</option>
+            <option value="consolidated">Consolidated</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Commodity</label>
+          <input type="text" class="form-control" name="commodity" placeholder="e.g. Electronics">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label class="form-label">Weight (kg) *</label>
+          <input type="number" class="form-control" name="weight_kg" required step="0.1" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Chargeable (kg)</label>
+          <input type="number" class="form-control" name="chargeable_weight" step="0.1" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Pieces *</label>
+          <input type="number" class="form-control" name="total_pcs" required placeholder="1" min="1">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label class="form-label">Airline</label>
+          <input type="text" class="form-control" name="airline" placeholder="e.g. Garuda Indonesia">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Flight Number</label>
+          <input type="text" class="form-control" name="flight_number" placeholder="GA-001">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Title / Description</label>
+        <input type="text" class="form-control" name="title" placeholder="e.g. Electronics batch for Q4">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-control" name="notes" rows="2" placeholder="Internal notes..."></textarea>
+      </div>
+      <div style="display:flex;gap:12px;justify-content:flex-end">
+        <button type="button" class="btn btn-outline" onclick="closeModal('modal-shipment')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Create Shipment</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Customer Modal -->
+<div class="modal" id="modal-customer">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+      <h3>New Customer</h3>
+      <button onclick="closeModal('modal-customer')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.5rem">×</button>
+    </div>
+    <form id="customer-form">
+      <input type="hidden" name="id">
+      <div class="form-group">
+        <label class="form-label">Customer Type *</label>
+        <div style="display:flex;gap:8px">
+          <button type="button" class="btn btn-sm type-toggle active" data-type="retail" onclick="setCustomerType('retail')">Retail</button>
+          <button type="button" class="btn btn-sm btn-outline type-toggle" data-type="b2b" onclick="setCustomerType('b2b')">B2B</button>
+        </div>
+        <input type="hidden" name="type" value="retail">
+      </div>
+      <div id="retail-fields">
+        <div class="form-group">
+          <label class="form-label">Full Name *</label>
+          <input type="text" class="form-control" name="full_name" placeholder="John Smith">
+        </div>
+      </div>
+      <div id="b2b-fields" style="display:none">
+        <div class="form-group">
+          <label class="form-label">Company Name *</label>
+          <input type="text" class="form-control" name="company_name" placeholder="Company Pte. Ltd.">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-control" name="email" placeholder="email@company.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone *</label>
+          <input type="tel" class="form-control" name="phone" required placeholder="+65 1234 5678">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Address *</label>
+        <textarea class="form-control" name="address" required rows="2" placeholder="Full address"></textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label class="form-label">Country *</label>
+          <input type="text" class="form-control" name="country" required placeholder="Singapore">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Country Code *</label>
+          <input type="text" class="form-control" name="country_code" required placeholder="SG" maxlength="3" style="text-transform:uppercase">
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;justify-content:flex-end">
+        <button type="button" class="btn btn-outline" onclick="closeModal('modal-customer')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Create Customer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Blog Modal -->
+<div class="modal" id="modal-blog">
+  <div class="modal-box" style="max-width:800px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <h3 id="blog-modal-title">New Blog Post</h3>
+      <button onclick="closeModal('modal-blog')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.5rem">×</button>
+    </div>
+    <div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:24px">
+      <button class="tab-btn active" onclick="switchTab('content')">Content</button>
+      <button class="tab-btn" onclick="switchTab('seo')">SEO</button>
+    </div>
+    <form id="blog-form">
+      <input type="hidden" name="id" id="blog-id">
+      <div id="tab-content">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="form-group"><label class="form-label">Title (EN) *</label><input type="text" class="form-control" name="title_en" required placeholder="English title"></div>
+          <div class="form-group"><label class="form-label">Title (ID) *</label><input type="text" class="form-control" name="title_id" required placeholder="Judul Indonesia"></div>
+        </div>
+        <div class="form-group"><label class="form-label">Slug *</label><input type="text" class="form-control" name="slug" required placeholder="url-friendly-slug"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="form-group"><label class="form-label">Category</label>
+            <select class="form-control" name="category">
+              <option value="guides">Guides</option><option value="regulations">Regulations</option>
+              <option value="news">News</option><option value="general">General</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">Status</label>
+            <select class="form-control" name="status">
+              <option value="draft">Draft</option><option value="published">Published</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group"><label class="form-label">Excerpt (EN)</label><textarea class="form-control" name="excerpt_en" rows="2" placeholder="Short description in English"></textarea></div>
+        <div class="form-group"><label class="form-label">Excerpt (ID)</label><textarea class="form-control" name="excerpt_id" rows="2" placeholder="Deskripsi singkat dalam Bahasa Indonesia"></textarea></div>
+        <div class="form-group"><label class="form-label">Content (EN)</label><div id="quill-content-en"></div><input type="hidden" name="content_en" id="hidden-content-en"></div>
+        <div class="form-group"><label class="form-label">Content (ID)</label><div id="quill-content-id"></div><input type="hidden" name="content_id" id="hidden-content-id"></div>
+        <div class="form-group"><label class="form-label">Scheduled Publish Date</label><input type="datetime-local" class="form-control" name="scheduled_at"></div>
+      </div>
+      <div id="tab-seo" style="display:none">
+        <div class="form-group"><label class="form-label">Meta Title (EN)</label><input type="text" class="form-control" name="meta_title_en" placeholder="SEO title in English (50-60 chars)"></div>
+        <div class="form-group"><label class="form-label">Meta Title (ID)</label><input type="text" class="form-control" name="meta_title_id" placeholder="Judul SEO Bahasa Indonesia"></div>
+        <div class="form-group"><label class="form-label">Meta Description (EN)</label><textarea class="form-control" name="meta_description_en" rows="3" placeholder="SEO description (150-160 chars)"></textarea></div>
+        <div class="form-group"><label class="form-label">Meta Description (ID)</label><textarea class="form-control" name="meta_description_id" rows="3" placeholder="Deskripsi SEO Bahasa Indonesia"></textarea></div>
+        <div class="form-group"><label class="form-label">Tags (comma separated)</label><input type="text" class="form-control" name="tags" placeholder="air freight, indonesia, customs"></div>
+        <div class="form-group"><label class="form-label">Cover Image URL</label><input type="url" class="form-control" name="cover_image_url" placeholder="https://..."></div>
+        <div class="form-group"><label class="form-label">Author</label><input type="text" class="form-control" name="author" placeholder="Ambara Artha Team"></div>
+      </div>
+      <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px">
+        <button type="button" class="btn btn-outline" onclick="closeModal('modal-blog')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Post</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Staff Modal -->
+<div class="modal" id="modal-staff">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+      <h3>Add Staff Account</h3>
+      <button onclick="closeModal('modal-staff')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.5rem">×</button>
+    </div>
+    <form id="staff-form">
+      <div class="form-group"><label class="form-label">Full Name *</label><input type="text" class="form-control" name="full_name" required placeholder="Staff Name"></div>
+      <div class="form-group"><label class="form-label">Email *</label><input type="email" class="form-control" name="email" required placeholder="staff@ambaraartha.com"></div>
+      <div class="form-group"><label class="form-label">Password *</label><input type="password" class="form-control" name="password" required placeholder="Minimum 8 characters" minlength="8"></div>
+      <div class="form-group"><label class="form-label">Role *</label>
+        <select class="form-control" name="role" required>
+          <option value="finance">Finance</option>
+          <option value="operations">Operations</option>
+          <option value="superadmin">Super Admin</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:12px;justify-content:flex-end">
+        <button type="button" class="btn btn-outline" onclick="closeModal('modal-staff')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Create Staff</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- AWB Upload Modal -->
+<div class="modal" id="modal-awb-upload">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+      <h3>Upload AWB PDF</h3>
+      <button type="button" onclick="closeModal('modal-awb-upload')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.5rem">×</button>
+    </div>
+    <form id="awb-upload-form">
+      <div class="form-group"><label class="form-label">Customer *</label>
+        <select class="form-control" name="customer_id" id="awb-customer-select" required></select>
+      </div>
+      <div class="form-group"><label class="form-label">AWB PDF File *</label>
+        <input type="file" class="form-control" name="awb_file" id="awb_file_input" accept="application/pdf" required>
+        <small style="color:var(--text-muted);margin-top:4px;display:block">Systems automatically extracts data. You will be notified if auto-extraction fails.</small>
+      </div>
+      <div id="awb-upload-error" style="color:var(--red);font-size:0.875rem;margin-bottom:16px;display:none"></div>
+      <div style="display:flex;gap:12px;justify-content:flex-end">
+        <button type="button" class="btn btn-outline" onclick="closeModal('modal-awb-upload')">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="awb-upload-btn">Upload & Parse</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- AWB Edit Modal -->
+<div class="modal" id="modal-awb-edit">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+      <h3>Edit AWB Details</h3>
+      <button type="button" onclick="closeModal('modal-awb-edit')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.5rem">×</button>
+    </div>
+    <form id="awb-edit-form">
+      <input type="hidden" name="id" id="awb-edit-id">
+      <div style="font-size:0.875rem;background:var(--surface2);padding:12px;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:16px">
+        <div style="color:var(--red);font-weight:600;margin-bottom:4px" id="awb-edit-warning">Please review and complete the missing fields.</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label class="form-label">AWB No *</label><input type="text" class="form-control" name="awb_number" required></div>
+        <div class="form-group"><label class="form-label">Carrier</label><input type="text" class="form-control" name="carrier"></div>
+        <div class="form-group"><label class="form-label">Origin *</label><input type="text" class="form-control" name="origin" required placeholder="CGK"></div>
+        <div class="form-group"><label class="form-label">Destination *</label><input type="text" class="form-control" name="destination" required></div>
+        <div class="form-group"><label class="form-label">Flight Number</label><input type="text" class="form-control" name="flight_number"></div>
+        <div class="form-group"><label class="form-label">Shipment Date *</label><input type="date" class="form-control" name="shipment_date" required></div>
+        <div class="form-group"><label class="form-label">Pieces *</label><input type="number" class="form-control" name="pieces" required></div>
+        <div class="form-group"><label class="form-label">Chargeable Weight (kg) *</label><input type="number" step="0.01" class="form-control" name="chargeable_weight" required></div>
+      </div>
+      <div class="form-group"><label class="form-label">Commodity *</label><input type="text" class="form-control" name="commodity" required></div>
+      <div style="display:flex;gap:12px;justify-content:flex-end">
+        <button type="button" class="btn btn-outline" onclick="closeModal('modal-awb-edit')">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="awb-save-btn">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Testimonial Modal -->
+<div class="modal" id="modal-testimonial">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+      <h3>Add Testimonial</h3>
+      <button onclick="closeModal('modal-testimonial')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.5rem">×</button>
+    </div>
+    <form id="testimonial-form">
+      <input type="hidden" name="id">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label class="form-label">Client Name *</label><input type="text" class="form-control" name="client_name" required></div>
+        <div class="form-group"><label class="form-label">Company</label><input type="text" class="form-control" name="company"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Country</label><input type="text" class="form-control" name="country" placeholder="United States"></div>
+      <div class="form-group"><label class="form-label">Quote (EN) *</label><textarea class="form-control" name="quote_en" required rows="3"></textarea></div>
+      <div class="form-group"><label class="form-label">Quote (ID) *</label><textarea class="form-control" name="quote_id" required rows="3"></textarea></div>
+      <div style="display:flex;gap:12px;justify-content:flex-end">
+        <button type="button" class="btn btn-outline" onclick="closeModal('modal-testimonial')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Partner Modal -->
+<div class="modal" id="modal-partner">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+      <h3>Add Partner / Client</h3>
+      <button onclick="closeModal('modal-partner')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.5rem">×</button>
+    </div>
+    <form id="partner-form">
+      <input type="hidden" name="id">
+      <div class="form-group"><label class="form-label">Name *</label><input type="text" class="form-control" name="name" required></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label class="form-label">Type *</label>
+          <select class="form-control" name="partner_type" required>
+            <option value="partner">Partner</option>
+            <option value="client">Client</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Category *</label>
+          <select class="form-control" name="category" required>
+            <option value="airline">Airline</option>
+            <option value="trucking">Trucking</option>
+            <option value="customs_broker">Customs Broker</option>
+            <option value="warehouse">Warehouse</option>
+            <option value="other">Other</option>
+            <option value="client">Client</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Country</label><input type="text" class="form-control" name="country"></div>
+      <div class="form-group"><label class="form-label">Logo URL</label><input type="url" class="form-control" name="logo_url" placeholder="https://..."></div>
+      <div class="form-group"><label class="form-label">Website URL</label><input type="url" class="form-control" name="website_url" placeholder="https://..."></div>
+      <div style="display:flex;gap:12px;justify-content:flex-end">
+        <button type="button" class="btn btn-outline" onclick="closeModal('modal-partner')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- FAQ Modal -->
+<div class="modal" id="modal-faq">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+      <h3>Add FAQ</h3>
+      <button onclick="closeModal('modal-faq')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.5rem">×</button>
+    </div>
+    <form id="faq-form">
+      <input type="hidden" name="id">
+      <div class="form-group"><label class="form-label">Category *</label>
+        <select class="form-control" name="category_id" required id="faq-category-select"></select>
+      </div>
+      <div class="form-group"><label class="form-label">Question (EN) *</label><input type="text" class="form-control" name="question_en" required></div>
+      <div class="form-group"><label class="form-label">Question (ID) *</label><input type="text" class="form-control" name="question_id" required></div>
+      <div class="form-group"><label class="form-label">Answer (EN) *</label><textarea class="form-control" name="answer_en" required rows="4"></textarea></div>
+      <div class="form-group"><label class="form-label">Answer (ID) *</label><textarea class="form-control" name="answer_id" required rows="4"></textarea></div>
+      <div style="display:flex;gap:12px;justify-content:flex-end">
+        <button type="button" class="btn btn-outline" onclick="closeModal('modal-faq')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save FAQ</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Shipment Detail Modal -->
+<div class="modal" id="modal-shipment-detail">
+  <div class="modal-box" style="max-width:700px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+      <h3 id="detail-tracking-num">Shipment Detail</h3>
+      <button onclick="closeModal('modal-shipment-detail')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.5rem">×</button>
+    </div>
+    <div id="shipment-detail-content"></div>
+  </div>
+</div>
+
+<script src="/app.js?v=2.1"></script>
+<script>
+let token = localStorage.getItem('ambara_token');
+let currentStaff = null;
+let faqCategories = [];
+
+// LOGIN
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.textContent = 'Signing in...';
+  const errEl = document.getElementById('login-error');
+
+  try {
+    const res = await fetch('/api/auth?action=login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: document.getElementById('login-email').value, password: document.getElementById('login-password').value })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      localStorage.setItem('ambara_token', data.token);
+      token = data.token;
+      currentStaff = data.staff;
+      initAdmin();
+    } else {
+      errEl.textContent = data.error || 'Invalid credentials';
+      errEl.style.display = 'block';
+    }
+  } catch (err) { 
+    errEl.textContent = 'Connection error: ' + err.message; 
+    errEl.style.display = 'block'; 
+  }
+  btn.disabled = false; btn.textContent = 'Sign In →';
+});
+
+function logout() {
+  localStorage.removeItem('ambara_token');
+  location.reload();
+}
+
+async function verifyToken() {
+  if (!token) return false;
+  try {
+    const res = await fetch('/api/auth?action=verify', { headers: { 'Authorization': `Bearer ${token}` } });
+    if (res.ok) {
+      const data = await res.json();
+      currentStaff = data.staff;
+      return true;
+    }
+  } catch {}
+  return false;
+}
+
+async function initAdmin() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('admin-app').style.display = 'flex';
+  document.getElementById('staff-name').textContent = currentStaff?.name || 'Staff';
+  document.getElementById('staff-role-badge').textContent = currentStaff?.role === 'superadmin' ? '👑 Super Admin' : '⚙️ Operations';
+
+  if (currentStaff?.role === 'superadmin') {
+    document.getElementById('superadmin-section').style.display = 'block';
+    document.getElementById('staff-nav').style.display = 'flex';
+    document.getElementById('activity-nav').style.display = 'flex';
+    document.getElementById('finance-audit-nav').style.display = 'flex';
+  }
+  if (currentStaff?.role === 'finance') {
+    document.getElementById('finance-audit-nav').style.display = 'flex';
+  }
+
+  // Clock
+  setInterval(() => { document.getElementById('current-time').textContent = new Date().toLocaleString(); }, 1000);
+
+  loadDashboard();
+}
+
+// Check existing token
+(async () => {
+  if (token && await verifyToken()) initAdmin();
+})();
+
+function apiHeaders() {
+  return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+}
+
+async function api(path, method = 'GET', body = null) {
+  const opts = { method, headers: apiHeaders() };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(`/api/${path}`, opts);
+  return res.json();
+}
+
+// SECTION SWITCHING
+function showSection(name) {
+  document.querySelectorAll('.section-content').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+  document.getElementById(`section-${name}`)?.classList.add('active');
+  document.querySelector(`[data-section="${name}"]`)?.classList.add('active');
+
+  const loaders = { invoices: loadInvoices, 'finance-audit': loadFinanceAudit, shipments: loadShipments, customers: loadCustomers, quotes: loadQuotes, messages: loadMessages, blog: loadBlog, faq: loadFAQ, testimonials: loadTestimonials, partners: loadPartners, staff: loadStaff, activity: loadActivity, dashboard: loadDashboard };
+  loaders[name]?.();
+}
+
+function openModal(id) { document.getElementById(id)?.classList.add('open'); }
+function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
+
+// Close modal on backdrop click
+document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); }));
+
+// DASHBOARD
+async function loadDashboard() {
+  try {
+    const data = await api('content?type=analytics');
+    document.getElementById('d-shipments').textContent = data.totalShipments || 0;
+    document.getElementById('d-customers').textContent = data.totalCustomers || 0;
+    document.getElementById('d-ontime').textContent = (data.onTimeRate || 0) + '%';
+    document.getElementById('d-weight').textContent = parseFloat(data.totalWeight || 0).toFixed(0) + ' kg';
+
+    if (data.popularRoutes?.length) {
+      document.getElementById('d-routes').innerHTML = data.popularRoutes.slice(0, 5).map(r =>
+        `<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+          <span style="font-weight:600">${r.origin_iata} → ${r.destination_iata}</span>
+          <span class="badge badge-blue">${r.count} shipments</span>
+        </div>`).join('');
+    }
+    if (data.recentActivity?.length) {
+      document.getElementById('d-activity').innerHTML = data.recentActivity.slice(0, 8).map(a =>
+        `<div style="padding:10px 0;border-bottom:1px solid var(--border)">
+          <div style="font-size:0.875rem;font-weight:600">${a.action}</div>
+          <div style="font-size:0.75rem;color:var(--text-muted)">${a.staff_name} · ${new Date(a.created_at).toLocaleString()}</div>
+        </div>`).join('');
+    }
+  } catch {}
+}
+
+// SHIPMENTS
+async function loadShipments() {
+  const search = document.getElementById('search-shipments')?.value || '';
+  const status = document.getElementById('filter-status')?.value || '';
+  let url = 'shipments?';
+  if (search) url += `search=${encodeURIComponent(search)}&`;
+  if (status) url += `status=${status}`;
+
+  const data = await api(url);
+  const tbody = document.getElementById('shipments-table');
+  if (!data.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">No shipments found</td></tr>'; return; }
+
+  tbody.innerHTML = data.map(s => `
+    <tr>
+      <td><span style="font-family:monospace;font-weight:700;font-size:0.8125rem">${s.tracking_number}</span></td>
+      <td>${s.full_name||s.company_name||'—'}</td>
+      <td style="font-size:0.8125rem">${s.origin_iata||s.origin} → ${s.destination_iata||s.destination}</td>
+      <td><span class="badge badge-blue">${s.cargo_type?.replace('_',' ')}</span></td>
+      <td><span class="badge ${s.status==='delivered'?'badge-green':s.status==='delayed'?'badge-red':'badge-blue'}">${s.status}</span></td>
+      <td style="font-size:0.8125rem;color:var(--text-muted)">${new Date(s.created_at).toLocaleDateString()}</td>
+      <td style="display:flex;gap:6px">
+        <button class="btn btn-sm btn-outline" onclick="viewShipment(${s.id})">View</button>
+        <button class="btn btn-sm" style="background:rgba(255,68,102,0.1);color:var(--red);border:1px solid rgba(255,68,102,0.2)" onclick="deleteShipment(${s.id})">Del</button>
+      </td>
+    </tr>`).join('');
+}
+
+async function viewShipment(id) {
+  const data = await api(`shipments?id=${id}`);
+  const s = data.shipment;
+  document.getElementById('detail-tracking-num').textContent = s.tracking_number;
+  document.getElementById('shipment-detail-content').innerHTML = `
+    <div class="grid-2" style="margin-bottom:20px">
+      <div class="stat-card"><div class="stat-label">Route</div><div style="font-weight:700">${s.origin} → ${s.destination}</div></div>
+      <div class="stat-card"><div class="stat-label">Status</div><div><span class="badge badge-blue">${s.status}</span></div></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
+      <select id="status-update-select" class="form-control" style="width:200px">
+        <option value="pending">Pending</option>
+        <option value="in_transit">In Transit</option>
+        <option value="arrived_destination">Arrived Destination</option>
+        <option value="customs_clearance">Customs Clearance</option>
+        <option value="out_for_delivery">Out for Delivery</option>
+        <option value="delivered">Delivered</option>
+        <option value="delayed">Delayed</option>
+      </select>
+      <button class="btn btn-primary btn-sm" onclick="updateStatus(${s.id})">Update Status</button>
+    </div>
+    <div style="margin-bottom:20px">
+      <div style="font-weight:800;margin-bottom:12px">Add Tracking Event</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <input type="text" id="event-label" class="form-control" placeholder="Event label" style="flex:1;min-width:150px">
+        <input type="text" id="event-location" class="form-control" placeholder="Location" style="width:150px">
+        <button class="btn btn-primary btn-sm" onclick="addEvent(${s.id})">Add</button>
+      </div>
+    </div>
+    <div style="font-weight:800;margin-bottom:12px">Tracking History</div>
+    ${data.events.map(e => `<div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)"><div style="width:8px;height:8px;border-radius:50%;background:var(--blue);margin-top:6px;flex-shrink:0"></div><div><div style="font-weight:600;font-size:0.875rem">${e.label}</div><div style="font-size:0.75rem;color:var(--text-muted)">${e.location||''} · ${new Date(e.event_time).toLocaleString()}</div></div><button onclick="deleteEvent(${e.id})" style="margin-left:auto;background:none;border:none;color:var(--red);cursor:pointer;font-size:0.75rem">×</button></div>`).join('') || '<div style="color:var(--text-muted)">No events yet</div>'}`;
+  openModal('modal-shipment-detail');
+}
+
+async function updateStatus(id) {
+  const status = document.getElementById('status-update-select').value;
+  await api('shipments?action=update-status', 'POST', { id, status });
+  showToast('Status updated!');
+  viewShipment(id);
+  loadShipments();
+}
+
+async function addEvent(shipment_id) {
+  const label = document.getElementById('event-label').value;
+  const location = document.getElementById('event-location').value;
+  if (!label) return;
+  await api('shipments?action=add-event', 'POST', { shipment_id, label, location, event_time: new Date().toISOString() });
+  showToast('Event added!');
+  viewShipment(shipment_id);
+}
+
+async function deleteEvent(id) {
+  if (!confirm('Delete this event?')) return;
+  await api('shipments?action=delete-event', 'POST', { id });
+  showToast('Event deleted');
+}
+
+async function deleteShipment(id) {
+  if (!confirm('Delete this shipment and all tracking events?')) return;
+  await api('shipments?action=delete', 'POST', { id });
+  showToast('Shipment deleted');
+  loadShipments();
+}
+
+// CUSTOMERS
+let currentCustomers = [];
+async function loadCustomers() {
+  const search = document.getElementById('search-customers')?.value || '';
+  const type = document.getElementById('filter-customer-type')?.value || '';
+  let url = 'customers?';
+  if (search) url += `search=${encodeURIComponent(search)}&`;
+  if (type) url += `type=${type}`;
+
+  const data = await api(url);
+  currentCustomers = data;
+  const tbody = document.getElementById('customers-table');
+  if (!data.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">No customers found</td></tr>'; return; }
+  tbody.innerHTML = data.map(c => `
+    <tr>
+      <td><span style="font-family:monospace;font-weight:700">${c.customer_id}</span></td>
+      <td>${c.full_name||c.company_name||'—'}</td>
+      <td><span class="badge ${c.type==='b2b'?'badge-green':'badge-blue'}">${c.type.toUpperCase()}</span></td>
+      <td>${c.country}</td>
+      <td style="font-size:0.8125rem">${c.phone}</td>
+      <td>${c.shipment_count||0}</td>
+      <td><button class="btn btn-sm btn-outline" onclick="editCustomer(${c.id})">Edit</button><button class="btn btn-sm" style="background:rgba(17,34,238,0.1);color:var(--blue-accent);border:1px solid rgba(17,34,238,0.2)" onclick="setClientPassword(${c.id})">🔑 Portal</button></td>
+    </tr>`).join('');
+}
+
+function editCustomer(id) {
+  const c = currentCustomers.find(x => x.id === id);
+  if (!c) return;
+  const form = document.getElementById('customer-form');
+  form.reset();
+  form.querySelector('[name="id"]').value = c.id;
+  setCustomerType(c.type || 'retail');
+  if (c.type === 'b2b') {
+    form.querySelector('[name="company_name"]').value = c.company_name || '';
+  } else {
+    form.querySelector('[name="full_name"]').value = c.full_name || '';
+  }
+  form.querySelector('[name="email"]').value = c.email || '';
+  form.querySelector('[name="phone"]').value = c.phone || '';
+  form.querySelector('[name="address"]').value = c.address || '';
+  form.querySelector('[name="country"]').value = c.country || '';
+  form.querySelector('[name="country_code"]').value = c.country_code || '';
+  document.querySelector('#modal-customer h3').textContent = 'Edit Customer';
+  openModal('modal-customer');
+}
+
+// Ensure the title resets for New Customer
+function openNewCustomerModal() {
+  document.getElementById('customer-form').reset();
+  document.querySelector('#customer-form [name="id"]').value = '';
+  document.querySelector('#modal-customer h3').textContent = 'New Customer';
+  setCustomerType('retail'); // default
+  openModal('modal-customer');
+}
+
+// Customer search for shipment form
+async function searchCustomers(query) {
+  if (query.length < 2) { document.getElementById('customer-suggestions').style.display = 'none'; return; }
+  const data = await api(`customers?search=${encodeURIComponent(query)}`);
+  const suggestions = document.getElementById('customer-suggestions');
+  if (!data.length) { suggestions.style.display = 'none'; return; }
+  suggestions.style.display = 'block';
+  suggestions.innerHTML = data.map(c => `
+    <div onclick="selectCustomer(${c.id},'${c.customer_id}','${c.full_name||c.company_name}')" style="padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--border)" onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background='transparent'">
+      <div style="font-weight:600">${c.full_name||c.company_name}</div>
+      <div style="font-size:0.75rem;color:var(--text-muted)">${c.customer_id} · ${c.country}</div>
+    </div>`).join('');
+}
+
+function selectCustomer(id, customerId, name) {
+  document.getElementById('selected-customer-id').value = id;
+  document.getElementById('customer-search-input').value = name;
+  document.getElementById('customer-suggestions').style.display = 'none';
+  const display = document.getElementById('selected-customer-display');
+  display.textContent = `✓ ${name} (${customerId})`;
+  display.style.display = 'inline-flex';
+}
+
+function toggleCustomerMode(mode) {
+  document.querySelectorAll('.customer-toggle').forEach(b => { b.classList.remove('active'); b.classList.add('btn-outline'); });
+  document.querySelector(`.customer-toggle[data-mode="${mode}"]`).classList.add('active');
+  document.querySelector(`.customer-toggle[data-mode="${mode}"]`).classList.remove('btn-outline');
+  document.getElementById('existing-customer-wrap').style.display = mode === 'existing' ? 'block' : 'none';
+  document.getElementById('new-customer-wrap').style.display = mode === 'new' ? 'block' : 'none';
+}
+
+function setCustomerType(type) {
+  document.querySelectorAll('.type-toggle').forEach(b => { b.classList.remove('active'); b.classList.add('btn-outline'); });
+  document.querySelector(`.type-toggle[data-type="${type}"]`).classList.add('active');
+  document.querySelector(`.type-toggle[data-type="${type}"]`).classList.remove('btn-outline');
+  document.querySelector('[name="type"]').value = type;
+  document.getElementById('retail-fields').style.display = type === 'retail' ? 'block' : 'none';
+  document.getElementById('b2b-fields').style.display = type === 'b2b' ? 'block' : 'none';
+}
+
+// QUOTES & MESSAGES
+async function loadQuotes() {
+  const data = await api('quotes');
+  const tbody = document.getElementById('quotes-table');
+  if (!data.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">No quotes</td></tr>'; return; }
+  tbody.innerHTML = data.map(q => `
+    <tr>
+      <td><span style="font-family:monospace;font-size:0.8125rem">${q.reference_number}</span></td>
+      <td>${q.company_name||q.contact_name}</td>
+      <td style="font-size:0.8125rem">${q.origin} → ${q.destination}</td>
+      <td>${q.weight_kg} kg</td>
+      <td><span class="badge badge-blue">${q.status}</span></td>
+      <td style="font-size:0.8125rem;color:var(--text-muted)">${new Date(q.created_at).toLocaleDateString()}</td>
+      <td>
+        <select onchange="updateQuoteStatus(${q.id},this.value)" class="form-control" style="width:120px;padding:4px 8px;font-size:0.8125rem">
+          <option ${q.status==='new'?'selected':''} value="new">New</option>
+          <option ${q.status==='reviewing'?'selected':''} value="reviewing">Reviewing</option>
+          <option ${q.status==='quoted'?'selected':''} value="quoted">Quoted</option>
+          <option ${q.status==='closed'?'selected':''} value="closed">Closed</option>
+        </select>
+      </td>
+    </tr>`).join('');
+}
+
+async function updateQuoteStatus(id, status) {
+  await api('quotes?action=update-status', 'POST', { id, status });
+  showToast('Status updated');
+}
+
+async function loadMessages() {
+  const data = await api('quotes?action=messages');
+  const tbody = document.getElementById('messages-table');
+  if (!data.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">No messages</td></tr>'; return; }
+  tbody.innerHTML = data.map(m => `
+    <tr style="${m.status==='unread'?'font-weight:700':''}">
+      <td>${m.name}</td>
+      <td>${m.company||'—'}</td>
+      <td>${m.topic}</td>
+      <td><a href="mailto:${m.email}" style="color:var(--blue-accent)">${m.email}</a></td>
+      <td><span class="badge ${m.status==='unread'?'badge-blue':'badge-green'}">${m.status}</span></td>
+      <td style="font-size:0.8125rem;color:var(--text-muted)">${new Date(m.created_at).toLocaleDateString()}</td>
+      <td>${m.status==='unread'?`<button class="btn btn-sm btn-outline" onclick="markRead(${m.id})">Mark Read</button>`:''}</td>
+    </tr>`).join('');
+}
+
+async function markRead(id) {
+  await api('quotes?action=read-message', 'POST', { id });
+  loadMessages();
+}
+
+// BLOG
+async function loadBlog() {
+  const data = await api('blog-api?action=admin-list');
+  const tbody = document.getElementById('blog-table');
+  if (!data.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">No posts</td></tr>'; return; }
+  tbody.innerHTML = data.map(p => `
+    <tr>
+      <td style="max-width:300px"><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.title_en}</div><div style="font-size:0.75rem;color:var(--text-muted)">${p.slug}</div></td>
+      <td><span class="badge badge-blue">${p.category}</span></td>
+      <td><span class="badge ${p.status==='published'?'badge-green':'badge-blue'}">${p.status}</span></td>
+      <td style="font-size:0.8125rem;color:var(--text-muted)">${p.published_at?new Date(p.published_at).toLocaleDateString():'—'}</td>
+      <td style="display:flex;gap:6px">
+        <button class="btn btn-sm btn-outline" onclick="editBlogPost(${p.id})">Edit</button>
+        <button class="btn btn-sm" style="background:rgba(255,68,102,0.1);color:var(--red);border:1px solid rgba(255,68,102,0.2)" onclick="deleteBlog(${p.id})">Del</button>
+      </td>
+    </tr>`).join('');
+}
+
+async function editBlogPost(id) {
+  const post = await api(`blog-api?action=admin-get&id=${id}`);
+  const form = document.getElementById('blog-form');
+  Object.keys(post).forEach(k => { const el = form.querySelector(`[name="${k}"]`); if (el) el.value = post[k]||''; });
+  document.getElementById('blog-modal-title').textContent = 'Edit Blog Post';
+  openModal('modal-blog');
+}
+
+async function deleteBlog(id) {
+  if (!confirm('Delete this post?')) return;
+  await api('blog-api?action=delete', 'POST', { id });
+  showToast('Post deleted'); loadBlog();
+}
+
+// FAQ
+async function loadFAQ() {
+  const data = await api('content?type=faq-manage');
+  faqCategories = data.categories || [];
+  const select = document.getElementById('faq-category-select');
+  if (select) select.innerHTML = faqCategories.map(c => `<option value="${c.id}">${c.name_en}</option>`).join('');
+
+  const tbody = document.getElementById('faq-table');
+  if (!data.items?.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted)">No FAQs</td></tr>'; return; }
+  tbody.innerHTML = data.items.map(f => `
+    <tr>
+      <td style="max-width:400px">${f.question_en}</td>
+      <td>${faqCategories.find(c=>c.id===f.category_id)?.name_en||'—'}</td>
+      <td><span class="badge ${f.is_active?'badge-green':'badge-red'}">${f.is_active?'Active':'Hidden'}</span></td>
+      <td style="display:flex;gap:6px">
+        <button class="btn btn-sm" style="background:rgba(255,68,102,0.1);color:var(--red);border:1px solid rgba(255,68,102,0.2)" onclick="deleteFAQ(${f.id})">Del</button>
+      </td>
+    </tr>`).join('');
+}
+
+async function deleteFAQ(id) {
+  if (!confirm('Delete this FAQ?')) return;
+  await api('content?type=faq-manage&action=delete-faq', 'POST', { id });
+  showToast('FAQ deleted'); loadFAQ();
+}
+
+// TESTIMONIALS
+async function loadTestimonials() {
+  const data = await api('content?type=testimonial-manage');
+  document.getElementById('testimonials-grid').innerHTML = data.map(t => `
+    <div class="card" style="position:relative">
+      <button onclick="deleteTestimonial(${t.id})" style="position:absolute;top:12px;right:12px;background:none;border:none;color:var(--red);cursor:pointer;font-size:1.25rem">×</button>
+      <div style="color:var(--blue-accent);margin-bottom:12px">★★★★★</div>
+      <p style="font-style:italic;margin-bottom:16px;font-size:0.875rem">"${t.quote_en}"</p>
+      <div style="font-weight:700;font-size:0.9375rem">${t.client_name}</div>
+      <div style="font-size:0.8125rem;color:var(--text-muted)">${t.company||''} · ${t.country||''}</div>
+    </div>`).join('') || '<div style="color:var(--text-muted);padding:40px;text-align:center;grid-column:1/-1">No testimonials yet</div>';
+}
+
+async function deleteTestimonial(id) {
+  if (!confirm('Delete?')) return;
+  await api('content?type=testimonial-manage&action=delete', 'POST', { id });
+  showToast('Deleted'); loadTestimonials();
+}
+
+// PARTNERS
+async function loadPartners() {
+  const data = await api('content?type=partner-manage');
+  const tbody = document.getElementById('partners-table');
+  if (!data.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted)">No partners</td></tr>'; return; }
+  tbody.innerHTML = data.map(p => `
+    <tr>
+      <td style="font-weight:600">${p.name}</td>
+      <td><span class="badge ${p.partner_type==='client'?'badge-green':'badge-blue'}">${p.partner_type}</span></td>
+      <td>${p.category}</td>
+      <td>${p.country||'—'}</td>
+      <td><span class="badge ${p.is_active?'badge-green':'badge-red'}">${p.is_active?'Active':'Inactive'}</span></td>
+      <td><button class="btn btn-sm" style="background:rgba(255,68,102,0.1);color:var(--red);border:1px solid rgba(255,68,102,0.2)" onclick="deletePartner(${p.id})">Del</button></td>
+    </tr>`).join('');
+}
+
+async function deletePartner(id) {
+  if (!confirm('Delete?')) return;
+  await api('content?type=partner-manage&action=delete', 'POST', { id });
+  showToast('Deleted'); loadPartners();
+}
+
+// STAFF
+async function loadStaff() {
+  const data = await api('auth?action=staff');
+  const tbody = document.getElementById('staff-table');
+  tbody.innerHTML = data.map(s => `
+    <tr>
+      <td style="font-weight:600">${s.full_name}</td>
+      <td>${s.email}</td>
+      <td><span class="badge ${s.role==='superadmin'?'badge-green':'badge-blue'}">${s.role}</span></td>
+      <td><span class="badge ${s.is_active?'badge-green':'badge-red'}">${s.is_active?'Active':'Inactive'}</span></td>
+      <td style="font-size:0.8125rem;color:var(--text-muted)">${s.last_login?new Date(s.last_login).toLocaleDateString():'Never'}</td>
+      <td>${s.id!==currentStaff?.id?`<button class="btn btn-sm btn-outline" onclick="toggleStaff(${s.id},${!s.is_active})">${s.is_active?'Disable':'Enable'}</button>`:''}</td>
+    </tr>`).join('');
+}
+
+async function toggleStaff(id, active) {
+  await api('auth?action=staff-update', 'POST', { id, is_active: active });
+  showToast('Updated'); loadStaff();
+}
+
+async function loadActivity() {
+  const data = await api('content?type=analytics');
+  document.getElementById('activity-table').innerHTML = (data.recentActivity||[]).map(a => `
+    <tr>
+      <td style="font-weight:600">${a.staff_name||'—'}</td>
+      <td>${a.action}</td>
+      <td><span class="badge badge-blue">${a.entity_type||'—'}</span></td>
+      <td style="font-size:0.8125rem;color:var(--text-muted)">${new Date(a.created_at).toLocaleString()}</td>
+    </tr>`).join('');
+}
+
+// FORM SUBMISSIONS
+document.getElementById('shipment-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(e.target));
+  const res = await api('shipments', 'POST', data);
+  if (res.tracking_number) { showToast('Shipment created: ' + res.tracking_number); closeModal('modal-shipment'); loadShipments(); e.target.reset(); }
+  else showToast(res.error || 'Failed', 'error');
+});
+
+document.getElementById('customer-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(e.target));
+  const action = data.id ? 'update' : 'create';
+  const url = action === 'update' ? 'customers?action=update' : 'customers';
+  const res = await api(url, 'POST', data);
+  if (res.customer_id || res.success) { showToast(action === 'update' ? 'Customer updated!' : 'Customer created: ' + res.customer_id); closeModal('modal-customer'); loadCustomers(); e.target.reset(); }
+  else showToast(res.error || 'Failed', 'error');
+});
+
+document.getElementById('blog-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(e.target));
+  const action = data.id ? 'update' : 'create';
+  const res = await api(`blog-api?action=${action}`, 'POST', data);
+  if (res.success) { showToast('Post saved!'); closeModal('modal-blog'); loadBlog(); e.target.reset(); }
+  else showToast(res.error || 'Failed', 'error');
+});
+
+document.getElementById('staff-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(e.target));
+  const res = await api('auth?action=staff', 'POST', data);
+  if (res.success) { showToast('Staff created!'); closeModal('modal-staff'); loadStaff(); e.target.reset(); }
+  else showToast(res.error || 'Failed', 'error');
+});
+
+document.getElementById('testimonial-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(e.target));
+  const action = data.id ? 'update' : 'create';
+  await api(`content?type=testimonial-manage&action=${action}`, 'POST', data);
+  showToast('Saved!'); closeModal('modal-testimonial'); loadTestimonials(); e.target.reset();
+});
+
+document.getElementById('partner-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(e.target));
+  const action = data.id ? 'update' : 'create';
+  await api(`content?type=partner-manage&action=${action}`, 'POST', data);
+  showToast('Saved!'); closeModal('modal-partner'); loadPartners(); e.target.reset();
+});
+
+document.getElementById('faq-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(e.target));
+  const action = data.id ? 'update-faq' : 'create-faq';
+  await api(`content?type=faq-manage&action=${action}`, 'POST', data);
+  showToast('FAQ saved!'); closeModal('modal-faq'); loadFAQ(); e.target.reset();
+});
+
+// Blog tabs
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.tab-btn[onclick="switchTab('${tab}')"]`).classList.add('active');
+  document.getElementById('tab-content').style.display = tab === 'content' ? 'block' : 'none';
+  document.getElementById('tab-seo').style.display = tab === 'seo' ? 'block' : 'none';
+}
+
+
+// ---- QUILL RICH TEXT EDITORS ----
+let quillEN = null, quillID = null;
+function initQuillEditors() {
+  if (quillEN) return; // already initialized
+  const toolbarOptions = [
+    [{ 'header': [2, 3, false] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+    ['blockquote', 'link'],
+    ['clean']
+  ];
+  quillEN = new Quill('#quill-content-en', { theme: 'snow', modules: { toolbar: toolbarOptions }, placeholder: 'Write your article in English...' });
+  quillID = new Quill('#quill-content-id', { theme: 'snow', modules: { toolbar: toolbarOptions }, placeholder: 'Tulis artikel dalam Bahasa Indonesia...' });
+}
+
+// Override the blog form submit to use Quill content
+const origBlogSubmit = document.getElementById('blog-form')._origListener;
+document.getElementById('blog-form').removeEventListener('submit', origBlogSubmit);
+
+document.getElementById('blog-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  // Sync Quill HTML to hidden inputs
+  if (quillEN) document.getElementById('hidden-content-en').value = quillEN.root.innerHTML;
+  if (quillID) document.getElementById('hidden-content-id').value = quillID.root.innerHTML;
+  
+  const data = Object.fromEntries(new FormData(e.target));
+  const action = data.id ? 'update' : 'create';
+  const res = await api('blog-api?action=' + action, 'POST', data);
+  if (res.success) { showToast('Post saved!'); closeModal('modal-blog'); loadBlog(); e.target.reset(); if(quillEN) quillEN.root.innerHTML=''; if(quillID) quillID.root.innerHTML=''; }
+  else showToast(res.error || 'Failed', 'error');
+});
+
+// Override editBlogPost to populate Quill
+const _origEditBlog = editBlogPost;
+editBlogPost = async function(id) {
+  initQuillEditors();
+  const post = await api('blog-api?action=admin-get&id=' + id);
+  const form = document.getElementById('blog-form');
+  Object.keys(post).forEach(k => { const el = form.querySelector('[name="' + k + '"]'); if (el && k !== 'content_en' && k !== 'content_id') el.value = post[k]||''; });
+  if (quillEN) quillEN.root.innerHTML = post.content_en || '';
+  if (quillID) quillID.root.innerHTML = post.content_id || '';
+  document.getElementById('hidden-content-en').value = post.content_en || '';
+  document.getElementById('hidden-content-id').value = post.content_id || '';
+  document.getElementById('blog-modal-title').textContent = 'Edit Blog Post';
+  openModal('modal-blog');
+};
+
+// Initialize Quill when blog modal opens
+const _origOpenModal = openModal;
+openModal = function(id) {
+  _origOpenModal(id);
+  if (id === 'modal-blog') initQuillEditors();
+};
+
+// ---- SET CLIENT PASSWORD ----
+async function setClientPassword(customerId) {
+  const password = prompt('Set a client portal password for this customer (min 8 characters):');
+  if (!password) return;
+  if (password.length < 8) { showToast('Password must be at least 8 characters', 'error'); return; }
+  const res = await api('client-api?action=set-password', 'POST', { customer_id: customerId, password });
+  if (res.success) showToast('Client portal password set!');
+  else showToast(res.error || 'Failed', 'error');
+}
+
+// Auto-slug from title
+document.querySelector('[name="title_en"]')?.addEventListener?.('input', function() {
+  const slugEl = document.querySelector('[name="slug"]');
+  if (slugEl && !slugEl.value) slugEl.value = this.value.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+});
+
+// ---------- NOTIFICATIONS WIDGET ----------
+let admin_notifications = [];
+async function loadNotifications() {
+  try {
+    const data = await api('v1/notifications');
+    admin_notifications = data.data || [];
+    const unread = data.unread_count || 0;
+    const badge = document.getElementById('notif-badge');
+    if (unread > 0) {
+      badge.textContent = unread > 99 ? '99+' : unread;
+      badge.style.display = 'inline-block';
+    } else {
+      badge.style.display = 'none';
+    }
+  } catch(e) {}
+}
+
+function toggleNotifications() {
+  const dd = document.getElementById('notif-dropdown');
+  if (dd.style.display === 'none') {
+    dd.style.display = 'block';
+    renderNotifications();
+  } else {
+    dd.style.display = 'none';
+  }
+}
+
+function renderNotifications() {
+  const list = document.getElementById('notif-list');
+  if (!admin_notifications.length) {
+    list.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:0.875rem">No notifications</div>';
+    return;
+  }
+  list.innerHTML = admin_notifications.map(n => `
+    <div style="padding:12px;border-bottom:1px solid var(--border);background:${n.read_at ? 'transparent' : 'rgba(17,34,238,0.05)'};display:flex;gap:12px">
+      <div style="font-size:1.5rem">${n.type === 'awb_parse_error' ? '⚠️' : '🔔'}</div>
+      <div>
+        <div style="font-size:0.875rem;margin-bottom:4px;color:var(--text)">${n.message}</div>
+        <div style="font-size:0.75rem;color:var(--text-muted)">${new Date(n.created_at).toLocaleString()}</div>
+        ${n.type === 'awb_parse_error' ? `<div style="font-size:0.8125rem;margin-top:8px"><a href="#" onclick="showSection('awbs')" style="color:var(--blue-accent)">Review AWB →</a></div>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+async function markAllNotificationsRead() {
+  try {
+    await api('v1/notifications?action=read-all', 'POST');
+    await loadNotifications();
+    renderNotifications();
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+setInterval(loadNotifications, 60000); // Check every min
+loadNotifications();
+
+
+// ---------- AWBS WIDGET ----------
+let currentAwbs = [];
+async function loadAwbs() {
+  const search = document.getElementById('search-awbs')?.value || '';
+  const status = document.getElementById('filter-awb-status')?.value || '';
+  let url = 'awbs?';
+  if (search) url += `search=${encodeURIComponent(search)}&`;
+  if (status) url += `status=${status}`;
+  
+  try {
+    const data = await api(url);
+    currentAwbs = data.data || [];
+    const tbody = document.getElementById('awbs-table');
+    if (!currentAwbs.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted)">No AWBs found</td></tr>'; return; }
+    tbody.innerHTML = currentAwbs.map(a => `
+      <tr>
+        <td style="font-weight:600">${a.customer_name || '—'}</td>
+        <td><span style="font-family:monospace;color:var(--blue-accent)">${a.awb_number || 'TBD'}</span></td>
+        <td>${a.shipment_date ? new Date(a.shipment_date).toLocaleDateString() : '—'}</td>
+        <td style="font-size:0.8125rem">${a.origin||'?'} → ${a.destination||'?'}</td>
+        <td>${a.chargeable_weight||0} kg</td>
+        <td><span class="badge badge-${a.parse_status==='success'?'green':a.parse_status==='partial'?'blue':'red'}">${(a.parse_status||'Manual').toUpperCase()}</span></td>
+        <td><span class="badge ${a.is_invoiced?'badge-green':'badge-blue'}">${a.is_invoiced?'Invoiced':'Pending'}</span></td>
+        <td>
+          <button class="btn btn-sm btn-outline" onclick="editAwb(${a.id})">Edit</button>
+          ${a.invoiced && currentStaff?.role === 'superadmin' ? `<button class="btn btn-sm" style="background:rgba(255,68,102,0.1);color:var(--red);border:1px solid rgba(255,68,102,0.2);margin-left:4px" onclick="unmarkAwb('${a.id}')">Unmark</button>` : ''}
+          ${a.pdf_url ? `<a href="${a.pdf_url}" target="_blank" class="btn btn-sm" style="margin-left:4px">PDF</a>` : ''}
+        </td>
+      </tr>`).join('');
+  } catch(e) {
+    showToast(e.message, 'error');
+  }
+}
+
+// Populate customer select on AWB Upload Modal
+const oldOpenModal = openModal;
+openModal = async function(id) {
+  oldOpenModal(id);
+  if (id === 'modal-awb-upload') {
+    const data = await api('customers');
+    const select = document.getElementById('awb-customer-select');
+    select.innerHTML = '<option value="">-- Select Customer --</option>' + data.map(c => `<option value="${c.id}">${c.full_name || c.company_name} (${c.customer_id})</option>`).join('');
+  }
+};
+
+// Handle AWB Upload
+document.getElementById('awb-upload-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('awb-upload-btn');
+  const errEl = document.getElementById('awb-upload-error');
+  btn.disabled = true; btn.textContent = 'Uploading & Parsing...'; errEl.style.display = 'none';
+  
+  try {
+    const formData = new FormData(e.target);
+    const customer_id = formData.get('customer_id');
+    const file = formData.get('awb_file');
+    
+    // Read user auth token
+    const token = localStorage.getItem('ambara_token');
+
+    const reader = new FileReader();
+    reader.onload = async function() {
+      try {
+        const base64Data = reader.result.split(',')[1];
+        const payload = {
+          customer_id: customer_id,
+          file_name: file.name,
+          file_data: base64Data
+        };
+
+        const res = await fetch('/api/v1/awbs-upload', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const d = await res.json();
+
+        if (res.ok) {
+          showToast(d.parse_status === 'success' ? 'Perfect! Parsed automatically.' : 'Partial parse. Please resolve missing fields.');
+          closeModal('modal-awb-upload');
+          loadAwbs();
+          e.target.reset();
+        } else {
+          errEl.textContent = d.error?.message || 'Server Error';
+          errEl.style.display = 'block';
+        }
+      } catch(fetchErr) {
+        errEl.textContent = 'Network or JSON Error: ' + fetchErr.message;
+        errEl.style.display = 'block';
+      }
+      btn.disabled = false; btn.textContent = 'Upload & Parse';
+    };
+    reader.readAsDataURL(file);
+
+  } catch(err) {
+    errEl.textContent = err.message;
+    errEl.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Upload & Parse';
+  }
+});
+
+// Admin Review / Edit AWB
+function editAwb(id) {
+  const awb = currentAwbs.find(a => a.id === id);
+  if (!awb) return;
+  const form = document.getElementById('awb-edit-form');
+  document.getElementById('awb-edit-id').value = awb.id;
+  
+  const fields = ['awb_number','carrier','origin','destination','flight_number','pieces','chargeable_weight','commodity'];
+  fields.forEach(f => {
+    const el = form.querySelector(`[name="${f}"]`);
+    if (el) el.value = awb[f] || '';
+  });
+  
+  if (awb.shipment_date) {
+    form.querySelector('[name="shipment_date"]').value = new Date(awb.shipment_date).toISOString().split('T')[0];
+  } else {
+    form.querySelector('[name="shipment_date"]').value = '';
+  }
+
+  const warnEl = document.getElementById('awb-edit-warning');
+  if (awb.parse_status !== 'success') {
+    warnEl.style.display = 'block';
+  } else {
+    warnEl.style.display = 'none';
+  }
+  
+  openModal('modal-awb-edit');
+}
+
+document.getElementById('awb-edit-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const formData = Object.fromEntries(new FormData(e.target));
+  const id = formData.id;
+  delete formData.id;
+  
+  const btn = document.getElementById('awb-save-btn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+  
+  try {
+    const res = await api(`awbs/${id}`, 'PATCH', formData);
+    showToast('AWB updated successfully');
+    closeModal('modal-awb-edit');
+    loadAwbs();
+  } catch(err) {
+    showToast(err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Save Changes';
+  }
+});
+
+async function admin_reparseAWB() {
+  const id = document.getElementById('awb-edit-id').value;
+  const btn = document.getElementById('awb-reparse-btn');
+  btn.disabled = true; btn.textContent = 'Parsing...';
+  try {
+    await api(`awbs/${id}/parse`, 'POST');
+    showToast('Re-parse successful. Please reload data.');
+    closeModal('modal-awb-edit');
+    loadAwbs();
+  } catch(err) {
+    showToast(err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Re-Parse PDF';
+  }
+}
+
+// Also intercept showSection to loadAwbs if awbs section active
+const _origShowSection = showSection;
+showSection = function(id) {
+  _origShowSection(id);
+  if (id === 'awbs') loadAwbs();
+  if (id === 'invoices') loadInvoices();
+  if (id === 'dashboard') loadNotifications();
+};
+
+// ---------- INVOICE HISTORY ----------
+async function loadInvoices() {
+  const search = document.getElementById('search-invoices')?.value || '';
+  let url = 'v1/invoices?';
+  if (search) url += `search=${encodeURIComponent(search)}`;
+  
+  try {
+    const data = await api(url);
+    const invoices = data.data || [];
+    const tbody = document.getElementById('invoices-table');
+    if (!invoices.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted)">No invoices found</td></tr>'; return; }
+    
+    tbody.innerHTML = invoices.map(i => `
+      <tr>
+        <td><span style="font-family:monospace;font-weight:700;color:var(--blue-accent)">${i.invoice_number}</span></td>
+        <td>${i.company_name || i.customer_name}</td>
+        <td>${new Date(i.invoice_date).toLocaleDateString()}</td>
+        <td style="font-weight:600">${i.currency} ${Number(i.amount_due).toLocaleString()}</td>
+        <td><span class="badge ${i.archived ? 'badge-red' : 'badge-green'}">${i.archived ? 'Archived' : 'Active'}</span></td>
+        <td>
+           <button class="btn btn-sm btn-outline" onclick="viewInvoiceDetail('${i.id}')">View</button>
+        </td>
+      </tr>`).join('');
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+async function viewInvoiceDetail(id) {
+  try {
+    const data = await api(`v1/invoices?id=${id}`);
+    // For now, show a summary toast. A full modal could be built later.
+    const inv = data.data;
+    if (inv) {
+      showToast(`${inv.invoice_number} — ${inv.currency} ${Number(inv.amount_due).toLocaleString()} | ${inv.company_name || inv.customer_name}`);
+    } else {
+      showToast('Invoice details loaded.', 'info');
+    }
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+async function loadFinanceAudit() {
+  try {
+    const data = await api('v1/invoices?audit=true');
+    const logs = data.data || [];
+    const tbody = document.getElementById('finance-audit-table');
+    if (!logs.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">No audit entries yet</td></tr>'; return; }
+    
+    tbody.innerHTML = logs.map(l => {
+      let meta = '';
+      try { const m = typeof l.metadata === 'string' ? JSON.parse(l.metadata) : l.metadata; meta = Object.entries(m||{}).map(([k,v])=>`${k}: ${v}`).join(', '); } catch {}
+      return `
+      <tr>
+        <td style="font-size:0.8125rem;white-space:nowrap">${new Date(l.performed_at).toLocaleString()}</td>
+        <td><span style="font-weight:600">${l.action}</span></td>
+        <td><span style="font-family:monospace;font-size:0.8125rem">${l.entity_type}/${l.entity_id?.substring(0,8)}...</span></td>
+        <td>${l.staff_name || 'System'} <span style="color:var(--text-muted);font-size:0.75rem">(${l.staff_role || '—'})</span></td>
+        <td style="font-size:0.8125rem;color:var(--text-muted);max-width:300px;overflow:hidden;text-overflow:ellipsis">${meta}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+async function unmarkAwb(id) {
+  const reason = prompt('Reason for unmarking this AWB?');
+  if (!reason || !reason.trim()) return;
+  
+  try {
+    const res = await api(`v1/awbs-unmark?id=${id}`, 'POST', { reason });
+    if (res.success) {
+      showToast('AWB unmarked successfully. It is now available for new invoices.');
+      loadAwbs();
+    } else {
+      showToast(res.error?.message || 'Failed to unmark AWB', 'error');
+    }
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+function showToast(msg, type = 'success') {
+  // Simple toast fallback
+  const toast = document.createElement('div');
+  toast.style.cssText = `position:fixed;bottom:24px;right:24px;padding:12px 24px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);z-index:9999;box-shadow:0 8px 30px rgba(0,0,0,0.3);color:${type==='error'?'var(--red)':'var(--blue-accent)'}`;
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 4000);
+}
+
+</script>
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+</body>
+</html>

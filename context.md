@@ -1,0 +1,25 @@
+# Context Log: Ambara Command Center
+
+- **Who I Am**:
+    - **Name**: [Placeholder]
+    - **Company**: PT Ambara Artha Globaltrans
+    - **Role**: Principal Logistics Lead / Owner
+- **Company Context**:
+    - **Name**: PT Ambara Artha Globaltrans
+    - **Focus**: International Freight Forwarding & Logistics.
+    - **Location**: Soekarno-Hatta International Airport, Jakarta (CGK).
+    - **Specialty**: Regulated cargo, complex customs clearance, and high-security airfreight handles.
+- **Active Projects**:
+    - **Ambara Command Center**: Unified Next.js platform for internal operations and public tracking.
+    - **Deterministic AWB Scraper**: Proprietary coordinate-locked engine for error-free cargo data extraction.
+    - **Thermal Label Engine**: Automated generation of airline-compliant AWB stickers.
+- **Recent Decisions**:
+    - **Deployment Fix**: Resolved Vercel validation error caused by invalid negative lookahead syntax in `next.config.ts`.
+    - **Nuclear Consolidation**: Merged standalone portal and marketing into a single Next.js repo in the root directory.
+    - **Leaning History**: Purged 180MB of build artifacts and binary history to bypass GitHub limits.
+    - **Global Prompting**: Established `GEMINI.md` in the user's home directory for cross-project rules.
+- **Current Focus**: Verifying the Vercel production deployment and live API routing.
+- **Next Steps**:
+    - Confirm Vercel deployment is active after the rewrite fix.
+    - Swap Clerk `test` keys with `live` keys in Vercel.
+    - End-to-end "Ingest-to-Track" test on the live domain.

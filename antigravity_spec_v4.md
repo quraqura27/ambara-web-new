@@ -1,0 +1,29 @@
+# Antigravity Technical Spec v4.0
+
+- **Project Overview**: Unified Command Center for PT Ambara Artha Globaltrans. Integrates legacy marketing site with a modern Next.js operational portal for AWB tracking, shipment ingestion, and thermal label generation.
+- **Tech Stack**:
+    - **Core**: Next.js 15 (App Router), TypeScript, Tailwind CSS.
+    - **API**: Unified API Gateway (`/api/main.js`) proxying to modular handlers.
+    - **Database**: Neon Postgres (Serverless) via Drizzle ORM.
+    - **Auth**: Clerk (Production Live Keys required for full rollout).
+    - **Storage**: Cloudflare R2 (`ambara-artha-documents`) for PDF/images.
+    - **Parsing**: Deterministic coordinate-locked PDF extractor for AWBs.
+- **Project Structure**:
+    - `/src/app`: Next.js App Router (Dashboard, Sign-in, Public Tracking).
+    - `/api/handlers`: Modular legacy backend logic (25+ functions).
+    - `/src/lib/db`: Database schema and connection logic.
+    - `/src/lib/parser`: AWB parsing engine with coordinate definitions.
+    - `/public`: Static marketing assets (Bilingual EN/ID).
+- **Current Status**:
+    - **Operational**: Unified repo structure, AWB Parser (v10.0), Database schema, R2 integration, and Lean Production Push.
+    - **In Progress**: Vercel deployment verification (Rewrite fix applied).
+    - **Not Started**: Automated invoice reconciliation module.
+- **Rules & Constraints**:
+    - **No Deletion**: Customer/Shipment records are immutable via UI.
+    - **No Hyphens**: Tracking IDs are 16-char alphanumeric strictly.
+    - **Middleware**: Whitelist `/en`, `/id`, `/track/*`, `/api/*` for public access.
+    - **Design**: Maintain "Aura" theme (High-contrast dark mode with glassmorphism).
+- **Open Tasks**:
+    - Confirm Vercel production build success.
+    - Swap Clerk `test` keys with `live` keys in Vercel env.
+    - Implement automated backup schedule for Neon DB.

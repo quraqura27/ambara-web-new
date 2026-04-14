@@ -1,0 +1,41 @@
+{
+  "outputDirectory": "public",
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
+    { "source": "/", "destination": "/en/index.html" },
+    { "source": "/.netlify/functions/:path*", "destination": "/api/main" },
+    { "source": "/api/v1/:path*", "destination": "/api/main" },
+    { "source": "/api/:path(?!main).*", "destination": "/api/main" },
+    { "source": "/en/blog/:slug", "destination": "/en/blog-post.html?slug=:slug" },
+    { "source": "/id/blog/:slug", "destination": "/id/blog-post.html?slug=:slug" },
+    { "source": "/en", "destination": "/en/index.html" },
+    { "source": "/id", "destination": "/id/index.html" },
+    { "source": "/sitemap.xml", "destination": "/api/main" },
+    { "source": "/robots.txt", "destination": "/robots.txt" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains; preload" },
+        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" }
+      ]
+    },
+    {
+      "source": "/en/(.*)",
+      "headers": [
+        { "key": "Content-Language", "value": "en" }
+      ]
+    },
+    {
+      "source": "/id/(.*)",
+      "headers": [
+        { "key": "Content-Language", "value": "id" }
+      ]
+    }
+  ]
+}

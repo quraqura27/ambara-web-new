@@ -1,0 +1,29 @@
+{
+  "name": "ambara-artha-globaltrans",
+  "version": "5.0.0",
+  "description": "PT Ambara Artha Globaltrans - Air Freight Website",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "vercel-build": "echo 'Static site — no build step'"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.0.0",
+    "@aws-sdk/s3-request-presigner": "^3.0.0",
+    "@neondatabase/serverless": "^0.9.0",
+    "bcryptjs": "^2.4.3",
+    "canvas": "^3.2.3",
+    "d3-array": "^3.2.4",
+    "d3-geo": "^3.1.1",
+    "geojson": "^0.5.0",
+    "jsonwebtoken": "^9.0.0",
+    "pdf-lib": "^1.17.1",
+    "pdf-parse": "^2.4.5",
+    "qrcode": "^1.5.4",
+    "resend": "^3.2.0",
+    "topojson-client": "^3.1.0",
+    "url-toolkit": "^2.2.5"
+  }
+}
+
