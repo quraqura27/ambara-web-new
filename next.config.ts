@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   // Support legacy marketing site and consolidated API
   async rewrites() {
     return [
+      // 1. UNIVERSAL API GATEWAY (Priority)
       {
         source: "/.netlify/functions/:path*",
         destination: "/api/main",
@@ -12,23 +13,32 @@ const nextConfig: NextConfig = {
         source: "/api/v1/:path*",
         destination: "/api/main",
       },
-      // Ensure specific internal API routes aren't intercepted if they exist
+      // Exclude /api/main itself to avoid loops
       {
         source: "/api/:path((?!^main$).*)",
         destination: "/api/main",
       },
+      
+      // 2. BILINGUAL MARKETING BRIDGE
+      // Maps /en/services -> /services.html
       {
-        source: "/sitemap.xml",
-        destination: "/api/main",
+        source: "/en/:path*",
+        destination: "/:path.html",
       },
-      // Legacy landing page redirects
+      // Maps /id/services -> /id/services.html
+      {
+        source: "/id/:path*",
+        destination: "/id/:path.html",
+      },
+      
+      // 3. LEGACY ENTRY REDIRECTS
       {
         source: "/",
-        destination: "/en/index.html",
+        destination: "/index.html",
       },
       {
         source: "/en",
-        destination: "/en/index.html",
+        destination: "/index.html",
       },
       {
         source: "/id",
