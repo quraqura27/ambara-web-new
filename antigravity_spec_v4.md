@@ -15,8 +15,8 @@
     - `/src/lib/parser`: AWB parsing engine with coordinate definitions.
     - `/public`: Static marketing assets (Bilingual EN/ID).
 - **Current Status**:
-    - **Operational**: Unified repo structure, AWB Parser (v10.0), Database schema, R2 integration, and Lean Production Push.
-    - **In Progress**: Vercel deployment verification (Rewrite fix applied).
+    - **Operational**: Unified repo structure, AWB Parser (v10.0), Database schema, R2 integration, and Consolidated Production Build.
+    - **In Progress**: Clerk Production Key swap.
     - **Not Started**: Automated invoice reconciliation module.
 - **Rules & Constraints**:
     - **No Deletion**: Customer/Shipment records are immutable via UI.

@@ -1,7 +1,7 @@
-.// Netlify-to-Vercel Adapter
+// Netlify-to-Vercel Adapter
 // Wraps a Netlify Function handler (event => response) to work with Vercel's (req, res) API.
 
-function wrap(netlifyHandler) {
+function wrap(netlifyHandler, forcedFuncName) {
   return async (req, res) => {
     // Build Netlify-compatible event object from Vercel's req
     const queryStringParameters = req.query || {};
@@ -13,12 +13,9 @@ function wrap(netlifyHandler) {
     }
 
     // Build a Netlify-compatible `path`.
-    // Netlify sets event.path to the full request path (e.g. /api/auth).
-    // Some functions do event.path.replace('/.netlify/functions/NAME', '') to extract sub-paths.
-    // We replicate this by also providing the /.netlify/functions/ prefix for backward compat.
     const urlPath = req.url?.split('?')[0] || '';
-    // Derive the function name from the file path: /api/auth -> auth, /api/v1-invoices -> v1-invoices
-    const funcName = urlPath.replace(/^\/api\//, '').split('/')[0];
+    // Use the forced function name if provided, otherwise derive from URL
+    const funcName = forcedFuncName || urlPath.replace(/^\/api\//, '').split('/')[0];
 
     const event = {
       httpMethod: req.method,
