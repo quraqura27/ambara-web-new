@@ -1,35 +1,35 @@
 /**
- * STATIC API MANIFEST
- * This file explicitly requires all legacy handlers to ensure they are 
- * traced and bundled by Vercel into the single 'main' serverless function.
+ * ASYNC API DISPATCHER
+ * This version uses dynamic imports to ensure peak compatibility 
+ * with the Next.js App Router and Vercel bundling.
  */
 
 const dispatcher = {
-  get "auth"() { return require("../handlers/auth"); },
-  get "awbs"() { return require("../handlers/awbs"); },
-  get "blog-api"() { return require("../handlers/blog-api"); },
-  get "client-api"() { return require("../handlers/client-api"); },
-  get "content"() { return require("../handlers/content"); },
-  get "customers"() { return require("../handlers/customers"); },
-  get "documents"() { return require("../handlers/documents"); },
-  get "public-stats"() { return require("../handlers/public-stats"); },
-  get "quotes"() { return require("../handlers/quotes"); },
-  get "shipments"() { return require("../handlers/shipments"); },
-  get "sitemap"() { return require("../handlers/sitemap"); },
-  get "submit-contact"() { return require("../handlers/submit-contact"); },
-  get "submit-quote"() { return require("../handlers/submit-quote"); },
-  get "track-shipment"() { return require("../handlers/track-shipment"); },
-  get "v1-awbs-mark-invoiced"() { return require("../handlers/v1-awbs-mark-invoiced"); },
-  get "v1-awbs-parse"() { return require("../handlers/v1-awbs-parse"); },
-  get "v1-awbs-unmark"() { return require("../handlers/v1-awbs-unmark"); },
-  get "v1-awbs-update"() { return require("../handlers/v1-awbs-update"); },
-  get "v1-awbs-upload"() { return require("../handlers/v1-awbs-upload"); },
-  get "v1-customers-awbs"() { return require("../handlers/v1-customers-awbs"); },
-  get "v1-customers-search"() { return require("../handlers/v1-customers-search"); },
-  get "v1-invoices-upload-pdf"() { return require("../handlers/v1-invoices-upload-pdf"); },
-  get "v1-invoices"() { return require("../handlers/v1-invoices"); },
-  get "v1-notifications"() { return require("../handlers/v1-notifications"); },
-  get "ping"() { return async (event) => ({ statusCode: 200, body: JSON.stringify({ status: "pong", timestamp: new Date().toISOString() }) }); }
+  "auth": () => import("../handlers/auth"),
+  "awbs": () => import("../handlers/awbs"),
+  "blog-api": () => import("../handlers/blog-api"),
+  "client-api": () => import("../handlers/client-api"),
+  "content": () => import("../handlers/content"),
+  "customers": () => import("../handlers/customers"),
+  "documents": () => import("../handlers/documents"),
+  "public-stats": () => import("../handlers/public-stats"),
+  "quotes": () => import("../handlers/quotes"),
+  "shipments": () => import("../handlers/shipments"),
+  "sitemap": () => import("../handlers/sitemap"),
+  "submit-contact": () => import("../handlers/submit-contact"),
+  "submit-quote": () => import("../handlers/submit-quote"),
+  "track-shipment": () => import("../handlers/track-shipment"),
+  "v1-awbs-mark-invoiced": () => import("../handlers/v1-awbs-mark-invoiced"),
+  "v1-awbs-parse": () => import("../handlers/v1-awbs-parse"),
+  "v1-awbs-unmark": () => import("../handlers/v1-awbs-unmark"),
+  "v1-awbs-update": () => import("../handlers/v1-awbs-update"),
+  "v1-awbs-upload": () => import("../handlers/v1-awbs-upload"),
+  "v1-customers-awbs": () => import("../handlers/v1-customers-awbs"),
+  "v1-customers-search": () => import("../handlers/v1-customers-search"),
+  "v1-invoices-upload-pdf": () => import("../handlers/v1-invoices-upload-pdf"),
+  "v1-invoices": () => import("../handlers/v1-invoices"),
+  "v1-notifications": () => import("../handlers/v1-notifications"),
+  "ping": async () => ({ default: async (event) => ({ statusCode: 200, body: JSON.stringify({ status: "pong" }) }) })
 };
 
-module.exports = dispatcher;
+export default dispatcher;

@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-// @ts-ignore - Importing legacy JS logic into TS
-const dispatcher = require("@/server/legacy-api/lib/dispatcher");
+import dispatcher from "@/server/legacy-api/lib/dispatcher";
 // @ts-ignore
 const adapter = require("@/server/legacy-api/lib/adapter");
 
 /**
- * APP ROUTER UNIVERSAL GATEWAY
+ * APP ROUTER UNIVERSAL GATEWAY (ESM Version)
  * Matches: /api/main/[[...path]]
- * This catch-all route dispatches traffic to legacy handlers.
  */
 async function handle(
   request: NextRequest,
@@ -15,20 +13,17 @@ async function handle(
 ) {
   const { path: pathSegments } = await params;
   
-  // Extract the function name from the last segment of the path
   const lastSegment = pathSegments && pathSegments.length > 0 
     ? pathSegments[pathSegments.length - 1] 
     : "";
 
-  console.log(`[App Gateway] Incoming request for: ${lastSegment}`);
-
-  // Check query params if path is missing in URL segments
   const searchParams = request.nextUrl.searchParams;
   const targetFunc = lastSegment || searchParams.get("path") || "";
 
-  const legacyHandler = dispatcher[targetFunc];
+  // @ts-ignore
+  const importFn = dispatcher[targetFunc];
 
-  if (!legacyHandler) {
+  if (!importFn) {
     console.warn(`[App Gateway] Handler not found for: ${targetFunc}`);
     return NextResponse.json({ 
       error: "Handler not found", 
@@ -38,7 +33,9 @@ async function handle(
   }
 
   try {
-    // 1. Prepare Next.js 15+ compatible Request spoof
+    // 1. Await the dynamic import
+    const module = await importFn();
+    const legacyHandler = module.default || module;
     // We need to convert NextRequest back to something the legacy adapter understands
     const url = new URL(request.url);
     const query = Object.fromEntries(url.searchParams.entries());
