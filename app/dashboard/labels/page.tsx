@@ -1,18 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Barcode from "react-barcode";
-import { 
-  Printer, 
-  Search, 
-  ChevronRight, 
-  Box, 
-  MapPin, 
-  User,
-  ShieldCheck,
-  Zap
-} from "lucide-react";
-
 import { 
   Printer, 
   Search, 
@@ -26,7 +15,7 @@ import {
   QrCode
 } from "lucide-react";
 import { getShipmentsForLabels } from "@/app/actions/shipment-actions";
-import { generateLabelsAction } from "@/app/actions/print-actions";
+import { getShipmentLabels } from "@/app/actions/print-actions";
 
 export default function LabelPage() {
   const [labels, setLabels] = useState<any[]>([]);
@@ -53,8 +42,17 @@ export default function LabelPage() {
     if (!selected) return;
     try {
       setPrinting(true);
-      const pdfBytes = await generateLabelsAction([selected.id]);
-      const blob = new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" });
+      const base64Data = await getShipmentLabels([selected.id]);
+      
+      // Convert Base64 to binary
+      const binaryString = window.atob(base64Data);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+
+      const blob = new Blob([bytes], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       window.open(url, "_blank");
     } catch (err) {

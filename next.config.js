@@ -28,7 +28,6 @@ const nextConfig = {
     ];
   },
   // Ignore lint/ts errors on production build for legacy compatibility
-  eslint: { ignoreDuringBuilds: true },
   typescript: { ignoreBuildErrors: true }
 };
 
