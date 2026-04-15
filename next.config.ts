@@ -4,19 +4,19 @@ const nextConfig: NextConfig = {
   // Support legacy marketing site and consolidated API
   async rewrites() {
     return [
-      // 1. UNIVERSAL API GATEWAY (Priority)
+      // 1. UNIVERSAL API GATEWAY (Priority - App Router)
       {
         source: "/.netlify/functions/:path*",
-        destination: "/api/main",
+        destination: "/api/main/:path*",
       },
       {
         source: "/api/v1/:path*",
-        destination: "/api/main",
+        destination: "/api/main/:path*",
       },
       // Exclude /api/main itself to avoid loops
       {
         source: "/api/:path((?!^main$).*)",
-        destination: "/api/main",
+        destination: "/api/main/:path*",
       },
       
       // 2. BILINGUAL MARKETING BRIDGE
