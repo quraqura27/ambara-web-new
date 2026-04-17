@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import dispatcher from "@/server/legacy-api/lib/dispatcher";
-// @ts-ignore
-const adapter = require("@/server/legacy-api/lib/adapter");
+import { wrap } from "@/server/legacy-api/lib/adapter";
 
 /**
  * APP ROUTER UNIVERSAL GATEWAY (ESM Version)
@@ -77,7 +76,7 @@ async function handle(
       };
 
       // Execution
-      const wrapped = adapter.wrap(legacyHandler.handler || legacyHandler, targetFunc);
+      const wrapped = wrap(legacyHandler.handler || legacyHandler, targetFunc);
       wrapped(reqProxy, resProxy);
     });
   } catch (error: any) {

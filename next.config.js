@@ -3,12 +3,7 @@ const nextConfig = {
   // Support legacy marketing site and consolidated API
   async rewrites() {
     return [
-      // 1. UNIVERSAL API GATEWAY (Priority - App Router)
-      {
-        source: "/api/:path((?!^main$).*)",
-        destination: "/api/main/:path*",
-      },
-      // 2. BILINGUAL MARKETING (Bridge to Public Files)
+      // BILINGUAL MARKETING (Bridge to Public Files)
       {
         source: "/en/:path*",
         destination: "/en/:path*.html",

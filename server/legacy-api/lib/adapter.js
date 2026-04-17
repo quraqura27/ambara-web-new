@@ -45,5 +45,5 @@ function wrap(netlifyHandler, forcedFuncName) {
   };
 }
 
-module.exports = { wrap };
+export { wrap };
 
