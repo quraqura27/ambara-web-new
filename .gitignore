@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# debug artifacts from Phase 3
+*.mjs
+final_report_*.json
+*_output.txt
+diagnosis_*.txt
+*.lock
+legacy_vault/
