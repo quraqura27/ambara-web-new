@@ -2,7 +2,7 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { neon } from '@neondatabase/serverless';
 
-// Public Matchers (Tracking engine, auth pages, webhooks, root site)
+// Public Matchers
 const isPublicRoute = createRouteMatcher(['/', '/sign-in(.*)', '/sign-up(.*)', '/p/(.*)', '/track/(.*)', '/api/webhooks(.*)', '/api/public-stats(.*)', '/api/blog-api(.*)']);
 
 // Role Context Matchers
@@ -10,81 +10,72 @@ const isAdminRoute = createRouteMatcher(['/dashboard/admin(.*)']);
 const isFinanceRoute = createRouteMatcher(['/dashboard/finance(.*)']);
 const isOpsRoute = createRouteMatcher(['/dashboard/shipments(.*)', '/dashboard/ingest(.*)', '/dashboard/labels(.*)', '/dashboard/crm(.*)']);
 
-// Database Sovereign check - Edge Compatible
-async function getUserRole(clerkId?: string, email?: string) {
+async function getSovereignRole(userId: string) {
   try {
     if (!process.env.DATABASE_URL) return null;
     const sql = neon(process.env.DATABASE_URL);
-    
-    // We try clerkId first as it is the most modern and stable identifier
-    if (clerkId) {
-      const rows = await sql`SELECT role FROM profiles WHERE clerk_id = ${clerkId} AND status = 'ACTIVE' LIMIT 1`;
-      if (rows.length > 0) return rows[0].role;
-    }
-    
-    // Fallback to email lookup
-    if (email) {
-      const rows = await sql`SELECT role FROM profiles WHERE email = ${email} AND status = 'ACTIVE' LIMIT 1`;
-      if (rows.length > 0) return rows[0].role;
-    }
-    
-    return null;
-  } catch (error) {
-    console.error('Sovereign Auth Error:', error);
+    // Deterministic lookup by Clerk ID (The Sub)
+    const rows = await sql`SELECT role FROM profiles WHERE clerk_id = ${userId} AND status = 'ACTIVE' LIMIT 1`;
+    return rows.length > 0 ? rows[0].role : null;
+  } catch (e) {
+    console.error('Middleware Sovereign Check Failed:', e);
     return null;
   }
 }
 
 export default clerkMiddleware(async (auth, req) => {
-  // Always permit public routes regardless of session
-  if (isPublicRoute(req)) return NextResponse.next();
-
+  const response = NextResponse.next();
+  
   try {
+    // 1. Skip check for public routes
+    if (isPublicRoute(req)) return response;
+
     const authObj = await auth();
     const { userId, sessionClaims } = authObj;
-    
-    // Check for root admin email in session claims (if available) or standard fields
-    const email = (sessionClaims?.email || '') as string;
-    
-    // MASTER ADMIN Hard-coded Safety Net (Non-blocking)
-    const isOwnerEmail = email === 'quraisyabdurrahman@ambaraartha.com';
 
-    // Role Resolution
-    let userRole = await getUserRole(userId || undefined, email || undefined);
-    
-    // Secondary Fallback: Use Clerk Session Metadata if DB is silent
-    if (!userRole && sessionClaims?.metadata) {
-      userRole = (sessionClaims.metadata as any).role;
+    // 2. Auth Requirement
+    if (!userId) {
+      if (!isPublicRoute(req)) await auth.protect();
+      return response;
     }
 
-    const isMasterAdmin = isOwnerEmail || userRole === 'MASTER_ADMIN';
+    // 3. Deterministic Role Identification
+    // Primary: Database Lookup (True Sovereignty)
+    // Secondary: Session Claims (Cached State)
+    let userRole = await getSovereignRole(userId);
+    if (!userRole) {
+      userRole = sessionClaims?.metadata?.role as string;
+    }
 
-    const response = NextResponse.next();
-    
-    // Trace Headers for Debugging (Browser Network Tab)
-    response.headers.set('X-Ambara-Trace-UID', userId || 'none');
-    response.headers.set('X-Ambara-Trace-Role', userRole || 'GUEST');
+    const userEmail = sessionClaims?.email as string;
+    const isMasterAdmin = userRole === 'MASTER_ADMIN' || userEmail === 'quraisyabdurrahman@ambaraartha.com';
+
+    // 4. Debugging Headers (Internal Trace)
+    response.headers.set('X-Ambara-Trace-UID', userId);
+    response.headers.set('X-Ambara-Trace-Role', userRole || 'NONE');
     response.headers.set('X-Ambara-Trace-Master', isMasterAdmin ? 'TRUE' : 'FALSE');
 
-    // Master Admin bypasses all checks
+    // 5. RBAC Enforcement
     if (isMasterAdmin) return response;
 
-    // Route Guards
+    if (isFinanceRoute(req) && userRole !== 'FINANCE') {
+      return NextResponse.redirect(new URL('/dashboard', req.url));
+    }
+
+    if (isOpsRoute(req) && !['OPERATIONS', 'MASTER_ADMIN'].includes(userRole || '')) {
+      return NextResponse.redirect(new URL('/dashboard', req.url));
+    }
+
     if (isAdminRoute(req) && !isMasterAdmin) {
-      return NextResponse.redirect(new URL('/dashboard', req.url));
-    }
-    if (isFinanceRoute(req) && userRole !== 'FINANCE' && !isMasterAdmin) {
-      return NextResponse.redirect(new URL('/dashboard', req.url));
-    }
-    if (isOpsRoute(req) && !['OPERATIONS', 'MASTER_ADMIN'].includes(userRole as any) && !isMasterAdmin) {
       return NextResponse.redirect(new URL('/dashboard', req.url));
     }
 
     return response;
   } catch (err) {
-    console.error('Middleware Critical Path Error:', err);
-    // On critical failure, we allow navigation to dashboard but block sub-routes
-    return NextResponse.next();
+    console.error('Middleware Sentinel Error:', err);
+    // Step 1000: Fail-Graceful. If the middleware logic crashes, permit flow but mark the error.
+    response.headers.set('X-Ambara-Sentinel-Error', 'FATAL');
+    return response; 
   }
 });
 
