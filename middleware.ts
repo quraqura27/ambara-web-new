@@ -41,7 +41,19 @@ async function getSovereignRole(userId: string, email?: string) {
 
 export default clerkMiddleware(async (auth, req) => {
   const response = NextResponse.next();
-  
+  const url = req.nextUrl.pathname;
+
+  // Step 1000: Internal & Static Bypass (Safety First)
+  if (
+    url.startsWith('/_next') || 
+    url.includes('/api/auth') ||
+    url.includes('/favicon.ico') ||
+    url.endsWith('.png') ||
+    url.endsWith('.svg')
+  ) {
+    return response;
+  }
+
   try {
     if (isPublicRoute(req)) return response;
 
@@ -68,7 +80,7 @@ export default clerkMiddleware(async (auth, req) => {
     // Debugging Trace (Edge Headers)
     response.headers.set('X-Ambara-Auth-UID', userId);
     response.headers.set('X-Ambara-Auth-Role', userRole || 'GUEST');
-    response.headers.set('X-Ambara-Auth-Root', isMasterAdmin ? 'YES' : 'NO');
+    response.headers.set('X-Ambara-Auth-Status', isMasterAdmin ? 'SOVEREIGN' : 'RESTRICTED');
 
     // MASTER BYPASS
     if (isMasterAdmin) return response;
