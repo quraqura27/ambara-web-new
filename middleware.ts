@@ -1,8 +1,8 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
-// Public Matchers (Tracking engine, auth pages, webhooks)
-const isPublicRoute = createRouteMatcher(['/sign-in(.*)', '/sign-up(.*)', '/p/(.*)', '/api/webhooks(.*)']);
+// Public Matchers (Tracking engine, auth pages, webhooks, root site)
+const isPublicRoute = createRouteMatcher(['/', '/sign-in(.*)', '/sign-up(.*)', '/p/(.*)', '/track/(.*)', '/api/webhooks(.*)', '/api/public-stats(.*)', '/api/blog-api(.*)']);
 
 // Role Context Matchers
 const isAdminRoute = createRouteMatcher(['/dashboard/admin(.*)']);
