@@ -69,3 +69,15 @@ export const customers = pgTable('customers', {
   npwp: text('npwp'),
   createdAt: timestamp('created_at').defaultNow(),
 });
+
+export const profiles = pgTable('profiles', {
+  id: serial('id').primaryKey(),
+  clerkId: text('clerk_id').unique().notNull(),
+  email: text('email').notNull(),
+  firstName: text('first_name'),
+  lastName: text('last_name'),
+  role: text('role').default('CUSTOMER'), // MASTER_ADMIN, OPERATIONS, FINANCE, CUSTOMER
+  status: text('status').default('PENDING'), // PENDING, ACTIVE, SUSPENDED
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});

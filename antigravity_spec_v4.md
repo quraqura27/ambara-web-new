@@ -9,14 +9,14 @@
     - **Storage**: Cloudflare R2 (`ambara-artha-documents`) for PDF/images.
     - **Parsing**: Deterministic coordinate-locked PDF extractor for AWBs.
 - **Project Structure**:
-    - `/src/app`: Next.js App Router (Dashboard, Sign-in, Public Tracking).
-    - `/api/handlers`: Modular legacy backend logic (25+ functions).
-    - `/src/lib/db`: Database schema and connection logic.
-    - `/src/lib/parser`: AWB parsing engine with coordinate definitions.
+    - `/app`: Next.js App Router (Dashboard, Sign-in, Public Tracking).
+    - `/server/legacy-api/handlers`: Modular legacy backend logic (25+ functions).
+    - `/lib/db`: Database schema and connection logic.
+    - `/lib/parser`: AWB parsing engine with coordinate definitions.
     - `/public`: Static marketing assets (Bilingual EN/ID).
 - **Current Status**:
-    - **Operational**: Unified repo structure, AWB Parser (v10.0), Database schema, R2 integration, and Consolidated Production Build.
-    - **In Progress**: Clerk Production Key swap.
+    - **Operational**: Unified repo structure, AWB Parser (v10.0), Database schema, R2 integration, and Consolidated Production Build on Vercel. Auth routes properly resolving 200 OK after fixing bracket bug.
+    - **In Progress**: Clerk Production Key swap & SSL provisioning on Vercel. Admin role assignment.
     - **Not Started**: Automated invoice reconciliation module.
 - **Rules & Constraints**:
     - **No Deletion**: Customer/Shipment records are immutable via UI.
@@ -24,6 +24,5 @@
     - **Middleware**: Whitelist `/en`, `/id`, `/track/*`, `/api/*` for public access.
     - **Design**: Maintain "Aura" theme (High-contrast dark mode with glassmorphism).
 - **Open Tasks**:
-    - Confirm Vercel production build success.
     - Swap Clerk `test` keys with `live` keys in Vercel env.
     - Implement automated backup schedule for Neon DB.

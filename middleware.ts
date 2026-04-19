@@ -1,18 +1,49 @@
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 
-/**
- * Simplified middleware for production stability.
- * Clerk auth is handled at the page/layout level instead.
- * This middleware only handles public route pass-through.
- */
-export default function middleware(request: NextRequest) {
+// Public Matchers (Tracking engine, auth pages, webhooks)
+const isPublicRoute = createRouteMatcher(['/sign-in(.*)', '/sign-up(.*)', '/p/(.*)', '/api/webhooks(.*)']);
+
+// Role Context Matchers
+const isAdminRoute = createRouteMatcher(['/dashboard/admin(.*)']);
+const isFinanceRoute = createRouteMatcher(['/dashboard/finance(.*)']);
+const isOpsRoute = createRouteMatcher(['/dashboard/shipments(.*)', '/dashboard/ingest(.*)', '/dashboard/labels(.*)', '/dashboard/crm(.*)']);
+
+export default clerkMiddleware((auth, req) => {
+  // Always permit public routes regardless of session
+  if (isPublicRoute(req)) return NextResponse.next();
+
+  const userRole = auth().sessionClaims?.metadata?.role;
+  const isMasterAdmin = userRole === 'MASTER_ADMIN';
+
+  // Auth requirement for all remaining routes
+  auth().protect();
+
+  // Master Admin bypasses all checks
+  if (isMasterAdmin) {
+    return NextResponse.next(); 
+  }
+
+  // Finance Restrictive Matcher
+  if (isFinanceRoute(req) && userRole !== 'FINANCE') {
+    return NextResponse.redirect(new URL('/dashboard', req.url));
+  }
+
+  // Operations Restrictive Matcher
+  if (isOpsRoute(req) && userRole !== 'OPERATIONS') {
+    return NextResponse.redirect(new URL('/dashboard', req.url));
+  }
+
+  // Admin Enforcer
+  if (isAdminRoute(req) && !isMasterAdmin) {
+    return NextResponse.redirect(new URL('/dashboard', req.url));
+  }
+
   return NextResponse.next();
-}
+});
 
 export const config = {
   matcher: [
-    // Skip Next.js internals and all static files
     '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
     '/(api|trpc)(.*)',
   ],
