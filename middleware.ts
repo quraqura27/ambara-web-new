@@ -9,15 +9,16 @@ const isAdminRoute = createRouteMatcher(['/dashboard/admin(.*)']);
 const isFinanceRoute = createRouteMatcher(['/dashboard/finance(.*)']);
 const isOpsRoute = createRouteMatcher(['/dashboard/shipments(.*)', '/dashboard/ingest(.*)', '/dashboard/labels(.*)', '/dashboard/crm(.*)']);
 
-export default clerkMiddleware((auth, req) => {
+export default clerkMiddleware(async (auth, req) => {
   // Always permit public routes regardless of session
   if (isPublicRoute(req)) return NextResponse.next();
 
-  const userRole = auth().sessionClaims?.metadata?.role;
+  const authObj = await auth();
+  const userRole = authObj?.sessionClaims?.metadata?.role;
   const isMasterAdmin = userRole === 'MASTER_ADMIN';
 
   // Auth requirement for all remaining routes
-  auth().protect();
+  await authObj.protect();
 
   // Master Admin bypasses all checks
   if (isMasterAdmin) {
