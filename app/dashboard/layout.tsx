@@ -30,9 +30,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-[#0a0a0f]">
+    <div className="flex min-h-screen bg-[#0a0a0f] ambara-portal-bg">
       {/* Sidebar - Desktop */}
-      <aside className="hidden lg:flex flex-col w-64 border-r border-slate-800/50 bg-[#0f0f16]">
+      <aside className="hidden lg:flex flex-col w-64 border-r border-slate-800/50 bg-[#0f0f16] ambara-sidebar-shell">
         <div className="p-6">
           <h1 className="text-xl font-bold bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent">
             AMBARA PORTAL
@@ -48,7 +48,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Link
                 key={item.name}
                 href={item.href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ambara-nav-item ${
                   active 
                     ? "bg-blue-600/10 text-blue-400 font-medium border border-blue-500/20" 
                     : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
@@ -75,7 +75,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header */}
-        <header className="h-16 border-b border-slate-800/50 bg-[#0f0f16]/50 backdrop-blur-xl flex items-center justify-between px-6 z-10">
+        <header className="h-16 border-b border-slate-800/50 bg-[#0f0f16]/50 backdrop-blur-xl flex items-center justify-between px-6 z-10 ambara-header-shell">
           <button 
             className="lg:hidden text-slate-400"
             onClick={() => setMobileMenuOpen(true)}
