@@ -1,28 +1,29 @@
-# Antigravity Technical Spec v4.0
+# Antigravity Spec v4 (Live)
 
-- **Project Overview**: Unified Command Center for PT Ambara Artha Globaltrans. Integrates legacy marketing site with a modern Next.js operational portal for AWB tracking, shipment ingestion, and thermal label generation.
-- **Tech Stack**:
-    - **Core**: Next.js 15 (App Router), TypeScript, Tailwind CSS.
-    - **API**: Unified API Gateway (`/api/main.js`) proxying to modular handlers.
-    - **Database**: Neon Postgres (Serverless) via Drizzle ORM.
-    - **Auth**: Clerk (Production Live Keys required for full rollout).
-    - **Storage**: Cloudflare R2 (`ambara-artha-documents`) for PDF/images.
-    - **Parsing**: Deterministic coordinate-locked PDF extractor for AWBs.
-- **Project Structure**:
-    - `/app`: Next.js App Router (Dashboard, Sign-in, Public Tracking).
-    - `/server/legacy-api/handlers`: Modular legacy backend logic (25+ functions).
-    - `/lib/db`: Database schema and connection logic.
-    - `/lib/parser`: AWB parsing engine with coordinate definitions.
-    - `/public`: Static marketing assets (Bilingual EN/ID).
-- **Current Status**:
-    - **Operational**: Unified repo structure, AWB Parser (v10.0), Database schema, R2 integration, and Consolidated Production Build on Vercel. Auth routes properly resolving 200 OK after fixing bracket bug.
-    - **In Progress**: Clerk Production Key swap & SSL provisioning on Vercel. Admin role assignment.
-    - **Not Started**: Automated invoice reconciliation module.
-- **Rules & Constraints**:
-    - **No Deletion**: Customer/Shipment records are immutable via UI.
-    - **No Hyphens**: Tracking IDs are 16-char alphanumeric strictly.
-    - **Middleware**: Whitelist `/en`, `/id`, `/track/*`, `/api/*` for public access.
-    - **Design**: Maintain "Aura" theme (High-contrast dark mode with glassmorphism).
-- **Open Tasks**:
-    - Swap Clerk `test` keys with `live` keys in Vercel env.
-    - Implement automated backup schedule for Neon DB.
+## Goal
+To build a SaaS platform for a freight forwarding company handling global logistics, airfreight, and customs clearance.
+
+## Core Stack
+- **Framework**: Next.js (App Router)
+- **Database**: Neon (PostgreSQL) + Drizzle ORM
+- **Auth**: Clerk (Production Live)
+- **Styling**: Tailwind CSS
+- **Storage**: Cloudflare R2
+- **Email**: Resend
+
+## Recent Decisions (Session 4cb81bf1)
+1. **RBAC Transition:** Upgraded simple authentication to Role-Based Access Control using Clerk `sessionClaims` and metadata. Core roles remain: `MASTER_ADMIN`, `OPERATIONS`, `FINANCE`.
+2. **Database Sync:** Created `profiles` table to maintain a synchronized mapping of Clerk UUIDs to system roles via Webhooks (`svix`). New signups default to `PENDING` status.
+3. **Server Actions for Admin:** Replaced client-side state with Next.js Server Actions (`approveUser`, `denyUser`) inside `/app/dashboard/admin/users/page.tsx` for cleaner role assignments.
+4. **Environment Promotion:** Successfully pushed changes to Vercel production to enforce `/dashboard/admin` and `middleware.ts` protections globally. Clerk keys are completely migrated to Production keys.
+
+## Current Focus
+- The environment is fully deployed on Vercel. 
+- Awaiting user (quraisyabdurrahman@ambaraartha.com) authentication and manual review of the RBAC access layers by external AI agents.
+- **Next Phase:** Begin Automated Invoice Generation Module (3-stage PDF assembler) upon successful RBAC signoff.
+
+## Active Status
+- Migration: **Done**
+- Clerk Sign Up Flow: **Done**
+- RBAC Middleware: **Done**
+- Invoice Engine: **Pending**

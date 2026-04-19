@@ -27,8 +27,12 @@
 - **Hybrid Engine Restoration**: Successfully restored the site by bridging legacy HTML files with native Next.js API Gateway and App Router.
 - **Production Key Injection (April 17)**: Configured Vercel production edge with native Clerk `live` keys (Publishable, Secret, and 4 routing URLs) via Vercel CLI to remove silently failing `<SignIn />` blank screens.
 - **Automated DNS Setup**: Hardcoded all 5 required Clerk CNAME instances into Vercel DNS using Vercel CLI.
-- **Current Focus**: Waiting for the Principal Admin to create an account in the Live Clerk environment so we can execute `scripts/set-superadmin.mjs` and unlock their MASTER_ADMIN interface.
-- **Next Steps**:
-    - Complete End-to-end "Ingest-to-Track" system verification using the live domain once SSL fully propagates.
-    - Setup and test webhook sync between Clerk and Neon Postgres Database if required.
-    - Begin development of Phase 5: Automated Invoice Generation Module.
+- **Admin Setup Completed**: User signed up to production Clerk environment. Successfully elevated user `quraisyabdurrahman@ambaraartha.com` to `MASTER_ADMIN` status directly via API using production secret key.
+- **Admin Server Actions**: Converted the Admin Dashboard pending users table to use Next.js Server Actions with `force-dynamic` to allow direct DB updates and smooth production deploys.
+
+## Current Focus
+- The environment is fully deployed on Vercel (`ambara-web-4th02d9p3-quraisyabdurrahman-8982s-projects.vercel.app` & `www.ambaraartha.com`). 
+- Awaiting user authentication and manual review of the RBAC access layers by external AI agents.
+
+## Next Steps
+- Begin development of Phase 5: Automated Invoice Generation Module (3-stage PDF assembler) upon successful RBAC signoff.
