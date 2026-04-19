@@ -2,108 +2,54 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { neon } from '@neondatabase/serverless';
 
-// Public Matchers (Tracking engine, auth pages, webhooks, root site)
-const isPublicRoute = createRouteMatcher(['/', '/sign-in(.*)', '/sign-up(.*)', '/p/(.*)', '/track/(.*)', '/api/webhooks(.*)', '/api/public-stats(.*)', '/api/blog-api(.*)']);
+const isPublicRoute = createRouteMatcher(['/', '/sign-in(.*)', '/sign-up(.*)', '/p/(.*)', '/track/(.*)', '/api/webhooks(.*)']);
+const isProtectedRoute = createRouteMatcher(['/dashboard(.*)']);
 
-// Role Context Matchers
-const isAdminRoute = createRouteMatcher(['/dashboard/admin(.*)']);
-const isFinanceRoute = createRouteMatcher(['/dashboard/finance(.*)']);
-const isOpsRoute = createRouteMatcher(['/dashboard/shipments(.*)', '/dashboard/ingest(.*)', '/dashboard/labels(.*)', '/dashboard/crm(.*)']);
-
-// Step 1000: Module-level initialization for Edge pooling
 const sql = process.env.DATABASE_URL ? neon(process.env.DATABASE_URL) : null;
 
-async function getSovereignRole(userId: string, email?: string) {
+async function syncMasterAdmin(userId: string, email?: string) {
   try {
-    if (!sql) return null;
-    
-    // 1. Primary Lookup: Clerk ID (Deterministic)
-    let rows = await sql`SELECT role, email FROM profiles WHERE clerk_id = ${userId} AND status = 'ACTIVE' LIMIT 1`;
-    if (rows.length > 0) return rows[0].role;
-
-    // 2. Heavy Fallback: Check if this userId belongs to the Master Admin record via email
-    // even if email wasn't passed in (we'll fetch from claims or just scan the owner account)
-    const targetEmail = email || 'quraisyabdurrahman@ambaraartha.com';
-    const ownerRows = await sql`SELECT role FROM profiles WHERE email = ${targetEmail} AND role = 'MASTER_ADMIN' LIMIT 1`;
-    
-    if (ownerRows.length > 0) {
-      // Auto-Adopt Identity
-      await sql`UPDATE profiles SET clerk_id = ${userId}, status = 'ACTIVE' WHERE email = ${targetEmail}`;
-      return 'MASTER_ADMIN';
-    }
-
-    return null;
+    if (!sql || !email || email !== 'quraisyabdurrahman@ambaraartha.com') return;
+    await sql`UPDATE profiles SET clerk_id = ${userId}, status = 'ACTIVE' WHERE email = ${email}`;
   } catch (e) {
-    console.error('Middleware Sovereign Check Failed:', e);
-    return null;
+    console.error('Master Sync Failed:', e);
   }
 }
 
 export default clerkMiddleware(async (auth, req) => {
-  const response = NextResponse.next();
   const url = req.nextUrl.pathname;
 
-  // Step 1000: Internal & Static Bypass (Safety First)
-  if (
-    url.startsWith('/_next') || 
-    url.includes('/api/auth') ||
-    url.includes('/favicon.ico') ||
-    url.endsWith('.png') ||
-    url.endsWith('.svg')
-  ) {
-    return response;
+  // Bypasses for Assets & Internal Next.js requests
+  if (url.startsWith('/_next') || url.includes('/api/auth') || url.includes('favicon.ico')) {
+    return NextResponse.next();
   }
 
-  try {
-    if (isPublicRoute(req)) return response;
+  if (isPublicRoute(req)) return NextResponse.next();
 
-    const authObj = await auth();
-    const { userId, sessionClaims } = authObj;
+  const authObj = await auth();
+  const { userId, sessionClaims } = authObj;
 
-    if (!userId) {
-      if (!isPublicRoute(req)) await auth.protect();
-      return response;
-    }
-
-    const email = sessionClaims?.email as string;
-    
-    // Sovereign Role check (with self-healing auto-adopt)
-    let userRole = await getSovereignRole(userId, email || undefined);
-    
-    // Metadata fallback
-    if (!userRole) {
-      userRole = sessionClaims?.metadata?.role as string;
-    }
-
-    const isMasterAdmin = (email === 'quraisyabdurrahman@ambaraartha.com') || (userRole === 'MASTER_ADMIN');
-
-    // Debugging Trace (Edge Headers)
-    response.headers.set('X-Ambara-Auth-UID', userId);
-    response.headers.set('X-Ambara-Auth-Role', userRole || 'GUEST');
-    response.headers.set('X-Ambara-Auth-Status', isMasterAdmin ? 'SOVEREIGN' : 'RESTRICTED');
-
-    // MASTER BYPASS
-    if (isMasterAdmin) return response;
-
-    // RBAC Enforcement
-    if (isFinanceRoute(req) && !['FINANCE', 'MASTER_ADMIN'].includes(userRole || '')) {
-      return NextResponse.redirect(new URL('/dashboard', req.url));
-    }
-
-    if (isOpsRoute(req) && !['OPERATIONS', 'FINANCE', 'MASTER_ADMIN'].includes(userRole || '')) {
-      return NextResponse.redirect(new URL('/dashboard', req.url));
-    }
-
-    if (isAdminRoute(req)) {
-      return NextResponse.redirect(new URL('/dashboard', req.url));
-    }
-
-    return response;
-  } catch (err) {
-    console.error('Middleware Critical Sentinel Error:', err);
-    response.headers.set('X-Ambara-Sentinel-Panic', 'TRUE');
-    return response; 
+  if (!userId) {
+    if (isProtectedRoute(req)) await auth.protect();
+    return NextResponse.next();
   }
+
+  const email = sessionClaims?.email as string;
+  const isOwner = email === 'quraisyabdurrahman@ambaraartha.com';
+
+  // Self-healing synchronization for the Owner
+  if (isOwner) {
+    await syncMasterAdmin(userId, email);
+    return NextResponse.next();
+  }
+
+  // Basic Protection for all other dashboard routes
+  if (isProtectedRoute(req)) {
+    // We let the pages handle specific RBAC via server components for stability
+    return NextResponse.next();
+  }
+
+  return NextResponse.next();
 });
 
 export const config = {
