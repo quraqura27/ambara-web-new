@@ -49,35 +49,36 @@ export default clerkMiddleware(async (auth, req) => {
       return response;
     }
 
-    const email = sessionClaims?.email as string;
+    // Step 1000: Resilient Identity Identification
+    const email = (sessionClaims?.email as string) || (authObj.userId ? (await (await auth()).sessionClaims)?.email as string : null);
     
-    // Deterministic Role Identification with Auto-Healing
-    let userRole = await getSovereignRole(userId, email);
+    // THE MASTER KEY: Explicitly identify the owner even if DB/Clerk claims are glitchy
+    const isMasterEmail = email === 'quraisyabdurrahman@ambaraartha.com';
+
+    // Sovereign Role check (with self-healing auto-adopt)
+    let userRole = await getSovereignRole(userId, email || undefined);
     
-    // Secondary: Clerk Metadata Fallback
+    // Session metadata fallback
     if (!userRole) {
       userRole = sessionClaims?.metadata?.role as string;
     }
 
-    const isMasterAdmin = userRole === 'MASTER_ADMIN' || email === 'quraisyabdurrahman@ambaraartha.com';
+    const isMasterAdmin = isMasterEmail || userRole === 'MASTER_ADMIN';
 
     // Debugging Trace (Edge Headers)
-    response.headers.set('X-Ambara-Auth-Email', email || 'NONE');
     response.headers.set('X-Ambara-Auth-UID', userId);
     response.headers.set('X-Ambara-Auth-Role', userRole || 'GUEST');
-    response.headers.set('X-Ambara-Auth-Status', isMasterAdmin ? 'SOVEREIGN' : 'RESTRICTED');
+    response.headers.set('X-Ambara-Auth-Root', isMasterEmail ? 'YES' : 'NO');
 
-    // Master Admin bypasses all checks
+    // MASTER BYPASS: The Ultimate Sentinel Rule
     if (isMasterAdmin) return response;
 
-    const currentUrl = req.nextUrl.pathname;
-
-    // RBAC Enforcement
+    // RBAC Enforcement for other users
     if (isFinanceRoute(req) && userRole !== 'FINANCE') {
       return NextResponse.redirect(new URL('/dashboard', req.url));
     }
 
-    if (isOpsRoute(req) && !['OPERATIONS', 'MASTER_ADMIN', 'FINANCE'].includes(userRole || '')) {
+    if (isOpsRoute(req) && !['OPERATIONS', 'FINANCE'].includes(userRole || '')) {
       return NextResponse.redirect(new URL('/dashboard', req.url));
     }
 
@@ -87,9 +88,9 @@ export default clerkMiddleware(async (auth, req) => {
 
     return response;
   } catch (err) {
-    console.error('Middleware Fatal Exception:', err);
+    console.error('Middleware Critical Sentinel Error:', err);
     response.headers.set('X-Ambara-Sentinel-Panic', 'TRUE');
-    return response; // Fail Open to Dashboard Overview
+    return response; 
   }
 });
 
