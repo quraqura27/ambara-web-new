@@ -18,7 +18,7 @@ export default clerkMiddleware(async (auth, req) => {
   const isMasterAdmin = userRole === 'MASTER_ADMIN';
 
   // Auth requirement for all remaining routes
-  await authObj.protect();
+  await auth.protect();
 
   // Master Admin bypasses all checks
   if (isMasterAdmin) {
