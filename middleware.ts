@@ -18,13 +18,17 @@ async function getSovereignRole(userId: string, email?: string) {
     if (!sql) return null;
     
     // 1. Primary Lookup: Clerk ID (Deterministic)
-    let rows = await sql`SELECT role FROM profiles WHERE clerk_id = ${userId} AND status = 'ACTIVE' LIMIT 1`;
+    let rows = await sql`SELECT role, email FROM profiles WHERE clerk_id = ${userId} AND status = 'ACTIVE' LIMIT 1`;
     if (rows.length > 0) return rows[0].role;
 
-    // 2. Self-Healing Fallback: Primary Owner Check
-    if (email === 'quraisyabdurrahman@ambaraartha.com') {
-      // Auto-Adopt: Update the record to link this Clerk ID to the Master Admin email
-      await sql`UPDATE profiles SET clerk_id = ${userId}, status = 'ACTIVE' WHERE email = ${email}`;
+    // 2. Heavy Fallback: Check if this userId belongs to the Master Admin record via email
+    // even if email wasn't passed in (we'll fetch from claims or just scan the owner account)
+    const targetEmail = email || 'quraisyabdurrahman@ambaraartha.com';
+    const ownerRows = await sql`SELECT role FROM profiles WHERE email = ${targetEmail} AND role = 'MASTER_ADMIN' LIMIT 1`;
+    
+    if (ownerRows.length > 0) {
+      // Auto-Adopt Identity
+      await sql`UPDATE profiles SET clerk_id = ${userId}, status = 'ACTIVE' WHERE email = ${targetEmail}`;
       return 'MASTER_ADMIN';
     }
 
@@ -49,36 +53,32 @@ export default clerkMiddleware(async (auth, req) => {
       return response;
     }
 
-    // Step 1000: Resilient Identity Identification
-    const email = (sessionClaims?.email as string) || (authObj.userId ? (await (await auth()).sessionClaims)?.email as string : null);
+    const email = sessionClaims?.email as string;
     
-    // THE MASTER KEY: Explicitly identify the owner even if DB/Clerk claims are glitchy
-    const isMasterEmail = email === 'quraisyabdurrahman@ambaraartha.com';
-
     // Sovereign Role check (with self-healing auto-adopt)
     let userRole = await getSovereignRole(userId, email || undefined);
     
-    // Session metadata fallback
+    // Metadata fallback
     if (!userRole) {
       userRole = sessionClaims?.metadata?.role as string;
     }
 
-    const isMasterAdmin = isMasterEmail || userRole === 'MASTER_ADMIN';
+    const isMasterAdmin = (email === 'quraisyabdurrahman@ambaraartha.com') || (userRole === 'MASTER_ADMIN');
 
     // Debugging Trace (Edge Headers)
     response.headers.set('X-Ambara-Auth-UID', userId);
     response.headers.set('X-Ambara-Auth-Role', userRole || 'GUEST');
-    response.headers.set('X-Ambara-Auth-Root', isMasterEmail ? 'YES' : 'NO');
+    response.headers.set('X-Ambara-Auth-Root', isMasterAdmin ? 'YES' : 'NO');
 
-    // MASTER BYPASS: The Ultimate Sentinel Rule
+    // MASTER BYPASS
     if (isMasterAdmin) return response;
 
-    // RBAC Enforcement for other users
-    if (isFinanceRoute(req) && userRole !== 'FINANCE') {
+    // RBAC Enforcement
+    if (isFinanceRoute(req) && !['FINANCE', 'MASTER_ADMIN'].includes(userRole || '')) {
       return NextResponse.redirect(new URL('/dashboard', req.url));
     }
 
-    if (isOpsRoute(req) && !['OPERATIONS', 'FINANCE'].includes(userRole || '')) {
+    if (isOpsRoute(req) && !['OPERATIONS', 'FINANCE', 'MASTER_ADMIN'].includes(userRole || '')) {
       return NextResponse.redirect(new URL('/dashboard', req.url));
     }
 
