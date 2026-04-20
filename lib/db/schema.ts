@@ -59,15 +59,33 @@ export const awbs = pgTable('awbs', {
 export const customers = pgTable('customers', {
   id: serial('id').primaryKey(),
   customerId: text('customer_id'),
-  type: text('type'),
+  type: text('type'), // b2b, shipper, consignee
   fullName: text('full_name'),
   companyName: text('company_name'),
   email: text('email'),
   phone: text('phone'),
   address: text('address'),
   country: text('country'),
+  countryCode: text('country_code').default('ID'), // 2-char code for shipment tracking formulas
   npwp: text('npwp'),
   createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const invoices = pgTable('invoices', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  invoiceNumber: text('invoice_number').unique().notNull(),
+  customerId: integer('customer_id').references(() => customers.id),
+  shipmentId: integer('shipment_id').references(() => shipments.id),
+  amount: numeric('amount', { precision: 12, scale: 2 }).notNull(),
+  taxAmount: numeric('tax_amount', { precision: 12, scale: 2 }).default('0'),
+  totalAmount: numeric('total_amount', { precision: 12, scale: 2 }).notNull(),
+  currency: text('currency').default('IDR'),
+  status: text('status').default('PENDING'), // PENDING, PAID, OVERDUE, VOID
+  dueDate: timestamp('due_date'),
+  issuedAt: timestamp('issued_at').defaultNow(),
+  paidAt: timestamp('paid_at'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 export const profiles = pgTable('profiles', {
