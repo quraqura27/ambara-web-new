@@ -46,7 +46,8 @@ export default async function DashboardPage() {
         text: `Shipment ${s.trackingNumber || s.internalTrackingNo || "AAG-TEMP"} status: ${s.status}`,
         time: "Just now",
         user: "SYSTEM"
-      })));
+      })))
+      .catch(() => []);
 
     const chartData = [
       { name: "Mon", volume: 4000 },
@@ -71,11 +72,11 @@ export default async function DashboardPage() {
           </div>
         </header>
 
-        <DashboardContent stats={stats} chartData={chartData} activity={recentActivity} />
+        <DashboardContent stats={statsResult} chartData={chartData} activity={recentActivity} />
       </div>
     );
   } catch (error) {
-    console.error("Dashboard RSC Crash:", error);
+    console.error("Dashboard RSC Fallback:", error);
     return (
       <div className="text-center py-20 bg-slate-900/50 rounded-3xl border border-slate-800">
         <h2 className="text-xl font-bold text-white mb-2 italic">Dashboard Sync Interrupted</h2>
