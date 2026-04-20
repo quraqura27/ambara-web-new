@@ -72,7 +72,7 @@ export default async function DashboardPage() {
           </div>
         </header>
 
-        <DashboardContent stats={statsResult} chartData={chartData} activity={recentActivity} />
+        <DashboardContent stats={stats} chartData={chartData} activity={recentActivity} />
       </div>
     );
   } catch (error) {
