@@ -66,9 +66,14 @@ export async function createShipment(data: any) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
+  const parsedCustomerId = parseInt(data.customerId);
+  if (isNaN(parsedCustomerId)) {
+    throw new Error("Invalid Customer: Please select a billing account.");
+  }
+
   // 1. Resolve Billing Country for Tracking ID
   const customer = await db.query.customers.findFirst({
-    where: eq(customerTable.id, parseInt(data.customerId))
+    where: eq(customerTable.id, parsedCustomerId)
   });
 
   const internalTrackingNo = generateInternalTrackingNo(
@@ -80,7 +85,7 @@ export async function createShipment(data: any) {
   const [newShipment] = await db.insert(shipments).values({
     internalTrackingNo,
     trackingNumber: data.trackingNumber,
-    customerId: parseInt(data.customerId),
+    customerId: parsedCustomerId,
     status: "RECEIVED",
     origin: data.origin,
     destination: data.destination,
