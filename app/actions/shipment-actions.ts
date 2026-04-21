@@ -64,26 +64,35 @@ export async function bulkUpdateStatus(ids: number[], status: string) {
  */
 export async function createShipment(data: any) {
   try {
+    console.log("CREATE_SHIPMENT_START", { customerId: data.customerId });
     const { userId } = await auth();
-    if (!userId) return { success: false, error: "Unauthorized: Please sign in again." };
+    if (!userId) {
+      console.error("CREATE_SHIPMENT_AUTH_FAIL: No userId");
+      return { success: false, error: "Unauthorized: Please sign in again." };
+    }
 
     const parsedCustomerId = parseInt(data.customerId);
     if (isNaN(parsedCustomerId)) {
+      console.error("CREATE_SHIPMENT_VALIDATION_FAIL: Invalid customerId", data.customerId);
       return { success: false, error: "Invalid Customer: Please select a billing account." };
     }
 
     // 1. Resolve Billing Country for Tracking ID
+    console.log("RESOLVING_CUSTOMER", parsedCustomerId);
     const customer = await db.query.customers.findFirst({
       where: eq(customerTable.id, parsedCustomerId)
     });
 
+    console.log("GENERATING_TRACKING_NO", { country: customer?.countryCode, service: data.serviceType });
     const internalTrackingNo = generateInternalTrackingNo(
       customer?.countryCode || "ID",
       data.serviceType || "PP"
     );
 
+    console.log("STARTING_TRANSACTION", { internalTrackingNo });
     const result = await db.transaction(async (tx) => {
       // 2. Main Shipment Write
+      console.log("INSERTING_SHIPMENT");
       const [newShipment] = await tx.insert(shipments).values({
         internalTrackingNo,
         trackingNumber: data.trackingNumber || "",
@@ -96,6 +105,7 @@ export async function createShipment(data: any) {
         updatedAt: new Date(),
       }).returning();
 
+      console.log("INSERTING_AWB", { shipmentId: newShipment.id });
       // 3. Companion AWB Init
       await tx.insert(awbs).values({
         shipmentId: newShipment.id,
@@ -108,13 +118,15 @@ export async function createShipment(data: any) {
         parseStatus: "pending",
       });
 
+      console.log("TRANSACTION_COMMIT_SUCCESS");
       return newShipment;
     });
 
     revalidatePath("/dashboard/shipments");
+    console.log("CREATE_SHIPMENT_COMPLETED_REVALIDATED");
     return { success: true, data: result };
   } catch (error: any) {
-    console.error("Create Shipment Error:", error);
+    console.error("CREATE_SHIPMENT_CRASH:", error);
     return { success: false, error: error.message || "A database constraint violation occurred." };
   }
 }
