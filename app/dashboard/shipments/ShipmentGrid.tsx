@@ -165,21 +165,40 @@ export default function ShipmentGrid({ initialShipments, customers }: { initialS
       </SlideOver>
 
       {/* Search & Filter Bar */}
-      <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-[#0f0f16] border border-slate-800 p-4 rounded-2xl relative overflow-hidden">
+      <div 
+        className="flex flex-col md:flex-row gap-4 justify-between items-center bg-[#0f0f16] border border-slate-800 p-4 rounded-2xl relative overflow-hidden"
+        style={{ 
+          display: 'flex', 
+          flexDirection: 'row', 
+          gap: '16px', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          backgroundColor: '#0f0f16', 
+          border: '1px solid #1e293b', 
+          padding: '16px', 
+          borderRadius: '16px', 
+          position: 'relative', 
+          overflow: 'hidden',
+          marginBottom: '24px'
+        }}
+      >
         {selectedIds.length > 0 && (
-          <div className="absolute inset-0 bg-blue-600 flex items-center px-6 justify-between z-20 animate-in slide-in-from-top duration-300">
-            <div className="flex items-center gap-4">
-              <span className="text-sm font-bold text-white">{selectedIds.length} Shipments Selected</span>
-              <div className="h-4 w-px bg-blue-400" />
-              <div className="flex gap-2">
+          <div 
+            className="absolute inset-0 bg-blue-600 flex items-center px-6 justify-between z-20"
+            style={{ position: 'absolute', inset: 0, backgroundColor: '#2563eb', display: 'flex', alignItems: 'center', padding: '0 24px', justifyContent: 'space-between', zIndex: 20 }}
+          >
+            <div className="flex items-center gap-4" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <span className="text-sm font-bold text-white" style={{ fontSize: '14px', fontWeight: 'bold', color: 'white' }}>{selectedIds.length} Shipments Selected</span>
+              <div className="h-4 w-px bg-blue-400" style={{ height: '16px', width: '1px', backgroundColor: '#60a5fa' }} />
+              <div className="flex gap-2" style={{ display: 'flex', gap: '8px' }}>
                 <BulkActionButton icon={Truck} label="DEPARTED" onClick={() => handleBulkUpdate("DEPARTED")} disabled={isUpdating} />
                 <BulkActionButton icon={Package} label="ARRIVED" onClick={() => handleBulkUpdate("ARRIVED")} disabled={isUpdating} />
                 <BulkActionButton icon={CheckCircle} label="DELIVERED" onClick={() => handleBulkUpdate("DELIVERED")} disabled={isUpdating} />
-                <div className="h-4 w-px bg-blue-400 mx-1" />
+                <div className="h-4 w-px bg-blue-400 mx-1" style={{ height: '16px', width: '1px', backgroundColor: '#60a5fa', margin: '0 4px' }} />
                 <button 
                   onClick={handleBulkPrint}
                   disabled={isUpdating}
-                  className="bg-white text-blue-600 hover:bg-white/90 disabled:opacity-50 px-3 py-1.5 rounded-lg text-[10px] font-black flex items-center gap-2 transition-all shadow-lg"
+                  style={{ backgroundColor: 'white', color: '#2563eb', padding: '6px 12px', borderRadius: '8px', fontSize: '10px', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '8px', border: 'none', cursor: 'pointer' }}
                 >
                   <Printer size={14} /> PRINT {selectedIds.length} LABELS
                 </button>
@@ -187,31 +206,43 @@ export default function ShipmentGrid({ initialShipments, customers }: { initialS
             </div>
             <button 
               onClick={() => setSelectedIds([])}
-              className="text-white/70 hover:text-white text-[10px] font-black tracking-widest uppercase"
+              style={{ color: 'rgba(255,255,255,0.7)', background: 'none', border: 'none', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer' }}
             >
               Cancel
             </button>
           </div>
         )}
 
-        <div className="relative w-full md:w-96">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+        <div className="relative w-full md:w-96" style={{ position: 'relative', width: '384px' }}>
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
           <input 
             type="text" 
             placeholder="Search Tracking, AWB, or Customer..." 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-200 focus:outline-none focus:border-blue-500/50 transition-all"
+            style={{ 
+              width: '100%', 
+              backgroundColor: '#0f172a', 
+              border: '1px solid #1e293b', 
+              borderRadius: '12px', 
+              padding: '10px 16px 10px 40px', 
+              fontSize: '14px', 
+              color: '#e2e8f0', 
+              outline: 'none' 
+            }}
           />
         </div>
         
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 shadow-inner">
+        <div className="flex items-center gap-3 w-full md:w-auto" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div 
+            className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 shadow-inner"
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', padding: '6px 12px' }}
+          >
             <Filter size={14} className="text-slate-500" />
             <select 
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-transparent text-xs font-bold text-slate-300 outline-none uppercase tracking-wider cursor-pointer"
+              style={{ backgroundColor: 'transparent', border: 'none', color: '#cbd5e1', fontSize: '12px', fontWeight: 'bold', outline: 'none', cursor: 'pointer', textTransform: 'uppercase' }}
             >
               <option value="ALL">All Status</option>
               <option value="RECEIVED">Received</option>
@@ -224,16 +255,16 @@ export default function ShipmentGrid({ initialShipments, customers }: { initialS
           
           <button 
             onClick={() => { setSearch(""); setStatusFilter("ALL"); }}
-            className="flex items-center gap-2 text-[10px] font-black tracking-widest text-slate-500 hover:text-white transition-colors uppercase"
+            style={{ color: '#64748b', background: 'none', border: 'none', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer' }}
           >
              Clear Filters
           </button>
 
-          <div className="h-4 w-px bg-slate-800 mx-1 hidden md:block" />
+          <div className="h-4 w-px bg-slate-800 mx-1 hidden md:block" style={{ height: '16px', width: '1px', backgroundColor: '#1e293b', margin: '0 4px' }} />
 
           <button 
             onClick={() => setIsCreateOpen(true)}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold tracking-tight transition-all shadow-lg shadow-blue-500/20 active:scale-95 ambara-button-primary"
+            style={{ backgroundColor: '#2563eb', color: 'white', padding: '10px 20px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 10px 15px -3px rgba(59, 130, 246, 0.2)' }}
           >
             <Plus size={16} /> New Shipment
           </button>
