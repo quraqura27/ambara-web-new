@@ -231,9 +231,9 @@ export default function ShipmentGrid({ initialShipments, customers }: { initialS
 
           <button 
             onClick={() => setIsCreateOpen(true)}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all shadow-lg shadow-blue-900/20"
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold tracking-tight transition-all shadow-lg shadow-blue-500/20 active:scale-95"
           >
-            <Plus size={14} /> New Shipment
+            <Plus size={16} /> New Shipment
           </button>
         </div>
       </div>

@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import ShipmentGrid from "./ShipmentGrid";
 
+export const dynamic = "force-dynamic";
+
 export default async function ShipmentsPage() {
   // Fetch real data from your Neon DB
   const allShipments = await db.select({
@@ -39,6 +41,14 @@ export default async function ShipmentsPage() {
   .from(customers)
   .orderBy(customers.fullName);
 
+  // Dynamic Status Calculations
+  const stats = {
+    RECEIVED: allShipments.filter(s => s.status === "RECEIVED").length,
+    DEPARTED: allShipments.filter(s => s.status === "DEPARTED").length,
+    ARRIVED: allShipments.filter(s => s.status === "ARRIVED").length,
+    DELIVERED: allShipments.filter(s => s.status === "DELIVERED").length,
+  };
+
   return (
     <div className="space-y-8">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -55,10 +65,10 @@ export default async function ShipmentsPage() {
 
       {/* Stats Quick-Look */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <StatusCard icon={Clock} label="RECEIVED" count={12} color="text-yellow-500" bg="bg-yellow-500/10" />
-        <StatusCard icon={Truck} label="DEPARTED" count={8} color="text-blue-500" bg="bg-blue-500/10" />
-        <StatusCard icon={Package} label="ARRIVED" count={15} color="text-purple-500" bg="bg-purple-500/10" />
-        <StatusCard icon={CheckCircle2} label="DELIVERED" count={42} color="text-green-500" bg="bg-green-500/10" />
+        <StatusCard icon={Clock} label="RECEIVED" count={stats.RECEIVED} color="text-yellow-500" bg="bg-yellow-500/10" />
+        <StatusCard icon={Truck} label="DEPARTED" count={stats.DEPARTED} color="text-blue-500" bg="bg-blue-500/10" />
+        <StatusCard icon={Package} label="ARRIVED" count={stats.ARRIVED} color="text-purple-500" bg="bg-purple-500/10" />
+        <StatusCard icon={CheckCircle2} label="DELIVERED" count={stats.DELIVERED} color="text-green-500" bg="bg-green-500/10" />
       </div>
 
       <ShipmentGrid initialShipments={allShipments} customers={allCustomers} />
