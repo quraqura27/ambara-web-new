@@ -26,24 +26,27 @@ export default function ShipmentForm({ initialData, customers, onSuccess }: Ship
     e.preventDefault();
     setLoading(true);
     try {
+      console.log("FORM_SUBMIT_INVOKED", formData);
       if (initialData?.id) {
         const result = await updateFullShipment(initialData.id, formData);
-        if (result.success) {
+        console.log("UPDATE_RESULT_RECEIVED", result);
+        if (result?.success) {
           onSuccess();
         } else {
-          alert(result.error);
+          alert(result?.error || "Unknown error during update.");
         }
       } else {
         const result = await createShipment(formData);
-        if (result.success) {
+        console.log("CREATE_RESULT_RECEIVED", result);
+        if (result?.success) {
           onSuccess();
         } else {
-          alert(result.error);
+          alert(result?.error || "Unknown error during creation. Please check required fields.");
         }
       }
     } catch (err: any) {
-      console.error("Form submission failed:", err);
-      alert("A network or system error occurred. Please try again.");
+      console.error("FORM_SUBMISSION_CRASH:", err);
+      alert(`System Error: ${err.message || "Network Timeout"}`);
     } finally {
       setLoading(false);
     }
