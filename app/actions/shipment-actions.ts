@@ -5,13 +5,15 @@ import { shipments, awbs } from "@/lib/db/schema";
 import { eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { auth } from "@clerk/nextjs/server";
+import { generateInternalTrackingNo } from "@/lib/utils/id-gen";
+import { customers as customerTable } from "@/lib/db/schema";
 
 /**
  * UPDATE SHIPMENT STATUS
  * Transitions a shipment through its lifecycle.
  */
 export async function updateShipmentStatus(id: number, status: string) {
-  const { userId } = auth();
+  const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
   // 1. Check current status for locking
@@ -41,7 +43,7 @@ export async function updateShipmentStatus(id: number, status: string) {
  * Efficiently transitions multiple shipments at once.
  */
 export async function bulkUpdateStatus(ids: number[], status: string) {
-  const { userId } = auth();
+  const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
   const updated = await db.update(shipments)
@@ -51,6 +53,83 @@ export async function bulkUpdateStatus(ids: number[], status: string) {
     })
     .where(inArray(shipments.id, ids))
     .returning();
+
+  revalidatePath("/dashboard/shipments");
+  return updated;
+}
+
+/**
+ * CREATE NEW SHIPMENT
+ * Manually initializes a shipment in the command center.
+ */
+export async function createShipment(data: any) {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+
+  // 1. Resolve Billing Country for Tracking ID
+  const customer = await db.query.customers.findFirst({
+    where: eq(customerTable.id, parseInt(data.customerId))
+  });
+
+  const internalTrackingNo = generateInternalTrackingNo(
+    customer?.countryCode || "ID",
+    data.serviceType || "PP"
+  );
+
+  // 2. Main Shipment Write
+  const [newShipment] = await db.insert(shipments).values({
+    internalTrackingNo,
+    trackingNumber: data.trackingNumber,
+    customerId: parseInt(data.customerId),
+    status: "RECEIVED",
+    origin: data.origin,
+    destination: data.destination,
+    serviceType: data.serviceType || "PP",
+    createdBy: userId,
+    updatedAt: new Date(),
+  }).returning();
+
+  // 3. Optional AWB Init
+  await db.insert(awbs).values({
+    shipmentId: newShipment.id,
+    awbNumber: data.trackingNumber,
+    pieces: parseInt(data.pieces) || 0,
+    chargeableWeight: (data.weight || "0").toString(),
+    origin: data.origin,
+    destination: data.destination,
+    uploadedBy: userId,
+  });
+
+  revalidatePath("/dashboard/shipments");
+  return newShipment;
+}
+
+/**
+ * UPDATE FULL SHIPMENT
+ * Updates routing and AWB metadata via the Edit SlideOver.
+ */
+export async function updateFullShipment(id: number, data: any) {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+
+  const [updated] = await db.update(shipments)
+    .set({
+      origin: data.origin,
+      destination: data.destination,
+      serviceType: data.serviceType,
+      trackingNumber: data.trackingNumber,
+      updatedAt: new Date(),
+    })
+    .where(eq(shipments.id, id))
+    .returning();
+
+  await db.update(awbs)
+    .set({
+      pieces: parseInt(data.pieces) || 0,
+      chargeableWeight: (data.weight || "0").toString(),
+      awbNumber: data.trackingNumber,
+    })
+    .where(eq(awbs.shipmentId, id));
 
   revalidatePath("/dashboard/shipments");
   return updated;
@@ -87,7 +166,7 @@ export async function getPublicShipment(trackingNo: string) {
  * Retrieves shipments with AWB metadata for thermal printing terminal.
  */
 export async function getShipmentsForLabels() {
-  const { userId } = auth();
+  const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
   const results = await db.select({

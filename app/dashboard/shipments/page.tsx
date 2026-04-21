@@ -22,11 +22,22 @@ export default async function ShipmentsPage() {
     serviceType: shipments.serviceType,
     createdAt: shipments.createdAt,
     customerName: customers.fullName,
+    pieces: awbs.pieces,
+    weight: awbs.chargeableWeight,
+    customerId: shipments.customerId,
   })
   .from(shipments)
   .leftJoin(customers, eq(shipments.customerId, customers.id))
+  .leftJoin(awbs, eq(shipments.id, awbs.shipmentId))
   .orderBy(desc(shipments.createdAt))
   .limit(100);
+
+  const allCustomers = await db.select({
+    id: customers.id,
+    fullName: customers.fullName
+  })
+  .from(customers)
+  .orderBy(customers.fullName);
 
   return (
     <div className="space-y-8">
@@ -50,7 +61,7 @@ export default async function ShipmentsPage() {
         <StatusCard icon={CheckCircle2} label="DELIVERED" count={42} color="text-green-500" bg="bg-green-500/10" />
       </div>
 
-      <ShipmentGrid initialShipments={allShipments} />
+      <ShipmentGrid initialShipments={allShipments} customers={allCustomers} />
     </div>
   );
 }

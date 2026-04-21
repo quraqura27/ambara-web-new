@@ -11,7 +11,7 @@ import { createThermalLabel } from "@/lib/label-engine";
  * Fetches data and produces a multi-page PDF.
  */
 export async function getShipmentLabels(ids: number[]) {
-  const { userId } = auth();
+  const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
   // Fetch data
