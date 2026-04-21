@@ -30,11 +30,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-[#0a0a0f] ambara-portal-bg">
+    <div 
+      className="ambara-portal-bg"
+      style={{ 
+        display: 'flex', 
+        minHeight: '100vh', 
+        backgroundColor: '#0a0a0f',
+        color: '#f8fafc'
+      }}
+    >
       {/* Sidebar - Desktop */}
-      <aside className="hidden lg:flex flex-col w-64 border-r border-slate-800/50 bg-[#0f0f16] ambara-sidebar-shell">
+      <aside 
+        className="hidden lg:flex ambara-sidebar-shell"
+        style={{ 
+          width: '256px', 
+          flexShrink: 0, 
+          display: 'flex', 
+          flexDirection: 'column', 
+          backgroundColor: '#0f0f16', 
+          borderRight: '1px solid rgba(30,41,59,0.5)',
+          position: 'relative'
+        }}
+      >
         <div className="p-6">
-          <h1 className="text-xl font-bold bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent ambara-heading-main">
+          <h1 className="text-xl font-bold ambara-heading-main" style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>
             AMBARA PORTAL
           </h1>
           <p className="text-[10px] text-slate-500 tracking-widest mt-1">COMMAND CENTER v3</p>
@@ -73,9 +92,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden ambara-main-shell">
+      <main 
+        className="ambara-main-shell"
+        style={{ 
+          flex: 1, 
+          display: 'flex', 
+          flexDirection: 'column', 
+          minWidth: 0, 
+          overflow: 'hidden' 
+        }}
+      >
         {/* Header */}
-        <header className="h-16 border-b border-slate-800/50 bg-[#0f0f16]/50 backdrop-blur-xl flex items-center justify-between px-6 z-10 ambara-header-shell">
+        <header 
+          className="ambara-header-shell"
+          style={{ 
+            height: '64px', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'between', 
+            paddingLeft: '24px', 
+            paddingRight: '24px', 
+            backgroundColor: 'rgba(15,15,22,0.5)', 
+            backdropFilter: 'blur(20px)', 
+            borderBottom: '1px solid rgba(30,41,59,0.5)', 
+            zIndex: 10 
+          }}
+        >
           <button 
             className="lg:hidden text-slate-400"
             onClick={() => setMobileMenuOpen(true)}
@@ -89,15 +131,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <input 
                 type="text" 
                 placeholder="Search Tracking, AWB, or Invoice..." 
-                className="w-full bg-slate-900/50 border border-slate-800 rounded-full py-2 pl-10 pr-4 text-xs focus:outline-none focus:border-blue-500/50 transition-all text-slate-300"
+                className="w-full rounded-full py-2 pl-10 pr-4 text-xs transition-all"
+                style={{ 
+                  backgroundColor: 'rgba(15,23,42,0.5)', 
+                  border: '1px solid #1e293b', 
+                  color: '#cbd5e1', 
+                  outline: 'none' 
+                }}
               />
             </div>
           </div>
 
-          <div className="flex items-center gap-4 ml-4">
+          <div className="flex items-center gap-4 ml-4" style={{ display: 'flex', alignItems: 'center' }}>
             <div className="hidden md:flex flex-col items-end mr-2">
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"></span>
+                <span className="w-2 h-2 rounded-full bg-green-500" style={{ boxShadow: '0 0 8px rgba(34,197,94,0.5)' }}></span>
                 <span className="text-[10px] font-bold text-slate-400 tracking-wider">SYSTEM ONLINE</span>
               </div>
             </div>
@@ -105,7 +153,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* Content Region */}
-        <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar">
+        <div 
+          className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar"
+          style={{ 
+            flex: 1, 
+            overflowY: 'auto', 
+            padding: '24px' 
+          }}
+        >
           {children}
         </div>
       </main>
