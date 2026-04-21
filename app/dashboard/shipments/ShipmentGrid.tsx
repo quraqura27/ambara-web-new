@@ -233,16 +233,16 @@ export default function ShipmentGrid({ initialShipments, customers }: { initialS
           />
         </div>
         
-        <div className="flex items-center gap-3 w-full md:w-auto" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div className="flex items-center gap-3 w-full md:w-auto" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'nowrap' }}>
           <div 
             className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 shadow-inner"
-            style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', padding: '6px 12px' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', padding: '6px 12px', minWidth: '160px' }}
           >
             <Filter size={14} className="text-slate-500" />
             <select 
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              style={{ backgroundColor: 'transparent', border: 'none', color: '#cbd5e1', fontSize: '12px', fontWeight: 'bold', outline: 'none', cursor: 'pointer', textTransform: 'uppercase' }}
+              style={{ backgroundColor: 'transparent', border: 'none', color: '#cbd5e1', fontSize: '12px', fontWeight: 'bold', outline: 'none', cursor: 'pointer', textTransform: 'uppercase', width: '100%' }}
             >
               <option value="ALL">All Status</option>
               <option value="RECEIVED">Received</option>
@@ -255,7 +255,7 @@ export default function ShipmentGrid({ initialShipments, customers }: { initialS
           
           <button 
             onClick={() => { setSearch(""); setStatusFilter("ALL"); }}
-            style={{ color: '#64748b', background: 'none', border: 'none', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer' }}
+            style={{ color: '#64748b', background: 'none', border: 'none', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer', whiteSpace: 'nowrap' }}
           >
              Clear Filters
           </button>
@@ -264,7 +264,7 @@ export default function ShipmentGrid({ initialShipments, customers }: { initialS
 
           <button 
             onClick={() => setIsCreateOpen(true)}
-            style={{ backgroundColor: '#2563eb', color: 'white', padding: '10px 20px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 10px 15px -3px rgba(59, 130, 246, 0.2)' }}
+            style={{ backgroundColor: '#2563eb', color: 'white', padding: '10px 20px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 10px 15px -3px rgba(59, 130, 246, 0.2)', whiteSpace: 'nowrap' }}
           >
             <Plus size={16} /> New Shipment
           </button>
