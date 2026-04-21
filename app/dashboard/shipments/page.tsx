@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { shipments, customers } from "@/lib/db/schema";
+import { shipments, customers, awbs } from "@/lib/db/schema";
 import { desc, eq } from "drizzle-orm";
 import { 
   Package, 
