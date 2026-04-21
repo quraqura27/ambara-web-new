@@ -46,7 +46,7 @@ export const awbs = pgTable('awbs', {
   parseRawText: text('parse_raw_text'),
   invoiced: boolean('invoiced').default(false).notNull(),
   invoiceId: uuid('invoice_id'),
-  uploadedBy: text('uploaded_by').notNull(), // Changed to text for Clerk IDs
+  uploadedBy: text('uploaded_by'), // Optional for manual shipments
   editedBy: text('edited_by'), // Changed to text for Clerk IDs
   shipmentId: integer('shipment_id'), // Spec v3: Link to the tracking record
   shipperId: integer('shipper_id'), // Link to CRM
