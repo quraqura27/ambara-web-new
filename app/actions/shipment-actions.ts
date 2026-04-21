@@ -95,7 +95,8 @@ export async function createShipment(data: any) {
       console.log("INSERTING_SHIPMENT");
       const [newShipment] = await tx.insert(shipments).values({
         internalTrackingNo,
-        trackingNumber: data.trackingNumber || "",
+        trackingNumber: data.trackingNumber || `MANUAL-${Date.now()}`, // Ensure not null
+        title: data.trackingNumber ? `Shipment ${data.trackingNumber}` : "Manual Entry", // Required field
         customerId: parsedCustomerId,
         status: "RECEIVED",
         origin: data.origin,
@@ -109,12 +110,14 @@ export async function createShipment(data: any) {
       // 3. Companion AWB Init
       await tx.insert(awbs).values({
         shipmentId: newShipment.id,
+        customerId: parsedCustomerId, // Required field
         awbNumber: data.trackingNumber || "",
         pieces: parseInt(data.pieces) || 0,
         chargeableWeight: (data.weight || "0").toString(),
-        origin: data.origin,
-        destination: data.destination,
-        uploadedBy: userId,
+        origin: data.origin.slice(0, 3), // Ensure char(3)
+        destination: data.destination.slice(0, 3), // Ensure char(3)
+        uploadedBy: userId, // Required field
+        rawPdfUrl: "manual://none", // Required field - placeholder for manual entries
         parseStatus: "pending",
       });
 
@@ -145,8 +148,10 @@ export async function updateFullShipment(id: number, data: any) {
         .set({
           origin: data.origin,
           destination: data.destination,
+          status: data.status, // Now allowing status updates in the full update
           serviceType: data.serviceType,
           trackingNumber: data.trackingNumber,
+          customerId: data.customerId ? parseInt(data.customerId) : undefined,
           updatedAt: new Date(),
         })
         .where(eq(shipments.id, id))
@@ -157,6 +162,11 @@ export async function updateFullShipment(id: number, data: any) {
           pieces: parseInt(data.pieces) || 0,
           chargeableWeight: (data.weight || "0").toString(),
           awbNumber: data.trackingNumber,
+          origin: data.origin?.slice(0, 3),
+          destination: data.destination?.slice(0, 3),
+          updatedAt: new Date(),
+          editedBy: userId,
+          editedAt: new Date(),
         })
         .where(eq(awbs.shipmentId, id));
 

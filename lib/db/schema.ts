@@ -2,12 +2,13 @@ import { pgTable, text, serial, timestamp, uuid, integer, numeric, date, boolean
 
 export const shipments = pgTable('shipments', {
   id: serial('id').primaryKey(),
-  trackingNumber: text('tracking_number'), // Legacy tracking
+  trackingNumber: text('tracking_number').notNull(), // Legacy tracking
+  title: text('title').notNull(), // New field
   internalTrackingNo: text('internal_tracking_no'), // Spec v3: 16-char formula
   customerId: integer('customer_id'),
-  status: text('status'), // Received, Departed, Arrived, Customs, Delivered
-  origin: text('origin'),
-  destination: text('destination'),
+  status: text('status').notNull().default('pending'), // Received, Departed, Arrived, Customs, Delivered
+  origin: text('origin').notNull(),
+  destination: text('destination').notNull(),
   serviceType: text('service_type'), // PP, PD, DP, DD
   createdBy: text('created_by'), // Spec v3: Clerk User ID (string)
   createdAt: timestamp('created_at').defaultNow(),
@@ -29,7 +30,7 @@ export const staffAccounts = pgTable('staff_accounts', {
 
 export const awbs = pgTable('awbs', {
   id: uuid('id').defaultRandom().primaryKey(),
-  customerId: bigint('customer_id', { mode: 'number' }),
+  customerId: bigint('customer_id', { mode: 'number' }).notNull(),
   awbNumber: text('awb_number'),
   carrier: text('carrier'),
   origin: char('origin', { length: 3 }),
@@ -41,12 +42,12 @@ export const awbs = pgTable('awbs', {
   shipper: text('shipper'), // New field v15.0
   consignee: text('consignee'), // New field v15.0
   commodity: text('commodity'),
-  rawPdfUrl: text('raw_pdf_url'), // Cloudflare R2 URL (Optional for manual entry)
+  rawPdfUrl: text('raw_pdf_url').notNull(), // Cloudflare R2 URL (Optional for manual entry)
   parseStatus: text('parse_status').notNull().default('pending'),
   parseRawText: text('parse_raw_text'),
   invoiced: boolean('invoiced').default(false).notNull(),
   invoiceId: uuid('invoice_id'),
-  uploadedBy: text('uploaded_by'), // Optional for manual shipments
+  uploadedBy: text('uploaded_by').notNull(), // Optional for manual shipments
   editedBy: text('edited_by'), // Changed to text for Clerk IDs
   shipmentId: integer('shipment_id'), // Spec v3: Link to the tracking record
   shipperId: integer('shipper_id'), // Link to CRM

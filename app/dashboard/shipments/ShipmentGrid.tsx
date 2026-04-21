@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { 
   Search, 
   Filter, 
@@ -35,6 +36,7 @@ interface Shipment {
 }
 
 export default function ShipmentGrid({ initialShipments, customers }: { initialShipments: Shipment[], customers: { id: number, fullName: string }[] }) {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [sortField, setSortField] = useState<keyof Shipment>("createdAt");
@@ -50,7 +52,7 @@ export default function ShipmentGrid({ initialShipments, customers }: { initialS
       setIsUpdating(true);
       await bulkUpdateStatus(selectedIds, status);
       setSelectedIds([]);
-      // Note: revalidatePath in server action refreshes the page
+      router.refresh();
     } catch (err) {
       console.error("Bulk update failed:", err);
     } finally {
@@ -143,7 +145,7 @@ export default function ShipmentGrid({ initialShipments, customers }: { initialS
       >
         <ShipmentForm 
           customers={customers} 
-          onSuccess={() => { setIsCreateOpen(false); window.location.reload(); }} 
+          onSuccess={() => { setIsCreateOpen(false); router.refresh(); }} 
         />
       </SlideOver>
 
@@ -157,7 +159,7 @@ export default function ShipmentGrid({ initialShipments, customers }: { initialS
           <ShipmentForm 
             initialData={editingShipment}
             customers={[]} // Editing doesn't need customer list
-            onSuccess={() => { setEditingShipment(null); window.location.reload(); }} 
+            onSuccess={() => { setEditingShipment(null); router.refresh(); }} 
           />
         )}
       </SlideOver>

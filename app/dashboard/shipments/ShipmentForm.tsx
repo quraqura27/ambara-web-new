@@ -17,6 +17,7 @@ export default function ShipmentForm({ initialData, customers, onSuccess }: Ship
     trackingNumber: initialData?.trackingNumber || "",
     origin: initialData?.origin || "",
     destination: initialData?.destination || "",
+    status: initialData?.status || "RECEIVED",
     serviceType: initialData?.serviceType || "PP",
     pieces: initialData?.pieces?.toString() || "1",
     weight: initialData?.weight?.toString() || "0",
@@ -96,6 +97,22 @@ export default function ShipmentForm({ initialData, customers, onSuccess }: Ship
             <option value="XP">Express Air-freight</option>
           </select>
         </div>
+      </div>
+
+      {/* Shipment Status (Crucial for Edit Flow) */}
+      <div className="space-y-2">
+        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Shipment Status</label>
+        <select
+          value={formData.status}
+          onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+          className="w-full bg-slate-900 border border-amber-500/30 rounded-xl py-2.5 px-4 text-sm text-amber-200 focus:outline-none focus:border-amber-500/50"
+        >
+          <option value="RECEIVED">RECEIVED (In Warehouse)</option>
+          <option value="DEPARTED">DEPARTED (In Transit)</option>
+          <option value="ARRIVED">ARRIVED (Destination Port)</option>
+          <option value="CUSTOMS">CUSTOMS (Clearance)</option>
+          <option value="DELIVERED">DELIVERED (Final Destination)</option>
+        </select>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
