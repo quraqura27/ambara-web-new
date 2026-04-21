@@ -32,7 +32,12 @@ const nextConfig = {
     ];
   },
   // Ignore lint/ts errors on production build for legacy compatibility
-  typescript: { ignoreBuildErrors: true }
+  typescript: { ignoreBuildErrors: true },
+  experimental: {
+    serverActions: {
+      allowedOrigins: ["ambaraartha.com", "www.ambaraartha.com"],
+    },
+  },
 };
 
 module.exports = nextConfig;
