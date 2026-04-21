@@ -1,7 +1,8 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
-const isPublicRoute = createRouteMatcher(["/", "/sign-in(.*)", "/sign-up(.*)", "/api(.*)", "/dashboard(.*)"]);
+const isPublicRoute = createRouteMatcher(["/", "/sign-in(.*)", "/sign-up(.*)", "/api(.*)"]);
+const isDashboardRoute = createRouteMatcher(["/dashboard(.*)"]);
 const isProtectedRoute = createRouteMatcher(["/tracking(.*)"]);
 
 export default clerkMiddleware(async (auth, req) => {
@@ -23,22 +24,8 @@ export default clerkMiddleware(async (auth, req) => {
   if (isPublicRoute(req)) return NextResponse.next();
 
   // 3. Auth Requirement
-  const authObj = await auth();
-  const { userId, sessionClaims } = authObj;
-
-  if (!userId) {
-    if (isProtectedRoute(req)) {
-      // Redirect to sign-in if accessing dashboard
-      return await auth.protect();
-    }
-    return NextResponse.next();
-  }
-
-  // 4. Protected Route Optimization
-  // We return NextResponse.next() immediately to allow Next.js to handle RSC delivery.
-  // No blocking database calls here to ensure zero-latency routing.
-  if (isProtectedRoute(req)) {
-    return NextResponse.next();
+  if (isDashboardRoute(req) || isProtectedRoute(req)) {
+    await auth.protect();
   }
 
   return NextResponse.next();
