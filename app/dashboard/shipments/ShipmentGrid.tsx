@@ -11,10 +11,11 @@ import {
   FileSearch,
   User,
   ArrowUpDown,
-  CheckCircle,
-  Truck,
-  Package,
-  AlertCircle
+  CheckCircle, 
+  Truck, 
+  Package, 
+  AlertCircle,
+  Plus
 } from "lucide-react";
 import { bulkUpdateStatus } from "@/app/actions/shipment-actions";
 import { getShipmentLabels } from "@/app/actions/print-actions";
