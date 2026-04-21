@@ -233,7 +233,7 @@ export default function ShipmentGrid({ initialShipments, customers }: { initialS
 
           <button 
             onClick={() => setIsCreateOpen(true)}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold tracking-tight transition-all shadow-lg shadow-blue-500/20 active:scale-95"
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold tracking-tight transition-all shadow-lg shadow-blue-500/20 active:scale-95 ambara-button-primary"
           >
             <Plus size={16} /> New Shipment
           </button>
@@ -241,7 +241,7 @@ export default function ShipmentGrid({ initialShipments, customers }: { initialS
       </div>
 
       {/* Main Data Table */}
-      <div className="bg-[#0f0f16] border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+      <div className="bg-[#0f0f16] border border-slate-800 rounded-2xl overflow-hidden shadow-2xl ambara-table-container">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>

@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@source "..";
+@source "../**/*.{js,ts,jsx,tsx,mdx}";
 
 :root {
   --background: #020617;
@@ -78,4 +78,39 @@ body {
   border-radius: 0.5rem;
   text-decoration: none;
   font-size: 0.875rem;
+}
+.ambara-grid-shell {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .ambara-grid-shell {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.ambara-card-shell {
+  background-color: #0f0f16;
+  border: 1px solid rgba(30, 41, 59, 0.5);
+  border-radius: 1rem;
+  padding: 1.5rem;
+}
+
+.ambara-table-container {
+  background-color: #0f0f16;
+  border: 1px solid rgba(30, 41, 59, 0.5);
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+.ambara-button-primary {
+  background-color: #2563eb;
+  color: white;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.75rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
 }

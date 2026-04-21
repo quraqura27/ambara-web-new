@@ -64,7 +64,7 @@ export default async function ShipmentsPage() {
       </header>
 
       {/* Stats Quick-Look */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 ambara-grid-shell">
         <StatusCard icon={Clock} label="RECEIVED" count={stats.RECEIVED} color="text-yellow-500" bg="bg-yellow-500/10" />
         <StatusCard icon={Truck} label="DEPARTED" count={stats.DEPARTED} color="text-blue-500" bg="bg-blue-500/10" />
         <StatusCard icon={Package} label="ARRIVED" count={stats.ARRIVED} color="text-purple-500" bg="bg-purple-500/10" />
@@ -78,7 +78,7 @@ export default async function ShipmentsPage() {
 
 function StatusCard({ icon: Icon, label, count, color, bg }: any) {
   return (
-    <div className={`p-4 rounded-2xl border border-slate-800/50 ${bg} flex flex-col gap-2 shadow-sm`}>
+    <div className={`p-4 rounded-2xl border border-slate-800/50 ${bg} flex flex-col gap-2 shadow-sm ambara-card-shell`}>
       <div className="flex items-center gap-2">
         <Icon size={16} className={color} />
         <span className="text-[10px] font-black text-slate-400 tracking-widest">{label}</span>
