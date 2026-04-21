@@ -63,50 +63,60 @@ export async function bulkUpdateStatus(ids: number[], status: string) {
  * Manually initializes a shipment in the command center.
  */
 export async function createShipment(data: any) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+  try {
+    const { userId } = await auth();
+    if (!userId) return { success: false, error: "Unauthorized: Please sign in again." };
 
-  const parsedCustomerId = parseInt(data.customerId);
-  if (isNaN(parsedCustomerId)) {
-    throw new Error("Invalid Customer: Please select a billing account.");
+    const parsedCustomerId = parseInt(data.customerId);
+    if (isNaN(parsedCustomerId)) {
+      return { success: false, error: "Invalid Customer: Please select a billing account." };
+    }
+
+    // 1. Resolve Billing Country for Tracking ID
+    const customer = await db.query.customers.findFirst({
+      where: eq(customerTable.id, parsedCustomerId)
+    });
+
+    const internalTrackingNo = generateInternalTrackingNo(
+      customer?.countryCode || "ID",
+      data.serviceType || "PP"
+    );
+
+    const result = await db.transaction(async (tx) => {
+      // 2. Main Shipment Write
+      const [newShipment] = await tx.insert(shipments).values({
+        internalTrackingNo,
+        trackingNumber: data.trackingNumber || "",
+        customerId: parsedCustomerId,
+        status: "RECEIVED",
+        origin: data.origin,
+        destination: data.destination,
+        serviceType: data.serviceType || "PP",
+        createdBy: userId,
+        updatedAt: new Date(),
+      }).returning();
+
+      // 3. Companion AWB Init
+      await tx.insert(awbs).values({
+        shipmentId: newShipment.id,
+        awbNumber: data.trackingNumber || "",
+        pieces: parseInt(data.pieces) || 0,
+        chargeableWeight: (data.weight || "0").toString(),
+        origin: data.origin,
+        destination: data.destination,
+        uploadedBy: userId,
+        parseStatus: "pending",
+      });
+
+      return newShipment;
+    });
+
+    revalidatePath("/dashboard/shipments");
+    return { success: true, data: result };
+  } catch (error: any) {
+    console.error("Create Shipment Error:", error);
+    return { success: false, error: error.message || "A database constraint violation occurred." };
   }
-
-  // 1. Resolve Billing Country for Tracking ID
-  const customer = await db.query.customers.findFirst({
-    where: eq(customerTable.id, parsedCustomerId)
-  });
-
-  const internalTrackingNo = generateInternalTrackingNo(
-    customer?.countryCode || "ID",
-    data.serviceType || "PP"
-  );
-
-  // 2. Main Shipment Write
-  const [newShipment] = await db.insert(shipments).values({
-    internalTrackingNo,
-    trackingNumber: data.trackingNumber,
-    customerId: parsedCustomerId,
-    status: "RECEIVED",
-    origin: data.origin,
-    destination: data.destination,
-    serviceType: data.serviceType || "PP",
-    createdBy: userId,
-    updatedAt: new Date(),
-  }).returning();
-
-  // 3. Optional AWB Init
-  await db.insert(awbs).values({
-    shipmentId: newShipment.id,
-    awbNumber: data.trackingNumber,
-    pieces: parseInt(data.pieces) || 0,
-    chargeableWeight: (data.weight || "0").toString(),
-    origin: data.origin,
-    destination: data.destination,
-    uploadedBy: userId,
-  });
-
-  revalidatePath("/dashboard/shipments");
-  return newShipment;
 }
 
 /**
@@ -114,30 +124,39 @@ export async function createShipment(data: any) {
  * Updates routing and AWB metadata via the Edit SlideOver.
  */
 export async function updateFullShipment(id: number, data: any) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+  try {
+    const { userId } = await auth();
+    if (!userId) return { success: false, error: "Unauthorized" };
 
-  const [updated] = await db.update(shipments)
-    .set({
-      origin: data.origin,
-      destination: data.destination,
-      serviceType: data.serviceType,
-      trackingNumber: data.trackingNumber,
-      updatedAt: new Date(),
-    })
-    .where(eq(shipments.id, id))
-    .returning();
+    const result = await db.transaction(async (tx) => {
+      const [updated] = await tx.update(shipments)
+        .set({
+          origin: data.origin,
+          destination: data.destination,
+          serviceType: data.serviceType,
+          trackingNumber: data.trackingNumber,
+          updatedAt: new Date(),
+        })
+        .where(eq(shipments.id, id))
+        .returning();
 
-  await db.update(awbs)
-    .set({
-      pieces: parseInt(data.pieces) || 0,
-      chargeableWeight: (data.weight || "0").toString(),
-      awbNumber: data.trackingNumber,
-    })
-    .where(eq(awbs.shipmentId, id));
+      await tx.update(awbs)
+        .set({
+          pieces: parseInt(data.pieces) || 0,
+          chargeableWeight: (data.weight || "0").toString(),
+          awbNumber: data.trackingNumber,
+        })
+        .where(eq(awbs.shipmentId, id));
 
-  revalidatePath("/dashboard/shipments");
-  return updated;
+      return updated;
+    });
+
+    revalidatePath("/dashboard/shipments");
+    return { success: true, data: result };
+  } catch (error: any) {
+    console.error("Update Shipment Error:", error);
+    return { success: false, error: error.message || "Failed to update shipment records." };
+  }
 }
 
 /**

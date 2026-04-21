@@ -27,14 +27,23 @@ export default function ShipmentForm({ initialData, customers, onSuccess }: Ship
     setLoading(true);
     try {
       if (initialData?.id) {
-        await updateFullShipment(initialData.id, formData);
+        const result = await updateFullShipment(initialData.id, formData);
+        if (result.success) {
+          onSuccess();
+        } else {
+          alert(result.error);
+        }
       } else {
-        await createShipment(formData);
+        const result = await createShipment(formData);
+        if (result.success) {
+          onSuccess();
+        } else {
+          alert(result.error);
+        }
       }
-      onSuccess();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Form submission failed:", err);
-      alert("Error saving shipment. Please try again.");
+      alert("A network or system error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
