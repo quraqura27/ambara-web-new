@@ -6,16 +6,8 @@ const isProtectedRoute = createRouteMatcher(['/dashboard(.*)']);
 
 export default clerkMiddleware(async (auth, req) => {
   const url = req.nextUrl.pathname;
-  const hostname = req.headers.get("host") || "";
 
-  // 1. Canonical Domain Redirect (Fixes CSRF/Origin Mismatch)
-  if (hostname.startsWith("www.")) {
-    const newUrl = new URL(req.url);
-    newUrl.hostname = hostname.replace(/^www\./, "");
-    return NextResponse.redirect(newUrl, 301);
-  }
-
-  // 2. Static & Internal Bypass (Highest Priority)
+  // 1. Static & Internal Bypass (Highest Priority)
   if (
     url.startsWith('/_next') || 
     url.includes('/api/auth') || 
