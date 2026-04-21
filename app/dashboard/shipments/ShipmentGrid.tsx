@@ -308,10 +308,12 @@ export default function ShipmentGrid({ initialShipments, customers }: { initialS
                       {shipment.serviceType || "STANDARD"}
                     </span>
                   </td>
-                  <td className="px-6 py-4" suppressHydrationWarning>
+                  <td className="px-6 py-4">
                     <div className="flex items-center gap-2 text-slate-500">
                       <Calendar size={12} />
-                      <span className="text-xs font-medium">{shipment.createdAt?.toLocaleDateString()}</span>
+                      <span className="text-xs font-medium">
+                        {shipment.createdAt ? new Intl.DateTimeFormat('en-GB').format(new Date(shipment.createdAt)) : "-"}
+                      </span>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-right">

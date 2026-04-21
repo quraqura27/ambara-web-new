@@ -23,6 +23,9 @@
     - **Deterministic AWB Scraper**: Proprietary coordinate-locked engine for error-free cargo data extraction.
     - **Thermal Label Engine**: Automated generation of airline-compliant AWB stickers.
 ## Recent Decisions
+- **CSS Structural Hardening (April 21)**: Implemented "Immortal Shell" styling in `globals.css` with `!important` layout properties. Created explicit fallbacks for critical Tailwind utilities (flex, grid, responsive containers) to prevent production layout regressions caused by CSS stripping or environment mismatches.
+- **Hydration Sync Fix (April 21)**: Resolved persistent React hydration errors in `ShipmentGrid.tsx` by implementing a deterministic `Intl.DateTimeFormat('en-GB')` formatter, ensuring server-client consistency for shipment dates.
+- **Tailwind v4 Configuration Compatibility (April 21)**: Introduced a minimal `tailwind.config.ts` to ensure the CSS engine initializes correctly in non-standard production build environments.
 - **Clerk RBAC & Webhooks System (April 19)**: Scraped Fonnte/WhatsApp webhooks for native in-app Admin Notifications at `/dashboard/admin/users`. Created Neon `profiles` table to sync with Clerk `user.created` webhooks, alongside strict route-guard validations in `middleware.ts` evaluating `metadata.role`.
 - **Hybrid Engine Restoration**: Successfully restored the site by bridging legacy HTML files with native Next.js API Gateway and App Router.
 - **Production Key Injection (April 17)**: Configured Vercel production edge with native Clerk `live` keys (Publishable, Secret, and 4 routing URLs) via Vercel CLI to remove silently failing `<SignIn />` blank screens.

@@ -12,10 +12,12 @@ To build a SaaS platform for a freight forwarding company handling global logist
 - **Email**: Resend
 
 ## Recent Decisions (Session 4cb81bf1)
-1. **RBAC Transition:** Upgraded simple authentication to Role-Based Access Control using Clerk `sessionClaims` and metadata. Core roles remain: `MASTER_ADMIN`, `OPERATIONS`, `FINANCE`.
-2. **Database Sync:** Created `profiles` table to maintain a synchronized mapping of Clerk UUIDs to system roles via Webhooks (`svix`). New signups default to `PENDING` status.
-3. **Server Actions for Admin:** Replaced client-side state with Next.js Server Actions (`approveUser`, `denyUser`) inside `/app/dashboard/admin/users/page.tsx` for cleaner role assignments.
-4. **Environment Promotion:** Successfully pushed changes to Vercel production to enforce `/dashboard/admin` and `middleware.ts` protections globally. Clerk keys are completely migrated to Production keys.
+1. **CSS Structural Stabilization:** Hardened the dashboard layout using "Immortal Shell" CSS patterns in `globals.css` with `!important` fallbacks for critical Tailwind utilities.
+2. **Hydration Resolution:** Standardized date rendering using `Intl.DateTimeFormat` to eliminate server-client mismatches.
+3. **RBAC Transition:** Upgraded simple authentication to Role-Based Access Control using Clerk `sessionClaims` and metadata. Core roles remain: `MASTER_ADMIN`, `OPERATIONS`, `FINANCE`.
+4. **Database Sync:** Created `profiles` table to maintain a synchronized mapping of Clerk UUIDs to system roles via Webhooks (`svix`). New signups default to `PENDING` status.
+5. **Server Actions for Admin:** Replaced client-side state with Next.js Server Actions (`approveUser`, `denyUser`) inside `/app/dashboard/admin/users/page.tsx` for cleaner role assignments.
+6. **Environment Promotion:** Successfully pushed changes to Vercel production to enforce `/dashboard/admin` and `middleware.ts` protections globally. Clerk keys are completely migrated to Production keys.
 
 ## Current Focus
 - The environment is fully deployed on Vercel. 

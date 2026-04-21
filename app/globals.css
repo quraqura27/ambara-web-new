@@ -3,6 +3,8 @@
 :root {
   --background: #020617;
   --foreground: #f8fafc;
+  --sidebar-width: 16rem;
+  --header-height: 4rem;
 }
 
 @theme {
@@ -10,143 +12,142 @@
   --color-foreground: var(--foreground);
 }
 
-/* THE IMMORTAL SHELL - Core layout protection */
-.ambara-portal-bg { background-color: #0a0a0f !important; color: #f8fafc !important; }
-.ambara-sidebar-shell { background-color: #0f0f16 !important; border-right: 1px solid rgba(30,41,59,0.5); display: flex; flex-direction: column; width: 16rem; }
-.ambara-header-shell { background-color: rgba(15,15,22,0.5) !important; backdrop-filter: blur(20px); border-bottom: 1px solid rgba(30,41,59,0.5); height: 4rem; }
-.ambara-button-primary { background-color: #2563eb !important; color: white !important; padding: 0.625rem 1.25rem; border-radius: 0.75rem; font-weight: 700; border: none; cursor: pointer; }
+/* THE IMMORTAL SHELL - Structural & Visual Hardening */
+/* These classes are guaranteed to work even if Tailwind utility generation fails */
+
+.ambara-portal-bg { 
+  background-color: #0a0a0f !important; 
+  color: #f8fafc !important; 
+  display: flex !important;
+  min-height: 100vh !important;
+}
+
+.ambara-sidebar-shell { 
+  background-color: #0f0f16 !important; 
+  border-right: 1px solid rgba(30,41,59,0.5) !important; 
+  width: var(--sidebar-width) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex-shrink: 0 !important;
+}
+
+/* Responsive Sidebar: Hide on mobile, show on desktop */
+@media (max-width: 1023px) {
+  .ambara-sidebar-shell {
+    display: none !important;
+  }
+}
+
+.ambara-main-shell {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 0% !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+.ambara-header-shell { 
+  height: var(--header-height) !important;
+  background-color: rgba(15,15,22,0.8) !important; 
+  backdrop-filter: blur(20px); 
+  border-bottom: 1px solid rgba(30,41,59,0.5) !important; 
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 0 1.5rem !important;
+  z-index: 10 !important;
+}
+
+.ambara-button-primary { 
+  background-color: #2563eb !important; 
+  color: white !important; 
+  padding: 0.625rem 1.25rem !important; 
+  border-radius: 0.75rem !important; 
+  font-weight: 700 !important; 
+  border: none !important; 
+  cursor: pointer !important; 
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+
+/* Headings & Text Hardening */
+.ambara-heading-main {
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  background: linear-gradient(to right, #3b82f6, #22d3ee) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  color: transparent !important;
+  margin: 0 !important;
+}
+
+.ambara-heading-section {
+  font-size: 1.5rem !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+  margin-bottom: 0.5rem !important;
+}
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  margin: 0;
 }
 
-/* Custom Scrollbar for Manifest Review */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 5px;
-}
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #1e293b;
-  border-radius: 10px;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #334155;
-}
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar { width: 5px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #334155; }
 
-/* Hide Scrollbar Utility */
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-/* Glassmorphism Utilities */
-.glass-panel {
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(51, 65, 85, 0.5);
-}
-
-/* THE IMMORTAL SHELL - Core layout protection */
-.ambara-portal-bg {
-  background-color: #0a0a0f;
-  color: #f8fafc;
-}
-
-.ambara-sidebar-shell {
-  background-color: #0f0f16;
-  border-right: 1px solid rgba(30, 41, 59, 0.5);
-  display: flex;
-  flex-direction: column;
-  width: 16rem; /* 64 (w-64) */
-}
-
-.ambara-header-shell {
-  background-color: rgba(15, 15, 22, 0.5);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(30, 41, 59, 0.5);
-  height: 4rem; /* 16 (h-16) */
-}
-
-.ambara-nav-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.625rem 0.75rem;
-  border-radius: 0.5rem;
-  text-decoration: none;
-  font-size: 0.875rem;
-}
+/* Grid & Card Shells */
 .ambara-grid-shell {
-  display: grid;
-  grid-template-columns: repeat(1, minmax(0, 1fr));
-  gap: 1.5rem;
-}
-
-@media (min-width: 768px) {
-  .ambara-grid-shell {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
+  display: grid !important;
+  gap: 1.5rem !important;
 }
 
 .ambara-card-shell {
-  background-color: #0f0f16;
-  border: 1px solid rgba(30, 41, 59, 0.5);
-  border-radius: 1rem;
-  padding: 1.5rem;
+  background-color: #0f0f16 !important;
+  border: 1px solid rgba(30, 41, 59, 0.5) !important;
+  border-radius: 1rem !important;
+  padding: 1.5rem !important;
 }
 
 .ambara-table-container {
-  background-color: #0f0f16;
-  border: 1px solid rgba(30, 41, 59, 0.5);
-  border-radius: 1rem;
-  overflow: hidden;
+  background-color: #0f0f16 !important;
+  border: 1px solid rgba(30, 41, 59, 0.5) !important;
+  border-radius: 1rem !important;
+  overflow: hidden !important;
 }
 
-.ambara-button-primary {
-  background-color: #2563eb;
-  color: white;
-  padding: 0.625rem 1.25rem;
-  border-radius: 0.75rem;
-  font-weight: 700;
-  border: none;
-  cursor: pointer;
-}
-
-.ambara-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.ambara-table th {
-  padding: 1rem 1.5rem;
-  text-align: left;
-  border-bottom: 1px solid rgba(30, 41, 59, 0.5);
-  color: #64748b;
-  font-size: 10px;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.ambara-table td {
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid rgba(30, 41, 59, 0.2);
-  color: #e2e8f0;
-  font-size: 14px;
-}
-
-/* Global Fallbacks for Broken Tailwind Builds */
-a { color: #3b82f6; text-decoration: none; }
-a:hover { text-decoration: underline; }
-h1, h2, h3, h4 { color: #ffffff !important; }
-p, span, div { color: inherit; }
+/* Global Fallbacks for Broken Environments */
+h1, h2, h3 { color: #ffffff !important; font-family: sans-serif; }
 .text-white { color: #ffffff !important; }
 .text-slate-400 { color: #94a3b8 !important; }
+.text-slate-500 { color: #64748b !important; }
 .bg-blue-600 { background-color: #2563eb !important; }
+.bg-slate-800 { background-color: #1e293b !important; }
+.rounded-full { border-radius: 9999px !important; }
+.rounded-lg { border-radius: 0.5rem !important; }
+.rounded-2xl { border-radius: 1rem !important; }
+.flex { display: flex !important; }
+.flex-col { flex-direction: column !important; }
+.flex-1 { flex: 1 1 0% !important; }
+.items-center { align-items: center !important; }
+.justify-between { justify-content: space-between !important; }
+.gap-2 { gap: 0.5rem !important; }
+.gap-4 { gap: 1rem !important; }
+.grid { display: grid !important; }
+.grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)) !important; }
+@media (min-width: 768px) {
+  .md\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+  .md\:flex-row { flex-direction: row !important; }
+}
+.hidden { display: none !important; }
+@media (min-width: 1024px) {
+  .lg\:flex { display: flex !important; }
+}
+.w-full { width: 100% !important; }
+.h-full { height: 100% !important; }

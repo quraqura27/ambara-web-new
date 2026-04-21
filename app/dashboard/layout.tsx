@@ -34,7 +34,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Sidebar - Desktop */}
       <aside className="hidden lg:flex flex-col w-64 border-r border-slate-800/50 bg-[#0f0f16] ambara-sidebar-shell">
         <div className="p-6">
-          <h1 className="text-xl font-bold bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent">
+          <h1 className="text-xl font-bold bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent ambara-heading-main">
             AMBARA PORTAL
           </h1>
           <p className="text-[10px] text-slate-500 tracking-widest mt-1">COMMAND CENTER v3</p>
@@ -73,7 +73,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden ambara-main-shell">
         {/* Header */}
         <header className="h-16 border-b border-slate-800/50 bg-[#0f0f16]/50 backdrop-blur-xl flex items-center justify-between px-6 z-10 ambara-header-shell">
           <button 
@@ -105,7 +105,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* Content Region */}
-        <div className="flex-1 overflow-y-auto p-6 md:p-8">
+        <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar">
           {children}
         </div>
       </main>

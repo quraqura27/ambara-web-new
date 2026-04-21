@@ -52,9 +52,11 @@ export default async function ShipmentsPage() {
   return (
     <div className="space-y-8">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-white tracking-tight">Cargo Operations</h2>
-          <p className="text-sm text-slate-500">Managing {allShipments.length} active shipments in the current cycle.</p>
+        <div className="flex flex-col gap-1">
+          <h2 className="text-2xl font-bold text-white tracking-tight ambara-heading-section">Cargo Operations</h2>
+          <p className="text-sm text-slate-400">
+            Managing <span className="text-blue-400 font-semibold">{allShipments.length}</span> active shipments in the current cycle.
+          </p>
         </div>
         <div className="flex gap-3">
           <button className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 border border-slate-700">
