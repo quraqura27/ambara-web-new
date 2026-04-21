@@ -301,8 +301,12 @@ export default function ShipmentGrid({ initialShipments, customers }: { initialS
             </thead>
             <tbody className="divide-y divide-slate-800/50">
               {filteredShipments.map((shipment) => (
-                <tr key={shipment.id} className={`hover:bg-slate-800/20 transition-colors group ${selectedIds.includes(shipment.id) ? "bg-blue-500/5" : ""}`}>
-                  <td className="px-6 py-4">
+                <tr 
+                  key={shipment.id} 
+                  className={`hover:bg-slate-800/20 transition-colors group ${selectedIds.includes(shipment.id) ? "bg-blue-500/5" : ""}`}
+                  style={{ borderBottom: '1px solid rgba(30,41,59,0.3)', backgroundColor: selectedIds.includes(shipment.id) ? 'rgba(37,99,235,0.05)' : 'transparent' }}
+                >
+                  <td className="px-6 py-4" style={{ padding: '16px 24px' }}>
                     <input 
                       type="checkbox" 
                       checked={selectedIds.includes(shipment.id)} 
@@ -310,59 +314,62 @@ export default function ShipmentGrid({ initialShipments, customers }: { initialS
                       className="accent-blue-500 rounded border-slate-700 bg-slate-900" 
                     />
                   </td>
-                  <td className="px-4 py-4">
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-2 mb-1">
+                  <td className="px-4 py-4" style={{ padding: '16px 16px' }}>
+                    <div className="flex flex-col" style={{ display: 'flex', flexDirection: 'column' }}>
+                      <div className="flex items-center gap-2 mb-1" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                         <StatusBadge status={shipment.status || "RECEIVED"} />
-                        <span className="text-xs font-mono font-bold text-slate-200">{shipment.internalTrackingNo || shipment.trackingNumber}</span>
+                        <span className="text-xs font-mono font-bold text-slate-200" style={{ fontSize: '12px', fontFamily: 'monospace', fontWeight: 'bold', color: '#e2e8f0' }}>{shipment.internalTrackingNo || shipment.trackingNumber}</span>
                       </div>
-                      <span className="text-[10px] text-slate-500 font-medium tracking-tight">System Matched</span>
+                      <span className="text-[10px] text-slate-500 font-medium tracking-tight" style={{ fontSize: '10px', color: '#64748b' }}>System Matched</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-blue-400 transition-colors border border-slate-700/50">
+                  <td className="px-6 py-4" style={{ padding: '16px 24px' }}>
+                    <div className="flex items-center gap-3" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-blue-400 transition-colors border border-slate-700/50" style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#1e293b', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', border: '1px solid rgba(51,65,85,0.5)' }}>
                         <User size={14} />
                       </div>
-                      <span className="text-sm font-medium text-slate-300">{shipment.customerName || "Walk-in Client"}</span>
+                      <span className="text-sm font-medium text-slate-300" style={{ fontSize: '14px', fontWeight: 500, color: '#cbd5e1' }}>{shipment.customerName || "Walk-in Client"}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2 text-xs font-medium text-slate-400">
-                      <span className="bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-slate-300 font-bold border border-slate-700/30">{shipment.origin}</span>
+                  <td className="px-6 py-4" style={{ padding: '16px 24px' }}>
+                    <div className="flex items-center gap-2 text-xs font-medium text-slate-400" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#94a3b8' }}>
+                      <span className="bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-slate-300 font-bold border border-slate-700/30" style={{ backgroundColor: '#1e293b', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', color: '#cbd5e1', fontWeight: 'bold', border: '1px solid rgba(51,65,85,0.3)' }}>{shipment.origin}</span>
                       <ChevronRight size={12} className="text-slate-600" />
-                      <span className="bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-slate-300 font-bold border border-slate-700/30">{shipment.destination}</span>
+                      <span className="bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-slate-300 font-bold border border-slate-700/30" style={{ backgroundColor: '#1e293b', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', color: '#cbd5e1', fontWeight: 'bold', border: '1px solid rgba(51,65,85,0.3)' }}>{shipment.destination}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <span className="text-[10px] font-black text-blue-500/80 bg-blue-500/5 px-2 py-1 rounded border border-blue-500/10 tracking-widest">
+                  <td className="px-6 py-4" style={{ padding: '16px 24px' }}>
+                    <span className="text-[10px] font-black text-blue-500/80 bg-blue-500/5 px-2 py-1 rounded border border-blue-500/10 tracking-widest" style={{ fontSize: '10px', fontWeight: 900, color: 'rgba(59,130,246,0.8)', backgroundColor: 'rgba(59,130,246,0.05)', padding: '4px 8px', borderRadius: '4px', border: '1px solid rgba(59,130,246,0.1)', letterSpacing: '0.1em' }}>
                       {shipment.serviceType || "STANDARD"}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2 text-slate-500">
+                  <td className="px-6 py-4" style={{ padding: '16px 24px' }}>
+                    <div className="flex items-center gap-2 text-slate-500" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748b' }}>
                       <Calendar size={12} />
-                      <span className="text-xs font-medium">
+                      <span className="text-xs font-medium" style={{ fontSize: '12px' }}>
                         {shipment.createdAt ? new Intl.DateTimeFormat('en-GB').format(new Date(shipment.createdAt)) : "-"}
                       </span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <td className="px-6 py-4 text-right" style={{ padding: '16px 24px', textAlign: 'right' }}>
+                    <div className="flex items-center justify-end gap-2" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
                       <button 
                         onClick={() => handleSinglePrint(shipment.id)}
                         disabled={isUpdating}
-                        className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors" 
+                        style={{ padding: '8px', borderRadius: '8px', backgroundColor: 'transparent', border: 'none', cursor: 'pointer', color: '#94a3b8' }} 
                         title="Print Label"
                       >
                         <Printer size={16} />
                       </button>
-                      <button className="p-2 hover:bg-slate-700 rounded-lg text-slate-500 hover:text-white transition-colors" title="View Manifest">
+                      <button 
+                        style={{ padding: '8px', borderRadius: '8px', backgroundColor: 'transparent', border: 'none', cursor: 'pointer', color: '#94a3b8' }} 
+                        title="View Manifest"
+                      >
                         <FileSearch size={16} />
                       </button>
                       <button 
                         onClick={() => setEditingShipment(shipment)}
-                        className="p-2 hover:bg-slate-700 rounded-lg text-slate-500 hover:text-white transition-colors"
+                        style={{ padding: '8px', borderRadius: '8px', backgroundColor: 'transparent', border: 'none', cursor: 'pointer', color: '#94a3b8' }}
                       >
                         <MoreVertical size={16} />
                       </button>
@@ -390,15 +397,30 @@ export default function ShipmentGrid({ initialShipments, customers }: { initialS
 
 function StatusBadge({ status }: { status: string }) {
   const styles: any = {
-    RECEIVED: "bg-yellow-500 text-black",
-    DEPARTED: "bg-blue-600 text-white",
-    ARRIVED: "bg-purple-600 text-white",
-    DELIVERED: "bg-green-600 text-white",
-    CUSTOMS: "bg-orange-600 text-white",
+    RECEIVED: { bg: "#eab308", text: "#000000" },
+    DEPARTED: { bg: "#2563eb", text: "#ffffff" },
+    ARRIVED: { bg: "#9333ea", text: "#ffffff" },
+    DELIVERED: { bg: "#16a34a", text: "#ffffff" },
+    CUSTOMS: { bg: "#ea580c", text: "#ffffff" },
   };
 
+  const style = styles[status] || styles.RECEIVED;
+
   return (
-    <span className={`text-[9px] font-black px-1.5 py-0.5 rounded leading-none ${styles[status] || styles.RECEIVED}`}>
+    <span 
+      className={`text-[9px] font-black px-1.5 py-0.5 rounded leading-none ${status}`}
+      style={{ 
+        fontSize: '9px', 
+        fontWeight: 900, 
+        padding: '2px 6px', 
+        borderRadius: '4px', 
+        backgroundColor: style.bg, 
+        color: style.text,
+        textTransform: 'uppercase',
+        display: 'inline-block',
+        lineHeight: '1'
+      }}
+    >
       {status}
     </span>
   );
