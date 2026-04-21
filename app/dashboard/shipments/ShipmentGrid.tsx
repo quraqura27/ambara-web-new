@@ -243,7 +243,7 @@ export default function ShipmentGrid({ initialShipments, customers }: { initialS
       {/* Main Data Table */}
       <div className="bg-[#0f0f16] border border-slate-800 rounded-2xl overflow-hidden shadow-2xl ambara-table-container">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse ambara-table">
             <thead>
               <tr className="bg-slate-900/50 border-b border-slate-800 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                 <th className="px-6 py-4 w-10">
