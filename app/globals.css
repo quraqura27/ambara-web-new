@@ -141,3 +141,12 @@ body {
   color: #e2e8f0;
   font-size: 14px;
 }
+
+/* Global Fallbacks for Broken Tailwind Builds */
+a { color: #3b82f6; text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { color: #ffffff !important; }
+p, span, div { color: inherit; }
+.text-white { color: #ffffff !important; }
+.text-slate-400 { color: #94a3b8 !important; }
+.bg-blue-600 { background-color: #2563eb !important; }
