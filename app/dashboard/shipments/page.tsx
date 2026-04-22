@@ -15,20 +15,23 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export default async function ShipmentsPage() {
-  const [shipments, customers] = await Promise.all([
-    getShipments(),
+export default async function ShipmentsPage({ searchParams }: { searchParams: any }) {
+  const page = Number(searchParams?.page) || 1;
+  const limit = Number(searchParams?.limit) || 10;
+  const offset = (page - 1) * limit;
+
+  const [{ shipments, totalCount }, customers] = await Promise.all([
+    getShipments(limit, offset),
     getCustomers(),
   ]);
 
   // Quick Stats Logic
-  const totalShipments = shipments.length;
   const inWarehouse = shipments.filter(s => s.status === "RECEIVED").length;
   const inTransit = shipments.filter(s => s.status === "DEPARTED" || s.status === "ARRIVED").length;
   const delivered = shipments.filter(s => s.status === "DELIVERED").length;
 
   const stats = [
-    { label: "Total Active", value: totalShipments, icon: Package, color: "text-blue-400", bg: "bg-blue-400/10" },
+    { label: "Total Active", value: totalCount, icon: Package, color: "text-blue-400", bg: "bg-blue-400/10" },
     { label: "In Warehouse", value: inWarehouse, icon: Clock, color: "text-amber-400", bg: "bg-amber-400/10" },
     { label: "In Transit", value: inTransit, icon: Truck, color: "text-purple-400", bg: "bg-purple-400/10" },
     { label: "Delivered", value: delivered, icon: CheckCircle2, color: "text-emerald-400", bg: "bg-emerald-400/10" },

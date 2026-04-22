@@ -32,9 +32,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-[#020617] text-slate-50 font-sans selection:bg-blue-500/30">
+    <div className="flex min-h-screen bg-[#020617] text-slate-50 font-sans selection:bg-blue-500/30 ambara-portal-bg">
       {/* Sidebar - Desktop */}
-      <aside className="hidden lg:flex w-64 flex-col bg-slate-900/40 backdrop-blur-md border-r border-slate-800/50">
+      <aside className="hidden lg:flex w-64 flex-col bg-slate-900/40 backdrop-blur-md border-r border-slate-800/50 ambara-sidebar-shell">
         <div className="p-8">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-600/20">
@@ -55,7 +55,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Link
                 key={item.name}
                 href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all duration-200 group ${
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all duration-200 group ambara-nav-item ${
                   active 
                     ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20 font-semibold" 
                     : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
@@ -90,7 +90,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
         
         {/* Header */}
-        <header className="h-20 border-b border-slate-800/50 bg-[#020617]/60 backdrop-blur-xl flex items-center justify-between px-8 z-20 sticky top-0">
+        <header className="h-20 border-b border-slate-800/50 bg-[#020617]/60 backdrop-blur-xl flex items-center justify-between px-8 z-20 sticky top-0 ambara-header-shell">
           <button 
             className="lg:hidden text-slate-400 p-2 hover:bg-slate-800/50 rounded-lg transition-colors"
             onClick={() => setMobileMenuOpen(true)}

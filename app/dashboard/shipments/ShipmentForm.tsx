@@ -15,6 +15,7 @@ export default function ShipmentForm({ initialData, customers, onSuccess }: Ship
   const [formData, setFormData] = useState({
     customerId: initialData?.customerId?.toString() || "",
     trackingNumber: initialData?.trackingNumber || "",
+    internalTrackingNo: initialData?.internalTrackingNo || "",
     origin: initialData?.origin || "",
     destination: initialData?.destination || "",
     status: initialData?.status || "RECEIVED",
@@ -68,10 +69,24 @@ export default function ShipmentForm({ initialData, customers, onSuccess }: Ship
         </div>
       )}
 
-      {/* Logistics Details */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Logistics Identifiers */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 rounded-3xl bg-slate-900/40 border border-slate-800">
         <div className="space-y-2">
-          <label className={labelClasses}>MAWB / Tracking</label>
+          <div className="flex items-center justify-between mb-2">
+            <label className={labelClasses}>Internal tracking no</label>
+            <span className="text-[9px] font-bold text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded-full uppercase tracking-widest">Auto-Gen Enabled</span>
+          </div>
+          <input
+            type="text"
+            readOnly
+            placeholder="AAG24ID00000000PP"
+            value={formData.internalTrackingNo || "AUTO-GENERATED ON SAVE"}
+            className={`${inputClasses} bg-slate-900/50 border-dashed border-slate-700 text-slate-500 cursor-not-allowed`}
+          />
+          <p className="text-[9px] text-slate-600 font-medium italic mt-1 ml-1">Format: [AA][YY][Country][8-digit-ID][Service]</p>
+        </div>
+        <div className="space-y-2">
+          <label className={labelClasses}>MAWB / Air Waybill No</label>
           <input
             type="text"
             placeholder="e.g. 126-12345678"
@@ -80,6 +95,9 @@ export default function ShipmentForm({ initialData, customers, onSuccess }: Ship
             className={inputClasses}
           />
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
           <label className={labelClasses}>Service Class</label>
           <select
@@ -92,20 +110,12 @@ export default function ShipmentForm({ initialData, customers, onSuccess }: Ship
             <option value="XP">Express Air-freight</option>
           </select>
         </div>
-      </div>
-
-      {/* Operational Status */}
-      <div className="p-6 rounded-3xl bg-blue-600/5 border border-blue-500/10">
-        <div className="flex items-center gap-2 mb-4">
-           <Info size={14} className="text-blue-500" />
-           <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Operational Milestone</span>
-        </div>
         <div className="space-y-2">
-          <label className={labelClasses}>Current Status</label>
+          <label className={labelClasses}>Current Operational Status</label>
           <select
             value={formData.status}
             onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-            className="w-full bg-slate-900 border border-blue-500/30 rounded-2xl py-3.5 px-4 text-sm text-blue-100 focus:outline-none focus:border-blue-500 transition-all"
+            className="w-full bg-slate-900 border border-blue-500/30 rounded-2xl py-3 px-4 text-sm text-blue-100 focus:outline-none focus:border-blue-500 transition-all"
           >
             <option value="RECEIVED">RECEIVED (In Warehouse)</option>
             <option value="DEPARTED">DEPARTED (In Transit)</option>

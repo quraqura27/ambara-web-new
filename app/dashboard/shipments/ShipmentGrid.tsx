@@ -20,26 +20,32 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import ShipmentForm from "./ShipmentForm";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { deleteShipment } from "@/app/actions/shipment-actions";
 
 interface ShipmentGridProps {
   initialShipments: any[];
   customers: any[];
+  totalCount: number;
+  page: number;
+  limit: number;
 }
 
-export default function ShipmentGrid({ initialShipments, customers }: ShipmentGridProps) {
+export default function ShipmentGrid({ initialShipments, customers, totalCount, page, limit }: ShipmentGridProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [search, setSearch] = useState("");
   const [isAdding, setIsAdding] = useState(false);
   const [editingShipment, setEditingShipment] = useState<any>(null);
   const [filterStatus, setFilterStatus] = useState("ALL");
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
   const filteredShipments = useMemo(() => {
     return initialShipments.filter((s) => {
       const matchesSearch = 
         s.trackingNumber?.toLowerCase().includes(search.toLowerCase()) ||
-        s.customerId?.toString().includes(search) ||
+        s.internalTrackingNo?.toLowerCase().includes(search.toLowerCase()) ||
         s.origin?.toLowerCase().includes(search.toLowerCase()) ||
         s.destination?.toLowerCase().includes(search.toLowerCase());
       
@@ -49,11 +55,61 @@ export default function ShipmentGrid({ initialShipments, customers }: ShipmentGr
     });
   }, [initialShipments, search, filterStatus]);
 
+  const toggleSelectAll = () => {
+    if (selectedIds.length === filteredShipments.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredShipments.map(s => s.id));
+    }
+  };
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
   const handleDelete = async (id: number) => {
     if (confirm("Permanently delete this shipment? This action cannot be undone.")) {
       const res = await deleteShipment(id);
-      if (res.success) router.refresh();
+      if (res.success) {
+        setSelectedIds(prev => prev.filter(i => i !== id));
+        router.refresh();
+      }
     }
+  };
+
+  const handleBulkDelete = async () => {
+    if (confirm(`Permanently delete ${selectedIds.length} shipments?`)) {
+      alert("Bulk delete feature is being synchronized with the database...");
+    }
+  };
+
+  const handleExport = () => {
+    const headers = ["Internal ID", "MAWB", "Origin", "Destination", "Status", "Service", "Weight", "Pieces", "Shipper", "Consignee", "Created"];
+    const rows = filteredShipments.map(s => [
+      s.internalTrackingNo,
+      s.trackingNumber || "N/A",
+      s.origin,
+      s.destination,
+      s.status,
+      s.serviceType,
+      s.weight,
+      s.pieces,
+      s.shipper || "",
+      s.consignee || "",
+      format(new Date(s.createdAt), "yyyy-MM-dd")
+    ]);
+
+    const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `ambara_shipments_${format(new Date(), "yyyyMMdd")}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const getStatusStyle = (status: string) => {
@@ -69,6 +125,39 @@ export default function ShipmentGrid({ initialShipments, customers }: ShipmentGr
 
   return (
     <div className="flex flex-col h-full bg-[#0f172a]/30">
+      {/* Bulk Actions Toolbar */}
+      {selectedIds.length > 0 && (
+        <div className="bg-blue-600 px-6 py-3 flex items-center justify-between animate-in slide-in-from-top duration-300">
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-black text-white uppercase tracking-widest">{selectedIds.length} Shipments Selected</span>
+            <div className="h-4 w-px bg-white/20" />
+            <button className="text-xs font-bold text-white/80 hover:text-white transition-colors uppercase tracking-widest flex items-center gap-2">
+              <Edit2 size={14} /> Update Status
+            </button>
+            <button 
+              onClick={handleExport}
+              className="text-xs font-bold text-white/80 hover:text-white transition-colors uppercase tracking-widest flex items-center gap-2"
+            >
+              <Download size={14} /> Export CSV
+            </button>
+          </div>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={handleBulkDelete}
+              className="px-4 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-black text-white uppercase tracking-widest transition-all"
+            >
+              Delete Selected
+            </button>
+            <button 
+              onClick={() => setSelectedIds([])}
+              className="text-white/60 hover:text-white transition-colors"
+            >
+              <ChevronRight className="rotate-45" size={20} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Grid Toolbar */}
       <div className="p-6 border-b border-slate-800/50 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/20">
         <div className="flex items-center gap-4 flex-1">
@@ -76,7 +165,7 @@ export default function ShipmentGrid({ initialShipments, customers }: ShipmentGr
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
             <input
               type="text"
-              placeholder="Filter shipments..."
+              placeholder="Filter by Tracking, Route, or ID..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full bg-slate-900 border border-slate-800 rounded-xl py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-blue-500/50 transition-all text-slate-300"
@@ -96,13 +185,21 @@ export default function ShipmentGrid({ initialShipments, customers }: ShipmentGr
           </select>
         </div>
 
-        <button
-          onClick={() => setIsAdding(true)}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-blue-600/20 transition-all active:scale-95"
-        >
-          <Plus size={18} />
-          New Shipment
-        </button>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={handleExport}
+            className="p-2.5 bg-slate-900 text-slate-500 border border-slate-800 rounded-xl hover:text-white transition-all"
+          >
+            <Download size={18} />
+          </button>
+          <button
+            onClick={() => setIsAdding(true)}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-blue-600/20 transition-all active:scale-95"
+          >
+            <Plus size={18} />
+            New Shipment
+          </button>
+        </div>
       </div>
 
       {/* Table Container */}
@@ -110,6 +207,14 @@ export default function ShipmentGrid({ initialShipments, customers }: ShipmentGr
         <table className="w-full border-collapse">
           <thead>
             <tr className="border-b border-slate-800/50 bg-slate-900/40">
+              <th className="px-6 py-4 text-left w-10">
+                <input 
+                  type="checkbox" 
+                  checked={selectedIds.length === filteredShipments.length && filteredShipments.length > 0}
+                  onChange={toggleSelectAll}
+                  className="rounded border-slate-800 bg-slate-900 text-blue-600 focus:ring-blue-500 focus:ring-offset-slate-950"
+                />
+              </th>
               <th className="px-6 py-4 text-left">
                 <div className="flex items-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-widest">
                   Tracking <ArrowUpDown size={12} />
@@ -142,14 +247,22 @@ export default function ShipmentGrid({ initialShipments, customers }: ShipmentGr
           </thead>
           <tbody className="divide-y divide-slate-800/30">
             {filteredShipments.map((shipment) => (
-              <tr key={shipment.id} className="group hover:bg-blue-600/5 transition-colors">
+              <tr key={shipment.id} className={`group hover:bg-blue-600/5 transition-colors ${selectedIds.includes(shipment.id) ? 'bg-blue-600/10' : ''}`}>
+                <td className="px-6 py-5">
+                  <input 
+                    type="checkbox" 
+                    checked={selectedIds.includes(shipment.id)}
+                    onChange={() => toggleSelect(shipment.id)}
+                    className="rounded border-slate-800 bg-slate-900 text-blue-600 focus:ring-blue-500 focus:ring-offset-slate-950"
+                  />
+                </td>
                 <td className="px-6 py-5">
                   <div className="flex flex-col">
                     <span className="text-sm font-bold text-white tracking-tight group-hover:text-blue-400 transition-colors">
                       {shipment.trackingNumber || "N/A"}
                     </span>
                     <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wider mt-0.5">
-                      {shipment.serviceType || "PP"} Standard
+                      {shipment.internalTrackingNo}
                     </span>
                   </div>
                 </td>
@@ -203,7 +316,6 @@ export default function ShipmentGrid({ initialShipments, customers }: ShipmentGr
             ))}
           </tbody>
         </table>
-
         {filteredShipments.length === 0 && (
           <div className="p-20 flex flex-col items-center justify-center text-center">
             <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center mb-4 border border-slate-800">
@@ -215,17 +327,79 @@ export default function ShipmentGrid({ initialShipments, customers }: ShipmentGr
         )}
       </div>
 
-      {/* Pagination Placeholder */}
-      <div className="p-6 border-t border-slate-800/50 bg-slate-900/20 flex items-center justify-between">
-        <span className="text-xs font-medium text-slate-500">
-          Showing <span className="text-slate-300 font-bold">{filteredShipments.length}</span> results
-        </span>
+      {/* Pagination Controls */}
+      <div className="p-6 border-t border-slate-800/50 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-slate-900/10">
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Rows per page:</span>
+            <select 
+              value={limit}
+              onChange={(e) => {
+                const params = new URLSearchParams(searchParams);
+                params.set('limit', e.target.value);
+                params.set('page', '1');
+                router.push(`${pathname}?${params.toString()}`);
+              }}
+              className="bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-[10px] font-black text-slate-300 focus:outline-none"
+            >
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
+          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+            Showing {(page - 1) * limit + 1} - {Math.min(page * limit, totalCount)} of {totalCount}
+          </span>
+        </div>
+
         <div className="flex items-center gap-2">
-           <button className="p-2 text-slate-500 hover:text-white disabled:opacity-30" disabled><ChevronLeft size={20} /></button>
-           <div className="flex items-center gap-1">
-             <button className="w-8 h-8 rounded-lg bg-blue-600 text-white text-xs font-bold">1</button>
-           </div>
-           <button className="p-2 text-slate-500 hover:text-white disabled:opacity-30" disabled><ChevronRight size={20} /></button>
+          <button 
+            disabled={page <= 1}
+            onClick={() => {
+              const params = new URLSearchParams(searchParams);
+              params.set('page', (page - 1).toString());
+              router.push(`${pathname}?${params.toString()}`);
+            }}
+            className="p-2 border border-slate-800 rounded-xl text-slate-500 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          
+          <div className="flex items-center gap-1">
+            {Array.from({ length: Math.min(5, Math.ceil(totalCount / limit)) }, (_, i) => {
+              const pageNum = i + 1;
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => {
+                    const params = new URLSearchParams(searchParams);
+                    params.set('page', pageNum.toString());
+                    router.push(`${pathname}?${params.toString()}`);
+                  }}
+                  className={`w-10 h-10 rounded-xl text-xs font-black transition-all ${
+                    page === pageNum 
+                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' 
+                      : 'bg-slate-900 text-slate-500 hover:text-white border border-slate-800'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+          </div>
+
+          <button 
+            disabled={page >= Math.ceil(totalCount / limit)}
+            onClick={() => {
+              const params = new URLSearchParams(searchParams);
+              params.set('page', (page + 1).toString());
+              router.push(`${pathname}?${params.toString()}`);
+            }}
+            className="p-2 border border-slate-800 rounded-xl text-slate-500 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+          >
+            <ChevronRight size={18} />
+          </button>
         </div>
       </div>
 

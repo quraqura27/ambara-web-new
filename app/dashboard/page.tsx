@@ -1,6 +1,4 @@
-import { db } from "@/lib/db";
-import { shipments, customers, invoices, awbs } from "@/lib/db/schema";
-import { count, sum, desc, eq } from "drizzle-orm";
+import { getDashboardStats, getTonnageData, getRecentActivity } from "@/app/actions/dashboard-actions";
 import { auth } from "@clerk/nextjs/server";
 import DashboardContent from "./DashboardContent";
 import { ShieldCheck, Activity, Globe } from "lucide-react";
@@ -12,46 +10,12 @@ export default async function DashboardPage() {
   const { userId } = await auth();
   if (!userId) return <div>Unauthorized</div>;
 
-  // 1. Fetch Stats with Total Isolation
-  const shipCount = await db.select({ total: count() }).from(shipments).then(res => Number(res[0]?.total || 0)).catch(() => 0);
-  const custCount = await db.select({ total: count() }).from(customers).then(res => Number(res[0]?.total || 0)).catch(() => 0);
-  const invSum = await db.select({ total: sum(invoices.totalAmount) }).from(invoices).where(eq(invoices.status, 'PENDING')).then(res => Number(res[0]?.total || 0)).catch(() => 0);
-  const volumeSum = await db.select({ total: sum(awbs.chargeableWeight) }).from(awbs).then(res => Number(res[0]?.total || 0)).catch(() => 0);
-
-  // 2. Format with Fallbacks
-  const stats = {
-    volume: volumeSum > 0 ? (volumeSum / 1000).toFixed(1) : `${shipCount} OPS`,
-    invoices: invSum >= 1_000_000_000 
-      ? `Rp ${(invSum / 1_000_000_000).toFixed(1)}B`
-      : invSum > 0 ? `Rp ${(invSum / 1_000_000).toFixed(0)}M` : "Rp 0",
-    customers: custCount,
-    volumeChange: "+12.4%",
-    invoiceChange: "Stable",
-    customerChange: "Verified"
-  };
-
-  // 3. Fetch Activity
-  const activity = await db.select()
-    .from(shipments)
-    .orderBy(desc(shipments.createdAt))
-    .limit(5)
-    .then(rows => rows.map(s => ({
-      text: `Shipment ${s.trackingNumber || s.internalTrackingNo || "AAG-TEMP"} status updated to ${s.status}`,
-      time: "Just now",
-      user: "SYSTEM",
-      type: s.status === 'DELIVERED' ? 'success' : 'info'
-    })))
-    .catch(() => []);
-
-  const chartData = [
-    { name: "Mon", volume: 4000 },
-    { name: "Tue", volume: 3000 },
-    { name: "Wed", volume: 5500 },
-    { name: "Thu", volume: 4200 },
-    { name: "Fri", volume: 1890 },
-    { name: "Sat", volume: 2390 },
-    { name: "Sun", volume: 3490 },
-  ];
+  // 1. Fetch Stats via Server Actions
+  const [stats, chartData, activity] = await Promise.all([
+    getDashboardStats(),
+    getTonnageData(),
+    getRecentActivity()
+  ]);
 
   return (
     <div className="space-y-10 animate-in fade-in duration-1000">

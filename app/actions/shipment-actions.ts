@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db";
 import { shipments, awbs } from "@/lib/db/schema";
-import { eq, inArray, desc, ilike } from "drizzle-orm";
+import { eq, inArray, desc, ilike, count } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { auth } from "@clerk/nextjs/server";
 import { generateInternalTrackingNo } from "@/lib/utils/id-gen";
@@ -242,11 +242,14 @@ export async function getShipmentsForLabels() {
  * GET ALL SHIPMENTS (Unified Grid)
  * Optimized fetch for the main command center grid.
  */
-export async function getShipments() {
+export async function getShipments(limit: number = 10, offset: number = 0) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
-  return await db.select({
+  const [countResult] = await db.select({ total: count() }).from(shipments);
+  const totalCount = Number(countResult.total);
+
+  const data = await db.select({
     id: shipments.id,
     internalTrackingNo: shipments.internalTrackingNo,
     trackingNumber: shipments.trackingNumber,
@@ -265,7 +268,11 @@ export async function getShipments() {
   })
   .from(shipments)
   .leftJoin(awbs, eq(shipments.id, awbs.shipmentId))
-  .orderBy(desc(shipments.createdAt));
+  .orderBy(desc(shipments.createdAt))
+  .limit(limit)
+  .offset(offset);
+
+  return { shipments: data, totalCount };
 }
 
 /**
