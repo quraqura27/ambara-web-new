@@ -56,17 +56,39 @@ export async function getDashboardStats() {
       db.select({ total: count() }).from(customers).where(sql`${customers.createdAt} >= ${startOfPreviousMonth} AND ${customers.createdAt} <= ${endOfPreviousMonth}`)
     ]);
 
-    // 2. Process Volume (MT) - Value is ABSOLUTE total
-    const volTotal = Number(totalVolumeResult[0]?.total || 0);
-    const volCurr = Number(currentVolume[0]?.total || 0);
-    const volPrev = Number(prevVolume[0]?.total || 0);
+    const stats = {
+      volume: "0.0",
+      volumeChange: "0%",
+      invoices: "Rp 0",
+      invoiceChange: "0%",
+      customers: 0,
+      customerChange: "0%",
+      volumeUp: true,
+      invoiceUp: true,
+      customerUp: true,
+    };
+
+    console.log("DASHBOARD_STATS_START");
+    console.log("TOTAL_VOLUME_RAW:", totalVolumeResult[0]?.total);
+    console.log("TOTAL_SHIPMENTS_RAW:", totalShipmentsResult[0]?.total);
+
+    const volTotal = parseFloat(totalVolumeResult[0]?.total?.toString() || "0");
+    const countTotal = parseInt(totalShipmentsResult[0]?.total?.toString() || "0");
     
-    // Intelligent Unit Selection: Show MT for large volumes, KG for small
+    console.log("PARSED_VOLUME:", volTotal);
+    console.log("PARSED_COUNT:", countTotal);
+
+    // Dynamic Unit Selection
     if (volTotal >= 1000) {
       stats.volume = (volTotal / 1000).toFixed(2) + " MT";
     } else {
       stats.volume = volTotal.toFixed(0) + " KG";
     }
+
+    stats.customers = countTotal;
+
+    const volCurr = Number(currentVolume[0]?.total || 0);
+    const volPrev = Number(prevVolume[0]?.total || 0);
     
     stats.volumeChange = calculatePercentageChange(volCurr, volPrev);
     stats.volumeUp = volCurr >= volPrev;
