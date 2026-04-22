@@ -30,11 +30,19 @@ export async function getDashboardStats() {
   };
 
   try {
-    // 1. Core Portfolio Metrics (ABSOLUTE TOTALS)
+    console.log("DB_CONNECTION_HOST:", process.env.DATABASE_URL?.split('@')[1]?.split('/')[0]);
+
+    // 1. Core Portfolio Metrics (ABSOLUTE TOTALS - RAW SQL BYPASS)
     const [totalShipmentsResult, totalVolumeResult] = await Promise.all([
-      db.select({ total: count() }).from(shipments),
-      db.select({ total: sql<string>`SUM(CAST(${shipments.chargeableWeight} AS NUMERIC))` }).from(shipments)
+      db.execute(sql`SELECT count(*) as total FROM shipments`),
+      db.execute(sql`SELECT SUM(CAST(chargeable_weight AS NUMERIC)) as total FROM shipments`)
     ]);
+    
+    console.log("RAW_VOLUME_RESULT:", totalVolumeResult);
+    console.log("RAW_SHIPMENTS_RESULT:", totalShipmentsResult);
+
+    const volTotal = parseFloat(totalVolumeResult[0]?.total?.toString() || "0");
+    const countTotal = parseInt(totalShipmentsResult[0]?.total?.toString() || "0");
     
     // 2. Trend Metrics (Monthly Comparison)
     const [currentShipments, prevShipments, currentVolume, prevVolume] = await Promise.all([
