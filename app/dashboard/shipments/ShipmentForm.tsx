@@ -167,7 +167,7 @@ export default function ShipmentForm({ initialData, customers, onSuccess }: Ship
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20 ambara-button-primary"
+          className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20"
         >
           {loading ? "Processing..." : initialData ? "Update Shipment" : "Create Shipment"}
           {!loading && <Save size={18} />}

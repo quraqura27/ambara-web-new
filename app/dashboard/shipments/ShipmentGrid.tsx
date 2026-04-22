@@ -165,40 +165,21 @@ export default function ShipmentGrid({ initialShipments, customers }: { initialS
       </SlideOver>
 
       {/* Search & Filter Bar */}
-      <div 
-        className="flex flex-col md:flex-row gap-4 justify-between items-center bg-[#0f0f16] border border-slate-800 p-4 rounded-2xl relative overflow-hidden"
-        style={{ 
-          display: 'flex', 
-          flexDirection: 'row', 
-          gap: '16px', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
-          backgroundColor: '#0f0f16', 
-          border: '1px solid #1e293b', 
-          padding: '16px', 
-          borderRadius: '16px', 
-          position: 'relative', 
-          overflow: 'hidden',
-          marginBottom: '24px'
-        }}
-      >
+      <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-[#0f172a]/50 border border-slate-800/50 p-4 rounded-2xl relative overflow-hidden">
         {selectedIds.length > 0 && (
-          <div 
-            className="absolute inset-0 bg-blue-600 flex items-center px-6 justify-between z-20"
-            style={{ position: 'absolute', inset: 0, backgroundColor: '#2563eb', display: 'flex', alignItems: 'center', padding: '0 24px', justifyContent: 'space-between', zIndex: 20 }}
-          >
-            <div className="flex items-center gap-4" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <span className="text-sm font-bold text-white" style={{ fontSize: '14px', fontWeight: 'bold', color: 'white' }}>{selectedIds.length} Shipments Selected</span>
-              <div className="h-4 w-px bg-blue-400" style={{ height: '16px', width: '1px', backgroundColor: '#60a5fa' }} />
-              <div className="flex gap-2" style={{ display: 'flex', gap: '8px' }}>
+          <div className="absolute inset-0 bg-blue-600 flex items-center px-6 justify-between z-20">
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-bold text-white">{selectedIds.length} Shipments Selected</span>
+              <div className="h-4 w-px bg-blue-400" />
+              <div className="flex gap-2">
                 <BulkActionButton icon={Truck} label="DEPARTED" onClick={() => handleBulkUpdate("DEPARTED")} disabled={isUpdating} />
                 <BulkActionButton icon={Package} label="ARRIVED" onClick={() => handleBulkUpdate("ARRIVED")} disabled={isUpdating} />
                 <BulkActionButton icon={CheckCircle} label="DELIVERED" onClick={() => handleBulkUpdate("DELIVERED")} disabled={isUpdating} />
-                <div className="h-4 w-px bg-blue-400 mx-1" style={{ height: '16px', width: '1px', backgroundColor: '#60a5fa', margin: '0 4px' }} />
+                <div className="h-4 w-px bg-blue-400 mx-1" />
                 <button 
                   onClick={handleBulkPrint}
                   disabled={isUpdating}
-                  style={{ backgroundColor: 'white', color: '#2563eb', padding: '6px 12px', borderRadius: '8px', fontSize: '10px', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '8px', border: 'none', cursor: 'pointer' }}
+                  className="bg-white text-blue-600 px-3 py-1.5 rounded-lg text-[10px] font-black flex items-center gap-2"
                 >
                   <Printer size={14} /> PRINT {selectedIds.length} LABELS
                 </button>
@@ -206,43 +187,31 @@ export default function ShipmentGrid({ initialShipments, customers }: { initialS
             </div>
             <button 
               onClick={() => setSelectedIds([])}
-              style={{ color: 'rgba(255,255,255,0.7)', background: 'none', border: 'none', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer' }}
+              className="text-white/70 text-[10px] font-bold uppercase tracking-widest hover:text-white"
             >
               Cancel
             </button>
           </div>
         )}
 
-        <div className="relative w-full md:w-96" style={{ position: 'relative', width: '384px' }}>
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+        <div className="relative w-full md:w-96">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
           <input 
             type="text" 
             placeholder="Search Tracking, AWB, or Customer..." 
+            className="w-full bg-slate-900/50 border border-slate-800 rounded-xl py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-blue-500/50 transition-all text-slate-300"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{ 
-              width: '100%', 
-              backgroundColor: '#0f172a', 
-              border: '1px solid #1e293b', 
-              borderRadius: '12px', 
-              padding: '10px 16px 10px 40px', 
-              fontSize: '14px', 
-              color: '#e2e8f0', 
-              outline: 'none' 
-            }}
           />
         </div>
         
-        <div className="flex items-center gap-3 w-full md:w-auto" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'nowrap' }}>
-          <div 
-            className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 shadow-inner"
-            style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', padding: '6px 12px', minWidth: '160px' }}
-          >
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 shadow-inner">
             <Filter size={14} className="text-slate-500" />
             <select 
+              className="bg-transparent border-none text-xs font-bold text-slate-300 focus:outline-none cursor-pointer uppercase"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              style={{ backgroundColor: 'transparent', border: 'none', color: '#cbd5e1', fontSize: '12px', fontWeight: 'bold', outline: 'none', cursor: 'pointer', textTransform: 'uppercase', width: '100%' }}
             >
               <option value="ALL">All Status</option>
               <option value="RECEIVED">Received</option>
@@ -254,17 +223,17 @@ export default function ShipmentGrid({ initialShipments, customers }: { initialS
           </div>
           
           <button 
+            className="text-[10px] font-bold text-slate-500 uppercase tracking-widest hover:text-slate-300"
             onClick={() => { setSearch(""); setStatusFilter("ALL"); }}
-            style={{ color: '#64748b', background: 'none', border: 'none', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer', whiteSpace: 'nowrap' }}
           >
              Clear Filters
           </button>
 
-          <div className="h-4 w-px bg-slate-800 mx-1 hidden md:block" style={{ height: '16px', width: '1px', backgroundColor: '#1e293b', margin: '0 4px' }} />
+          <div className="h-4 w-px bg-slate-800 mx-1 hidden md:block" />
 
           <button 
             onClick={() => setIsCreateOpen(true)}
-            style={{ backgroundColor: '#2563eb', color: 'white', padding: '10px 20px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 10px 15px -3px rgba(59, 130, 246, 0.2)', whiteSpace: 'nowrap' }}
+            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-lg shadow-blue-900/20"
           >
             <Plus size={16} /> New Shipment
           </button>
@@ -272,9 +241,9 @@ export default function ShipmentGrid({ initialShipments, customers }: { initialS
       </div>
 
       {/* Main Data Table */}
-      <div className="bg-[#0f0f16] border border-slate-800 rounded-2xl overflow-hidden shadow-2xl ambara-table-container">
+      <div className="bg-[#0f172a]/50 border border-slate-800/50 rounded-2xl overflow-hidden shadow-2xl">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse ambara-table">
+          <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-900/50 border-b border-slate-800 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                 <th className="px-6 py-4 w-10">
@@ -304,9 +273,8 @@ export default function ShipmentGrid({ initialShipments, customers }: { initialS
                 <tr 
                   key={shipment.id} 
                   className={`hover:bg-slate-800/20 transition-colors group ${selectedIds.includes(shipment.id) ? "bg-blue-500/5" : ""}`}
-                  style={{ borderBottom: '1px solid rgba(30,41,59,0.3)', backgroundColor: selectedIds.includes(shipment.id) ? 'rgba(37,99,235,0.05)' : 'transparent' }}
                 >
-                  <td className="px-6 py-4" style={{ padding: '16px 24px' }}>
+                  <td className="px-6 py-4">
                     <input 
                       type="checkbox" 
                       checked={selectedIds.includes(shipment.id)} 
@@ -314,62 +282,59 @@ export default function ShipmentGrid({ initialShipments, customers }: { initialS
                       className="accent-blue-500 rounded border-slate-700 bg-slate-900" 
                     />
                   </td>
-                  <td className="px-4 py-4" style={{ padding: '16px 16px' }}>
-                    <div className="flex flex-col" style={{ display: 'flex', flexDirection: 'column' }}>
-                      <div className="flex items-center gap-2 mb-1" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <td className="px-4 py-4">
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2 mb-1">
                         <StatusBadge status={shipment.status || "RECEIVED"} />
-                        <span className="text-xs font-mono font-bold text-slate-200" style={{ fontSize: '12px', fontFamily: 'monospace', fontWeight: 'bold', color: '#e2e8f0' }}>{shipment.internalTrackingNo || shipment.trackingNumber}</span>
+                        <span className="text-xs font-mono font-bold text-slate-200">{shipment.internalTrackingNo || shipment.trackingNumber}</span>
                       </div>
-                      <span className="text-[10px] text-slate-500 font-medium tracking-tight" style={{ fontSize: '10px', color: '#64748b' }}>System Matched</span>
+                      <span className="text-[10px] text-slate-500 font-medium tracking-tight">System Matched</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4" style={{ padding: '16px 24px' }}>
-                    <div className="flex items-center gap-3" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-blue-400 transition-colors border border-slate-700/50" style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#1e293b', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', border: '1px solid rgba(51,65,85,0.5)' }}>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-blue-400 transition-colors border border-slate-700/50">
                         <User size={14} />
                       </div>
-                      <span className="text-sm font-medium text-slate-300" style={{ fontSize: '14px', fontWeight: 500, color: '#cbd5e1' }}>{shipment.customerName || "Walk-in Client"}</span>
+                      <span className="text-sm font-medium text-slate-300">{shipment.customerName || "Walk-in Client"}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4" style={{ padding: '16px 24px' }}>
-                    <div className="flex items-center gap-2 text-xs font-medium text-slate-400" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#94a3b8' }}>
-                      <span className="bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-slate-300 font-bold border border-slate-700/30" style={{ backgroundColor: '#1e293b', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', color: '#cbd5e1', fontWeight: 'bold', border: '1px solid rgba(51,65,85,0.3)' }}>{shipment.origin}</span>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2 text-xs font-medium text-slate-400">
+                      <span className="bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-slate-300 font-bold border border-slate-700/30">{shipment.origin}</span>
                       <ChevronRight size={12} className="text-slate-600" />
-                      <span className="bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-slate-300 font-bold border border-slate-700/30" style={{ backgroundColor: '#1e293b', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', color: '#cbd5e1', fontWeight: 'bold', border: '1px solid rgba(51,65,85,0.3)' }}>{shipment.destination}</span>
+                      <span className="bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-slate-300 font-bold border border-slate-700/30">{shipment.destination}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4" style={{ padding: '16px 24px' }}>
-                    <span className="text-[10px] font-black text-blue-500/80 bg-blue-500/5 px-2 py-1 rounded border border-blue-500/10 tracking-widest" style={{ fontSize: '10px', fontWeight: 900, color: 'rgba(59,130,246,0.8)', backgroundColor: 'rgba(59,130,246,0.05)', padding: '4px 8px', borderRadius: '4px', border: '1px solid rgba(59,130,246,0.1)', letterSpacing: '0.1em' }}>
+                  <td className="px-6 py-4">
+                    <span className="text-[10px] font-black text-blue-500/80 bg-blue-500/5 px-2 py-1 rounded border border-blue-500/10 tracking-widest uppercase">
                       {shipment.serviceType || "STANDARD"}
                     </span>
                   </td>
-                  <td className="px-6 py-4" style={{ padding: '16px 24px' }}>
-                    <div className="flex items-center gap-2 text-slate-500" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748b' }}>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2 text-slate-500">
                       <Calendar size={12} />
-                      <span className="text-xs font-medium" style={{ fontSize: '12px' }}>
+                      <span className="text-xs font-medium">
                         {shipment.createdAt ? new Intl.DateTimeFormat('en-GB').format(new Date(shipment.createdAt)) : "-"}
                       </span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-right" style={{ padding: '16px 24px', textAlign: 'right' }}>
-                    <div className="flex items-center justify-end gap-2" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex items-center justify-end gap-2">
                       <button 
                         onClick={() => handleSinglePrint(shipment.id)}
                         disabled={isUpdating}
-                        style={{ padding: '8px', borderRadius: '8px', backgroundColor: 'transparent', border: 'none', cursor: 'pointer', color: '#94a3b8' }} 
+                        className="p-2 text-slate-500 hover:text-blue-400 transition-colors" 
                         title="Print Label"
                       >
                         <Printer size={16} />
                       </button>
-                      <button 
-                        style={{ padding: '8px', borderRadius: '8px', backgroundColor: 'transparent', border: 'none', cursor: 'pointer', color: '#94a3b8' }} 
-                        title="View Manifest"
-                      >
+                      <button className="p-2 text-slate-500 hover:text-blue-400 transition-colors" title="View Manifest">
                         <FileSearch size={16} />
                       </button>
                       <button 
                         onClick={() => setEditingShipment(shipment)}
-                        style={{ padding: '8px', borderRadius: '8px', backgroundColor: 'transparent', border: 'none', cursor: 'pointer', color: '#94a3b8' }}
+                        className="p-2 text-slate-500 hover:text-slate-200 transition-colors"
                       >
                         <MoreVertical size={16} />
                       </button>
@@ -396,31 +361,18 @@ export default function ShipmentGrid({ initialShipments, customers }: { initialS
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const styles: any = {
-    RECEIVED: { bg: "#eab308", text: "#000000" },
-    DEPARTED: { bg: "#2563eb", text: "#ffffff" },
-    ARRIVED: { bg: "#9333ea", text: "#ffffff" },
-    DELIVERED: { bg: "#16a34a", text: "#ffffff" },
-    CUSTOMS: { bg: "#ea580c", text: "#ffffff" },
+  const colors: any = {
+    RECEIVED: "bg-yellow-500 text-black",
+    DEPARTED: "bg-blue-600 text-white",
+    ARRIVED: "bg-purple-600 text-white",
+    DELIVERED: "bg-green-600 text-white",
+    CUSTOMS: "bg-orange-600 text-white",
   };
 
-  const style = styles[status] || styles.RECEIVED;
+  const colorClass = colors[status] || colors.RECEIVED;
 
   return (
-    <span 
-      className={`text-[9px] font-black px-1.5 py-0.5 rounded leading-none ${status}`}
-      style={{ 
-        fontSize: '9px', 
-        fontWeight: 900, 
-        padding: '2px 6px', 
-        borderRadius: '4px', 
-        backgroundColor: style.bg, 
-        color: style.text,
-        textTransform: 'uppercase',
-        display: 'inline-block',
-        lineHeight: '1'
-      }}
-    >
+    <span className={`text-[9px] font-black px-1.5 py-0.5 rounded leading-none uppercase ${colorClass}`}>
       {status}
     </span>
   );
