@@ -30,39 +30,28 @@ export async function getDashboardStats() {
   };
 
   try {
-    console.log("DB_CONNECTION_HOST:", process.env.DATABASE_URL?.split('@')[1]?.split('/')[0]);
-
-    // 1. Core Portfolio Metrics (AWB-FIRST ARCHITECTURE - STRICT DRIZZLE)
+    // 1. Core Portfolio Metrics
     const [totalShipmentsResult, totalVolumeResult] = await Promise.all([
-      db.select({ count: count() }).from(shipments),
-      db.select({ total: sum(awbs.chargeableWeight) }).from(awbs)
+      db.select({ value: count() }).from(shipments),
+      db.select({ value: sql<string>`SUM(CAST(${awbs.chargeableWeight} AS NUMERIC))` }).from(awbs)
     ]);
     
-    const volTotal = parseFloat(totalVolumeResult[0]?.total || "0");
-    const countTotal = Number(totalShipmentsResult[0]?.count || 0);
+    const volTotal = parseFloat(totalVolumeResult[0]?.value || "0");
+    const countTotal = Number(totalShipmentsResult[0]?.value || 0);
     
-    console.log("DASHBOARD_STATS_START");
-    console.log("TOTAL_VOLUME_RAW:", totalVolumeResult[0]?.total);
-    console.log("TOTAL_SHIPMENTS_RAW:", totalShipmentsResult[0]?.count);
-
     // 2. Trend Metrics (Monthly Comparison)
-    const [currentShipments, prevShipments, currentVolume, prevVolume] = await Promise.all([
-      db.select({ total: count() }).from(shipments).where(gte(shipments.createdAt, startOfMonth)),
-      db.select({ total: count() }).from(shipments).where(and(gte(shipments.createdAt, startOfPrevMonth), lte(shipments.createdAt, endOfPrevMonth))),
-      db.select({ total: sum(awbs.chargeableWeight) }).from(awbs).where(gte(awbs.createdAt, startOfMonth)),
-      db.select({ total: sum(awbs.chargeableWeight) }).from(awbs).where(and(gte(awbs.createdAt, startOfPrevMonth), lte(awbs.createdAt, endOfPrevMonth)))
+    const [currentVolume, prevVolume, currentInv, prevInv, currentCust, prevCust] = await Promise.all([
+      db.select({ value: sql<string>`SUM(CAST(${awbs.chargeableWeight} AS NUMERIC))` }).from(awbs).where(gte(awbs.createdAt, startOfMonth)),
+      db.select({ value: sql<string>`SUM(CAST(${awbs.chargeableWeight} AS NUMERIC))` }).from(awbs).where(and(gte(awbs.createdAt, startOfPrevMonth), lte(awbs.createdAt, endOfPrevMonth))),
+      db.select({ value: sum(invoices.totalAmount) }).from(invoices).where(gte(invoices.createdAt, startOfMonth)),
+      db.select({ value: sum(invoices.totalAmount) }).from(invoices).where(and(gte(invoices.createdAt, startOfPrevMonth), lte(invoices.createdAt, endOfPrevMonth))),
+      db.select({ value: count() }).from(customers).where(gte(customers.createdAt, startOfCurrentMonth)),
+      db.select({ value: count() }).from(customers).where(and(gte(customers.createdAt, startOfPreviousMonth), lte(customers.createdAt, endOfPreviousMonth)))
     ]);
 
-    const [totalInvResult, currentInv, prevInv] = await Promise.all([
-      db.select({ total: sum(invoices.totalAmount) }).from(invoices),
-      db.select({ total: sum(invoices.totalAmount) }).from(invoices).where(sql`${invoices.createdAt} >= ${startOfMonth}`),
-      db.select({ total: sum(invoices.totalAmount) }).from(invoices).where(sql`${invoices.createdAt} >= ${startOfPrevMonth} AND ${invoices.createdAt} <= ${endOfPrevMonth}`)
-    ]);
-
-    const [totalCustResult, currentCust, prevCust] = await Promise.all([
-      db.select({ total: count() }).from(customers),
-      db.select({ total: count() }).from(customers).where(sql`${customers.createdAt} >= ${startOfCurrentMonth}`),
-      db.select({ total: count() }).from(customers).where(sql`${customers.createdAt} >= ${startOfPreviousMonth} AND ${customers.createdAt} <= ${endOfPreviousMonth}`)
+    const [totalInvResult, totalCustResult] = await Promise.all([
+      db.select({ value: sum(invoices.totalAmount) }).from(invoices),
+      db.select({ value: count() }).from(customers)
     ]);
 
     // Dynamic Unit Selection
@@ -72,26 +61,23 @@ export async function getDashboardStats() {
       stats.volume = volTotal.toFixed(0) + " KG";
     }
 
-    stats.customers = countTotal;
-
-    const volCurr = Number(currentVolume[0]?.total || 0);
-    const volPrev = Number(prevVolume[0]?.total || 0);
-    
+    const volCurr = Number(currentVolume[0]?.value || 0);
+    const volPrev = Number(prevVolume[0]?.value || 0);
     stats.volumeChange = calculatePercentageChange(volCurr, volPrev);
     stats.volumeUp = volCurr >= volPrev;
 
-    // 3. Process Invoices (Currency) - Value is ABSOLUTE total
-    const invTotal = Number(totalInvResult[0]?.total || 0);
-    const invCurr = Number(currentInv[0]?.total || 0);
-    const invPrev = Number(prevInv[0]?.total || 0);
+    // 3. Process Invoices (Currency)
+    const invTotal = Number(totalInvResult[0]?.value || 0);
+    const invCurr = Number(currentInv[0]?.value || 0);
+    const invPrev = Number(prevInv[0]?.value || 0);
     stats.invoices = formatCurrency(invTotal);
     stats.invoiceChange = calculatePercentageChange(invCurr, invPrev);
     stats.invoiceUp = invCurr >= invPrev;
 
-    // 4. Process Customers - Value is ABSOLUTE total
-    const custTotal = Number(totalCustResult[0]?.total || 0);
-    const custCurr = Number(currentCust[0]?.total || 0);
-    const custPrev = Number(prevCust[0]?.total || 0);
+    // 4. Process Customers
+    const custTotal = Number(totalCustResult[0]?.value || 0);
+    const custCurr = Number(currentCust[0]?.value || 0);
+    const custPrev = Number(prevCust[0]?.value || 0);
     stats.customers = custTotal;
     stats.customerChange = calculatePercentageChange(custCurr, custPrev);
     stats.customerUp = custCurr >= custPrev;
