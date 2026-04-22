@@ -32,24 +32,25 @@ export async function getDashboardStats() {
   try {
     console.log("DB_CONNECTION_HOST:", process.env.DATABASE_URL?.split('@')[1]?.split('/')[0]);
 
-    // 1. Core Portfolio Metrics (AWB-FIRST ARCHITECTURE)
+    // 1. Core Portfolio Metrics (AWB-FIRST ARCHITECTURE - STRICT DRIZZLE)
     const [totalShipmentsResult, totalVolumeResult] = await Promise.all([
       db.select({ count: count() }).from(shipments),
-      db.select({ total: sql<string>`SUM(CAST(${awbs.chargeableWeight} AS NUMERIC))` }).from(awbs)
+      db.select({ total: sum(awbs.chargeableWeight) }).from(awbs)
     ]);
     
     const volTotal = parseFloat(totalVolumeResult[0]?.total || "0");
     const countTotal = Number(totalShipmentsResult[0]?.count || 0);
     
-    console.log("PARSED_VOLUME:", volTotal);
-    console.log("PARSED_COUNT:", countTotal);
-    
+    console.log("DASHBOARD_STATS_START");
+    console.log("TOTAL_VOLUME_RAW:", totalVolumeResult[0]?.total);
+    console.log("TOTAL_SHIPMENTS_RAW:", totalShipmentsResult[0]?.count);
+
     // 2. Trend Metrics (Monthly Comparison)
     const [currentShipments, prevShipments, currentVolume, prevVolume] = await Promise.all([
       db.select({ total: count() }).from(shipments).where(gte(shipments.createdAt, startOfMonth)),
       db.select({ total: count() }).from(shipments).where(and(gte(shipments.createdAt, startOfPrevMonth), lte(shipments.createdAt, endOfPrevMonth))),
-      db.select({ total: sql<string>`SUM(CAST(${awbs.chargeableWeight} AS NUMERIC))` }).from(awbs).where(gte(awbs.createdAt, startOfMonth)),
-      db.select({ total: sql<string>`SUM(CAST(${awbs.chargeableWeight} AS NUMERIC))` }).from(awbs).where(and(gte(awbs.createdAt, startOfPrevMonth), lte(awbs.createdAt, endOfPrevMonth)))
+      db.select({ total: sum(awbs.chargeableWeight) }).from(awbs).where(gte(awbs.createdAt, startOfMonth)),
+      db.select({ total: sum(awbs.chargeableWeight) }).from(awbs).where(and(gte(awbs.createdAt, startOfPrevMonth), lte(awbs.createdAt, endOfPrevMonth)))
     ]);
 
     const [totalInvResult, currentInv, prevInv] = await Promise.all([
@@ -63,13 +64,6 @@ export async function getDashboardStats() {
       db.select({ total: count() }).from(customers).where(sql`${customers.createdAt} >= ${startOfCurrentMonth}`),
       db.select({ total: count() }).from(customers).where(sql`${customers.createdAt} >= ${startOfPreviousMonth} AND ${customers.createdAt} <= ${endOfPreviousMonth}`)
     ]);
-
-    console.log("DASHBOARD_STATS_START");
-    console.log("TOTAL_VOLUME_RAW:", totalVolumeResult[0]?.total);
-    console.log("TOTAL_SHIPMENTS_RAW:", totalShipmentsResult[0]?.total);
-
-    console.log("PARSED_VOLUME:", volTotal);
-    console.log("PARSED_COUNT:", countTotal);
 
     // Dynamic Unit Selection
     if (volTotal >= 1000) {
@@ -103,7 +97,8 @@ export async function getDashboardStats() {
     stats.customerUp = custCurr >= custPrev;
 
   } catch (e) {
-    console.error("Dashboard Stats Fail:", e);
+    console.error("DASHBOARD DB ERROR:", e);
+    throw e;
   }
 
   return stats;
