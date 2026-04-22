@@ -38,7 +38,7 @@ export default function DashboardContent({ stats, chartData, activity }: Dashboa
           href="/dashboard/shipments"
           label="Total Cargo Volume" 
           value={stats?.volume || "0.0"} 
-          suffix="MT"
+          suffix=""
           change={stats?.volumeChange || "---"} 
           up={true} 
           icon={Package} 

@@ -5,7 +5,10 @@ To build a SaaS platform for a freight forwarding company handling global logist
 
 ## Core Stack
 - **Framework**: Next.js (App Router)
-- **Database**: Neon (PostgreSQL) + Drizzle ORM
+- **Database**: Neon (PostgreSQL) + Drizzle### Data Models & Synchronization
+- **Shipments**: Now includes `chargeableWeight` (numeric), `totalPcs` (integer), and `shipperName` (text) to mirror the production database.
+- **Dual-Sync Strategy**: Every shipment write creates/updates both a `shipment` record (for dashboarding) and an `awb` record (for invoicing).
+- **Metric Formatting**: Tonnage is calculated dynamically as MT (if >= 1000kg) or KG (if < 1000kg).
 - **Auth**: Clerk (Production Live)
 - **Styling**: Tailwind CSS
 - **Storage**: Cloudflare R2

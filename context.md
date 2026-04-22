@@ -34,8 +34,13 @@
 - **Premium Command Center Overhaul (April 23)**: Executed a complete visual restyling of the entire dashboard (/app/dashboard). Transitioned from an unstable Tailwind v4 configuration to a stable **Tailwind v3.4.19** baseline. Implemented a cohesive "Glassmorphism" design system, high-fidelity data grids, and refined operational terminals for Ingest, Finance, and Labels.
 - **Tailwind Stability Migration (April 23)**: Resolved persistent layout regressions by purging Tailwind v4 dependencies and implementing a standard `tailwind.config.ts` with premium design tokens. Verified stability via successful production builds and GitHub deployment.
 - **Admin Server Actions**: Converted the Admin Dashboard pending users table to use Next.js Server Actions with `force-dynamic` to allow direct DB updates and smooth production deploys.
+- **Tonnage Source of Truth**: Switched dashboard stats to pull from the `shipments` table for speed and accuracy across all 35+ records.
+- **Dual-Sync Protocol**: Implemented logic to sync weight/pieces between `shipments` (operational) and `awbs` (financial) tables on every write.
+- **Intelligent Unit Display**: Dashboard now switches between KG and MT automatically based on volume size.
 
 ## Current Focus
+- **Phase 3: AWB Ingestion**: Activating the parsing engine to automate PDF data entry into the CRM.
+- **Phase 4: Thermal Labels**: Preparing the layout engine for 4x6 printing.
 - The premium "Command Center" UI overhaul is now live on Vercel. 
 - Monitoring production builds and user feedback on the new high-fidelity layout.
 - The environment is fully deployed on Vercel (`www.ambaraartha.com`). 

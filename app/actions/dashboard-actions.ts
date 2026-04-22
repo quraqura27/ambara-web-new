@@ -33,15 +33,15 @@ export async function getDashboardStats() {
     // 1. Core Portfolio Metrics (ABSOLUTE TOTALS)
     const [totalShipmentsResult, totalVolumeResult] = await Promise.all([
       db.select({ total: count() }).from(shipments),
-      db.select({ total: sum(shipments.chargeableWeight) }).from(shipments)
+      db.select({ total: sql<string>`SUM(CAST(${shipments.chargeableWeight} AS NUMERIC))` }).from(shipments)
     ]);
     
     // 2. Trend Metrics (Monthly Comparison)
     const [currentShipments, prevShipments, currentVolume, prevVolume] = await Promise.all([
       db.select({ total: count() }).from(shipments).where(gte(shipments.createdAt, startOfMonth)),
       db.select({ total: count() }).from(shipments).where(and(gte(shipments.createdAt, startOfPrevMonth), lte(shipments.createdAt, endOfPrevMonth))),
-      db.select({ total: sum(shipments.chargeableWeight) }).from(shipments).where(gte(shipments.createdAt, startOfMonth)),
-      db.select({ total: sum(shipments.chargeableWeight) }).from(shipments).where(and(gte(shipments.createdAt, startOfPrevMonth), lte(shipments.createdAt, endOfPrevMonth)))
+      db.select({ total: sql<string>`SUM(CAST(${shipments.chargeableWeight} AS NUMERIC))` }).from(shipments).where(gte(shipments.createdAt, startOfMonth)),
+      db.select({ total: sql<string>`SUM(CAST(${shipments.chargeableWeight} AS NUMERIC))` }).from(shipments).where(and(gte(shipments.createdAt, startOfPrevMonth), lte(shipments.createdAt, endOfPrevMonth)))
     ]);
 
     const [totalInvResult, currentInv, prevInv] = await Promise.all([
@@ -117,7 +117,7 @@ export async function getTonnageData() {
   });
 
   const dailyVolume = await Promise.all(last7Days.map(async (date) => {
-    const result = await db.select({ total: sum(shipments.chargeableWeight) })
+    const result = await db.select({ total: sql<string>`SUM(CAST(${shipments.chargeableWeight} AS NUMERIC))` })
       .from(shipments)
       .where(sql`DATE(${shipments.createdAt}) = ${date}`);
     
