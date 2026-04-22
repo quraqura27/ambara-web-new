@@ -80,9 +80,6 @@ export async function getDashboardStats() {
     console.log("TOTAL_VOLUME_RAW:", totalVolumeResult[0]?.total);
     console.log("TOTAL_SHIPMENTS_RAW:", totalShipmentsResult[0]?.total);
 
-    const volTotal = parseFloat(totalVolumeResult[0]?.total?.toString() || "0");
-    const countTotal = parseInt(totalShipmentsResult[0]?.total?.toString() || "0");
-    
     console.log("PARSED_VOLUME:", volTotal);
     console.log("PARSED_COUNT:", countTotal);
 
