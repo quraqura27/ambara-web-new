@@ -35,7 +35,7 @@ export async function getDashboardStats() {
     // 1. Core Portfolio Metrics (ABSOLUTE TOTALS - RAW SQL BYPASS)
     const [totalShipmentsResult, totalVolumeResult] = await Promise.all([
       db.execute(sql`SELECT count(*) as total FROM shipments`),
-      db.execute(sql`SELECT SUM(CAST(chargeable_weight AS NUMERIC)) as total FROM shipments`)
+      db.execute(sql`SELECT SUM(CAST(chargeable_weight AS NUMERIC)) as total FROM awbs`)
     ]);
     
     console.log("RAW_VOLUME_RESULT_KEYS:", Object.keys(totalVolumeResult));
@@ -52,8 +52,8 @@ export async function getDashboardStats() {
     const [currentShipments, prevShipments, currentVolume, prevVolume] = await Promise.all([
       db.select({ total: count() }).from(shipments).where(gte(shipments.createdAt, startOfMonth)),
       db.select({ total: count() }).from(shipments).where(and(gte(shipments.createdAt, startOfPrevMonth), lte(shipments.createdAt, endOfPrevMonth))),
-      db.select({ total: sql<string>`SUM(CAST(${shipments.chargeableWeight} AS NUMERIC))` }).from(shipments).where(gte(shipments.createdAt, startOfMonth)),
-      db.select({ total: sql<string>`SUM(CAST(${shipments.chargeableWeight} AS NUMERIC))` }).from(shipments).where(and(gte(shipments.createdAt, startOfPrevMonth), lte(shipments.createdAt, endOfPrevMonth)))
+      db.select({ total: sql<string>`SUM(CAST(${awbs.chargeableWeight} AS NUMERIC))` }).from(awbs).where(gte(awbs.createdAt, startOfMonth)),
+      db.select({ total: sql<string>`SUM(CAST(${awbs.chargeableWeight} AS NUMERIC))` }).from(awbs).where(and(gte(awbs.createdAt, startOfPrevMonth), lte(awbs.createdAt, endOfPrevMonth)))
     ]);
 
     const [totalInvResult, currentInv, prevInv] = await Promise.all([
@@ -67,18 +67,6 @@ export async function getDashboardStats() {
       db.select({ total: count() }).from(customers).where(sql`${customers.createdAt} >= ${startOfCurrentMonth}`),
       db.select({ total: count() }).from(customers).where(sql`${customers.createdAt} >= ${startOfPreviousMonth} AND ${customers.createdAt} <= ${endOfPreviousMonth}`)
     ]);
-
-    const stats = {
-      volume: "0.0",
-      volumeChange: "0%",
-      invoices: "Rp 0",
-      invoiceChange: "0%",
-      customers: 0,
-      customerChange: "0%",
-      volumeUp: true,
-      invoiceUp: true,
-      customerUp: true,
-    };
 
     console.log("DASHBOARD_STATS_START");
     console.log("TOTAL_VOLUME_RAW:", totalVolumeResult[0]?.total);
@@ -148,9 +136,9 @@ export async function getTonnageData() {
   });
 
   const dailyVolume = await Promise.all(last7Days.map(async (date) => {
-    const result = await db.select({ total: sql<string>`SUM(CAST(${shipments.chargeableWeight} AS NUMERIC))` })
-      .from(shipments)
-      .where(sql`DATE(${shipments.createdAt}) = ${date}`);
+    const result = await db.select({ total: sql<string>`SUM(CAST(${awbs.chargeableWeight} AS NUMERIC))` })
+      .from(awbs)
+      .where(sql`DATE(${awbs.createdAt}) = ${date}`);
     
     return {
       name: new Date(date).toLocaleDateString('en-US', { weekday: 'short' }),

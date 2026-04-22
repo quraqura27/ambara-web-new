@@ -10,9 +10,6 @@ export const shipments = pgTable('shipments', {
   origin: text('origin').notNull(),
   destination: text('destination').notNull(),
   serviceType: text('service_type'), // PP, PD, DP, DD
-  chargeableWeight: numeric('chargeable_weight'), // Added from actual DB
-  weightKg: numeric('weight_kg'), // Added from actual DB
-  totalPcs: integer('total_pcs'), // Added from actual DB
   shipperName: text('shipper_name'), // Added from actual DB
   consigneeName: text('consignee_name'), // Added from actual DB
   createdBy: text('created_by'), // Spec v3: Clerk User ID (string)
@@ -48,8 +45,6 @@ export const awbs = pgTable('awbs', {
   consignee: text('consignee'), // New field v15.0
   commodity: text('commodity'),
   rawPdfUrl: text('raw_pdf_url').notNull(), // Cloudflare R2 URL (Optional for manual entry)
-  parseStatus: text('parse_status').notNull().default('pending'),
-  parseRawText: text('parse_raw_text'),
   invoiced: boolean('invoiced').default(false).notNull(),
   invoiceId: uuid('invoice_id'),
   uploadedBy: text('uploaded_by').notNull(), // Optional for manual shipments
