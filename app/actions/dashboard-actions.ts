@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db";
 import { shipments, invoices, customers, awbs } from "@/lib/db/schema";
-import { count, sum, desc, sql, eq } from "drizzle-orm";
+import { count, sum, desc, sql, eq, gte, and, lte } from "drizzle-orm";
 import { auth } from "@clerk/nextjs/server";
 
 export async function getDashboardStats() {
@@ -13,6 +13,9 @@ export async function getDashboardStats() {
   const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const startOfPreviousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const endOfPreviousMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const endOfPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0);
 
   let stats = {
     volume: "0.0",
@@ -27,17 +30,24 @@ export async function getDashboardStats() {
   };
 
   try {
-    // 1. Fetch Absolute Totals vs Trend Months
-    const [totalVolumeResult, currentVolume, prevVolume] = await Promise.all([
-      db.select({ total: sum(awbs.chargeableWeight) }).from(awbs),
-      db.select({ total: sum(awbs.chargeableWeight) }).from(awbs).where(sql`${awbs.createdAt} >= ${startOfCurrentMonth}`),
-      db.select({ total: sum(awbs.chargeableWeight) }).from(awbs).where(sql`${awbs.createdAt} >= ${startOfPreviousMonth} AND ${awbs.createdAt} <= ${endOfPreviousMonth}`)
+    // 1. Core Portfolio Metrics (ABSOLUTE TOTALS)
+    const [totalShipmentsResult, totalVolumeResult] = await Promise.all([
+      db.select({ total: count() }).from(shipments),
+      db.select({ total: sum(shipments.chargeableWeight) }).from(shipments)
+    ]);
+    
+    // 2. Trend Metrics (Monthly Comparison)
+    const [currentShipments, prevShipments, currentVolume, prevVolume] = await Promise.all([
+      db.select({ total: count() }).from(shipments).where(gte(shipments.createdAt, startOfMonth)),
+      db.select({ total: count() }).from(shipments).where(and(gte(shipments.createdAt, startOfPrevMonth), lte(shipments.createdAt, endOfPrevMonth))),
+      db.select({ total: sum(shipments.chargeableWeight) }).from(shipments).where(gte(shipments.createdAt, startOfMonth)),
+      db.select({ total: sum(shipments.chargeableWeight) }).from(shipments).where(and(gte(shipments.createdAt, startOfPrevMonth), lte(shipments.createdAt, endOfPrevMonth)))
     ]);
 
     const [totalInvResult, currentInv, prevInv] = await Promise.all([
       db.select({ total: sum(invoices.totalAmount) }).from(invoices),
-      db.select({ total: sum(invoices.totalAmount) }).from(invoices).where(sql`${invoices.createdAt} >= ${startOfCurrentMonth}`),
-      db.select({ total: sum(invoices.totalAmount) }).from(invoices).where(sql`${invoices.createdAt} >= ${startOfPreviousMonth} AND ${invoices.createdAt} <= ${endOfPreviousMonth}`)
+      db.select({ total: sum(invoices.totalAmount) }).from(invoices).where(sql`${invoices.createdAt} >= ${startOfMonth}`),
+      db.select({ total: sum(invoices.totalAmount) }).from(invoices).where(sql`${invoices.createdAt} >= ${startOfPrevMonth} AND ${invoices.createdAt} <= ${endOfPrevMonth}`)
     ]);
 
     const [totalCustResult, currentCust, prevCust] = await Promise.all([
@@ -107,9 +117,9 @@ export async function getTonnageData() {
   });
 
   const dailyVolume = await Promise.all(last7Days.map(async (date) => {
-    const result = await db.select({ total: sum(awbs.chargeableWeight) })
-      .from(awbs)
-      .where(sql`DATE(${awbs.createdAt}) = ${date}`);
+    const result = await db.select({ total: sum(shipments.chargeableWeight) })
+      .from(shipments)
+      .where(sql`DATE(${shipments.createdAt}) = ${date}`);
     
     return {
       name: new Date(date).toLocaleDateString('en-US', { weekday: 'short' }),

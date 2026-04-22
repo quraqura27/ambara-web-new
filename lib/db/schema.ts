@@ -10,6 +10,11 @@ export const shipments = pgTable('shipments', {
   origin: text('origin').notNull(),
   destination: text('destination').notNull(),
   serviceType: text('service_type'), // PP, PD, DP, DD
+  chargeableWeight: numeric('chargeable_weight'), // Added from actual DB
+  weightKg: numeric('weight_kg'), // Added from actual DB
+  totalPcs: integer('total_pcs'), // Added from actual DB
+  shipperName: text('shipper_name'), // Added from actual DB
+  consigneeName: text('consignee_name'), // Added from actual DB
   createdBy: text('created_by'), // Spec v3: Clerk User ID (string)
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
