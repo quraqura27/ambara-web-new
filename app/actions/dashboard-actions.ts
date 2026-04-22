@@ -38,11 +38,15 @@ export async function getDashboardStats() {
       db.execute(sql`SELECT SUM(CAST(chargeable_weight AS NUMERIC)) as total FROM shipments`)
     ]);
     
-    console.log("RAW_VOLUME_RESULT:", totalVolumeResult);
-    console.log("RAW_SHIPMENTS_RESULT:", totalShipmentsResult);
-
-    const volTotal = parseFloat(totalVolumeResult[0]?.total?.toString() || "0");
-    const countTotal = parseInt(totalShipmentsResult[0]?.total?.toString() || "0");
+    console.log("RAW_VOLUME_RESULT_KEYS:", Object.keys(totalVolumeResult));
+    
+    // @ts-ignore - db.execute returns a different structure
+    const volTotal = parseFloat(totalVolumeResult.rows?.[0]?.total || totalVolumeResult?.[0]?.total || "0");
+    // @ts-ignore
+    const countTotal = parseInt(totalShipmentsResult.rows?.[0]?.total || totalShipmentsResult?.[0]?.total || "0");
+    
+    console.log("PARSED_VOLUME:", volTotal);
+    console.log("PARSED_COUNT:", countTotal);
     
     // 2. Trend Metrics (Monthly Comparison)
     const [currentShipments, prevShipments, currentVolume, prevVolume] = await Promise.all([
