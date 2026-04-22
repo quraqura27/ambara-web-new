@@ -32,18 +32,14 @@ export async function getDashboardStats() {
   try {
     console.log("DB_CONNECTION_HOST:", process.env.DATABASE_URL?.split('@')[1]?.split('/')[0]);
 
-    // 1. Core Portfolio Metrics (ABSOLUTE TOTALS - RAW SQL BYPASS)
+    // 1. Core Portfolio Metrics (AWB-FIRST ARCHITECTURE)
     const [totalShipmentsResult, totalVolumeResult] = await Promise.all([
-      db.execute(sql`SELECT count(*) as total FROM shipments`),
-      db.execute(sql`SELECT SUM(CAST(chargeable_weight AS NUMERIC)) as total FROM awbs`)
+      db.select({ count: count() }).from(shipments),
+      db.select({ total: sql<string>`SUM(CAST(${awbs.chargeableWeight} AS NUMERIC))` }).from(awbs)
     ]);
     
-    console.log("RAW_VOLUME_RESULT_KEYS:", Object.keys(totalVolumeResult));
-    
-    // @ts-ignore - db.execute returns a different structure
-    const volTotal = parseFloat(totalVolumeResult.rows?.[0]?.total || totalVolumeResult?.[0]?.total || "0");
-    // @ts-ignore
-    const countTotal = parseInt(totalShipmentsResult.rows?.[0]?.total || totalShipmentsResult?.[0]?.total || "0");
+    const volTotal = parseFloat(totalVolumeResult[0]?.total || "0");
+    const countTotal = Number(totalShipmentsResult[0]?.count || 0);
     
     console.log("PARSED_VOLUME:", volTotal);
     console.log("PARSED_COUNT:", countTotal);
