@@ -50,7 +50,14 @@ export async function getDashboardStats() {
     const volTotal = Number(totalVolumeResult[0]?.total || 0);
     const volCurr = Number(currentVolume[0]?.total || 0);
     const volPrev = Number(prevVolume[0]?.total || 0);
-    stats.volume = (volTotal / 1000).toFixed(1);
+    
+    // Intelligent Unit Selection: Show MT for large volumes, KG for small
+    if (volTotal >= 1000) {
+      stats.volume = (volTotal / 1000).toFixed(2) + " MT";
+    } else {
+      stats.volume = volTotal.toFixed(0) + " KG";
+    }
+    
     stats.volumeChange = calculatePercentageChange(volCurr, volPrev);
     stats.volumeUp = volCurr >= volPrev;
 

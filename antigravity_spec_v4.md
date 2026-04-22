@@ -19,6 +19,11 @@ To build a SaaS platform for a freight forwarding company handling global logist
 5. **Database Sync:** Created `profiles` table to maintain a synchronized mapping of Clerk UUIDs to system roles via Webhooks (`svix`). New signups default to `PENDING` status.
 6. **Server Actions for Admin:** Replaced client-side state with Next.js Server Actions for cleaner role assignments.
 
+## Global Rules & Constraints
+1. **Visual Excellence**: All web UI must be premium, high-fidelity, and adhere to `UI-STYLE.MD`.
+2. **Persistence**: Never delete `implementation_plan.md` or `task.md`.
+3. **CLI-First**: ALWAYS use the CLI (terminal) for DevOps, status checks, and data fetching if direct access is available. Avoid the browser unless visual verification is required.
+
 ## Current Focus
 - The premium "Command Center" UI is fully deployed on Vercel. 
 - Monitoring production builds and user feedback on the new high-fidelity layout.
