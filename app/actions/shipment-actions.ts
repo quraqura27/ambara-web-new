@@ -102,6 +102,8 @@ export async function createShipment(data: any) {
         origin: data.origin,
         destination: data.destination,
         serviceType: data.serviceType || "PP",
+        chargeableWeight: (data.weight || "0").toString(), // Dual-Sync for Dashboard
+        totalPcs: parseInt(data.pieces) || 0, // Dual-Sync for Dashboard
         createdBy: userId,
         updatedAt: new Date(),
       }).returning();
@@ -151,6 +153,8 @@ export async function updateFullShipment(id: number, data: any) {
           status: data.status, // Now allowing status updates in the full update
           serviceType: data.serviceType,
           trackingNumber: data.trackingNumber,
+          chargeableWeight: (data.weight || "0").toString(), // Dual-Sync for Dashboard
+          totalPcs: parseInt(data.pieces) || 0, // Dual-Sync for Dashboard
           customerId: data.customerId ? parseInt(data.customerId) : undefined,
           updatedAt: new Date(),
         })
