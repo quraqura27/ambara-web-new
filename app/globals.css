@@ -1,49 +1,42 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
   --background: #020617;
   --foreground: #f8fafc;
+  --font-sans: "Inter", system-ui, sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+@layer base {
+  body {
+    @apply bg-background text-foreground antialiased selection:bg-blue-500/30;
+  }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
+@layer components {
+  .glass-panel {
+    @apply bg-slate-900/60 backdrop-blur-xl border border-slate-800/50 shadow-2xl;
+  }
+  
+  .premium-card {
+    @apply bg-[#0f172a]/50 border border-slate-800/50 rounded-2xl p-6 transition-all hover:border-blue-500/30 hover:shadow-blue-500/5;
+  }
 }
 
-/* Custom Scrollbar for Manifest Review */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 5px;
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
 }
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #1e293b;
-  border-radius: 10px;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-800 rounded-full hover:bg-slate-700 transition-colors;
 }
 
-/* Hide Scrollbar Utility */
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-/* Glassmorphism Utilities */
-.glass-panel {
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(51, 65, 85, 0.5);
+/* Custom Utilities */
+.text-gradient {
+  @apply bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent;
 }

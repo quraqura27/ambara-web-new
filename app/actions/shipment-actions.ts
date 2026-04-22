@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db";
 import { shipments, awbs } from "@/lib/db/schema";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, desc, ilike } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { auth } from "@clerk/nextjs/server";
 import { generateInternalTrackingNo } from "@/lib/utils/id-gen";
@@ -232,7 +232,66 @@ export async function getShipmentsForLabels() {
   })
   .from(shipments)
   .leftJoin(awbs, eq(shipments.id, awbs.shipmentId))
-  .orderBy(shipments.createdAt);
+  .orderBy(desc(shipments.createdAt));
 
   return results;
+}
+
+/**
+ * GET ALL SHIPMENTS (Unified Grid)
+ * Optimized fetch for the main command center grid.
+ */
+export async function getShipments() {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+
+  return await db.select({
+    id: shipments.id,
+    internalTrackingNo: shipments.internalTrackingNo,
+    trackingNumber: shipments.trackingNumber,
+    status: shipments.status,
+    origin: shipments.origin,
+    destination: shipments.destination,
+    serviceType: shipments.serviceType,
+    updatedAt: shipments.updatedAt,
+    customerId: shipments.customerId,
+    weight: awbs.chargeableWeight,
+    pieces: awbs.pieces,
+    awbNumber: awbs.awbNumber,
+    shipper: awbs.shipper,
+    consignee: awbs.consignee
+  })
+  .from(shipments)
+  .leftJoin(awbs, eq(shipments.id, awbs.shipmentId))
+  .orderBy(desc(shipments.createdAt));
+}
+
+/**
+ * GET BILLING CUSTOMERS
+ * Used for shipment creation and filtering.
+ */
+export async function getCustomers() {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+
+  return await db.select().from(customerTable).orderBy(customerTable.fullName);
+}
+
+/**
+ * DELETE SHIPMENT
+ * Permanently removes a shipment and its associated AWB record.
+ */
+export async function deleteShipment(id: number) {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+
+  await db.transaction(async (tx) => {
+    // 1. Delete associated AWB
+    await tx.delete(awbs).where(eq(awbs.shipmentId, id));
+    // 2. Delete Shipment
+    await tx.delete(shipments).where(eq(shipments.id, id));
+  });
+
+  revalidatePath("/dashboard/shipments");
+  return { success: true };
 }
