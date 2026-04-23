@@ -17,22 +17,22 @@ To build a SaaS platform for a freight forwarding company handling global logist
 - **Email**: Resend
 
 ## Recent Decisions (Session 4cb81bf1)
-1. **Premium UI Overhaul (April 23):** Executed a total visual transformation of the dashboard using "Glassmorphism" design patterns and high-density operational components.
-2. **Tailwind v3 Stability Migration:** Downgraded to Tailwind v3.4.19 to resolve build-time CSS stripping issues and ensure layout consistency across all environments.
-3. **Hydration Resolution:** Standardized date rendering using `Intl.DateTimeFormat` to eliminate server-client mismatches.
-4. **RBAC Transition:** Upgraded simple authentication to Role-Based Access Control using Clerk `sessionClaims` and metadata. Core roles remain: `MASTER_ADMIN`, `OPERATIONS`, `FINANCE`.
-5. **Database Sync:** Created `profiles` table to maintain a synchronized mapping of Clerk UUIDs to system roles via Webhooks (`svix`). New signups default to `PENDING` status.
-6. **Server Actions for Admin:** Replaced client-side state with Next.js Server Actions for cleaner role assignments.
+1. **Schema Normalization (April 23):** Synchronized Drizzle `schema.ts` with the production Neon database. Added 14 missing columns to `shipments`, 6 to `customers`, and performed a total overhaul of the `invoices` table to match reality.
+2. **Zero-Raw-SQL Mandate:** Migrated all dashboard aggregation logic from raw SQL to strict, type-safe Drizzle ORM syntax (e.g., `sum(invoices.total)`).
+3. **Phase 2 UI Stabilization:** Fixed broken pagination and data visibility in the Shipment Management module by correcting props-passing and removing stale logic references (`parseStatus`).
+4. **Mandatory Rule Enforcement:** Integrated `SKILL.md`, `CLI-FIRST.md`, and `UI-STYLE.MD` into the global agent instructions to ensure non-negotiable adherence to development standards.
+5. **Premium UI Overhaul (April 23):** Executed a total visual transformation of the dashboard using "Glassmorphism" design patterns and high-density operational components.
+6. **Tailwind v3 Stability Migration:** Downgraded to Tailwind v3.4.19 to resolve build-time CSS stripping issues and ensure layout consistency across all environments.
 
 ## Global Rules & Constraints
 1. **Visual Excellence**: All web UI must be premium, high-fidelity, and adhere to `UI-STYLE.MD`.
 2. **Persistence**: Never delete `implementation_plan.md` or `task.md`.
 3. **CLI-First**: ALWAYS use the CLI (terminal) for DevOps, status checks, and data fetching if direct access is available. Avoid the browser unless visual verification is required.
+4. **Strict Drizzle**: NEVER use raw SQL where a schema mapping can provide type-safe alternatives.
 
 ## Current Focus
-- Dashboard metrics stabilization: **Done** (116.98 MT confirmed in production).
-- The premium "Command Center" UI is fully deployed on Vercel.
-- **Next Phase:** Automated Invoice Generation Module drawing from `awbs` table.
+- Automated Invoice Generation Module drawing from `awbs` table.
+- Ensuring end-to-end data integrity between CRM and Shipments.
 
 ## Active Status
 - Migration: **Done**

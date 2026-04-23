@@ -124,7 +124,30 @@ export default function ShipmentGrid({ initialShipments, customers, totalCount, 
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#0f172a]/30">
+    <div className="space-y-10 animate-in fade-in duration-700">
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+             <div className="w-1.5 h-6 bg-blue-600 rounded-full" />
+             <h2 className="text-sm font-black text-blue-500 uppercase tracking-[0.2em]">Logistics Terminal</h2>
+          </div>
+          <h1 className="text-4xl font-black text-white tracking-tight">Shipment Management</h1>
+          <p className="text-slate-500 mt-2 font-medium">Real-time oversight of global cargo movements and operational status.</p>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={handleExport}
+            className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-slate-900 border border-slate-800 text-sm font-bold text-slate-300 hover:bg-slate-800 hover:text-white transition-all"
+          >
+            <Download size={16} />
+            Export Data
+          </button>
+        </div>
+      </div>
+
+      <div className="flex flex-col h-full bg-[#0f172a]/30">
       {/* Bulk Actions Toolbar */}
       {selectedIds.length > 0 && (
         <div className="bg-blue-600 px-6 py-3 flex items-center justify-between animate-in slide-in-from-top duration-300">
