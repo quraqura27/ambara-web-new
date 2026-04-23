@@ -2,17 +2,34 @@ import { pgTable, text, serial, timestamp, uuid, integer, numeric, date, boolean
 
 export const shipments = pgTable('shipments', {
   id: serial('id').primaryKey(),
-  trackingNumber: text('tracking_number').notNull(), // Legacy tracking
-  title: text('title').notNull(), // New field
-  internalTrackingNo: text('internal_tracking_no'), // Spec v3: 16-char formula
+  trackingNumber: text('tracking_number').notNull(), // Legacy tracking / MAWB
+  title: text('title').notNull(),
+  internalTrackingNo: text('internal_tracking_no'), // AA[YY][CC][8digits][SVC]
   customerId: integer('customer_id'),
-  status: text('status').notNull().default('pending'), // Received, Departed, Arrived, Customs, Delivered
+  status: text('status').notNull().default('pending'),
   origin: text('origin').notNull(),
   destination: text('destination').notNull(),
   serviceType: text('service_type'), // PP, PD, DP, DD
-  shipperName: text('shipper_name'), // Added from actual DB
-  consigneeName: text('consignee_name'), // Added from actual DB
-  createdBy: text('created_by'), // Spec v3: Clerk User ID (string)
+  shipperName: text('shipper_name'),
+  shipperAddress: text('shipper_address'),
+  consigneeName: text('consignee_name'),
+  consigneeAddress: text('consignee_address'),
+  consigneePhone: text('consignee_phone'),
+  customerName: text('customer_name'),
+  customerEmail: text('customer_email'),
+  goodsDescription: text('goods_description'),
+  originIata: text('origin_iata'),
+  destinationIata: text('destination_iata'),
+  totalPcs: integer('total_pcs'),
+  weightKg: numeric('weight_kg'),
+  chargeableWeight: numeric('chargeable_weight'),
+  isDamaged: boolean('is_damaged').default(false),
+  deliveredAt: timestamp('delivered_at'),
+  cargoType: text('cargo_type').default('general'),
+  commodity: text('commodity'),
+  createdByStaff: integer('created_by_staff'),
+  updatedByStaff: integer('updated_by_staff'),
+  createdBy: text('created_by'), // Clerk User ID
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
@@ -66,10 +83,16 @@ export const customers = pgTable('customers', {
   email: text('email'),
   phone: text('phone'),
   address: text('address'),
+  addressLine1: text('address_line1'),
+  addressLine2: text('address_line2'),
+  provincePostal: text('province_postal'),
   country: text('country'),
-  countryCode: text('country_code').default('ID'), // 2-char code for shipment tracking formulas
+  countryCode: text('country_code').default('ID'),
   npwp: text('npwp'),
+  contactPerson: text('contact_person'),
+  passwordHash: text('password_hash'),
   createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 export const invoices = pgTable('invoices', {

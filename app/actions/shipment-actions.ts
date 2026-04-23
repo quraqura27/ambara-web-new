@@ -118,7 +118,6 @@ export async function createShipment(data: any) {
         destination: data.destination.slice(0, 3), // Ensure char(3)
         uploadedBy: userId, // Required field
         rawPdfUrl: "manual://none", // Required field - placeholder for manual entries
-        parseStatus: "pending",
       });
 
       console.log("TRANSACTION_COMMIT_SUCCESS");

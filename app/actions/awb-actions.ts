@@ -124,9 +124,8 @@ export async function saveScrapedAWB(data: any, billingCustomerId?: number) {
     consigneeId: consigneeId, // Link to CRM
     commodity: data.commodity || "General Cargo",
     flightNumber: data.flightNumber,
-    flightDate: data.flightDate,
+    shipmentDate: data.flightDate,
     rawPdfUrl: data.url || data.rawPdfUrl,
-    parseStatus: "completed",
     uploadedBy: userId,
     shipmentId: newShipment.id, 
   }).returning();

@@ -9,7 +9,6 @@ import {
   Filter, 
   Plus, 
   ArrowUpRight,
-  TrendingUp,
   AlertCircle
 } from "lucide-react";
 
@@ -74,9 +73,8 @@ export default async function ShipmentsPage({ searchParams }: { searchParams: an
                   <Icon size={20} />
                 </div>
               </div>
-              <div className="mt-4 flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider relative z-10">
-                <TrendingUp size={12} className="text-emerald-500" />
-                <span>+12.5% vs last month</span>
+              <div className="mt-4 flex items-center gap-1.5 text-[10px] font-bold text-slate-600 uppercase tracking-wider relative z-10">
+                <span>All Time</span>
               </div>
             </div>
           );
@@ -93,7 +91,7 @@ export default async function ShipmentsPage({ searchParams }: { searchParams: an
               <p className="text-sm font-bold text-slate-500 uppercase tracking-widest animate-pulse">Initializing Data Stream...</p>
             </div>
           }>
-            <ShipmentGrid initialShipments={shipments} customers={customers} />
+            <ShipmentGrid initialShipments={shipments} customers={customers} totalCount={totalCount} page={page} limit={limit} />
           </Suspense>
         </div>
       </div>
