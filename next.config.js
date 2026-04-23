@@ -35,6 +35,7 @@ const nextConfig = {
   typescript: { ignoreBuildErrors: true },
   experimental: {
     serverActions: {
+      bodySizeLimit: "10mb",
       allowedOrigins: ["ambaraartha.com", "www.ambaraartha.com"],
     },
   },

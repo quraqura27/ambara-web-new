@@ -14,61 +14,66 @@ import { eq, ilike } from "drizzle-orm";
  * Orchestrates: PDF Optimization -> S3 Upload -> Scrape -> DB Write
  */
 export async function uploadAndProcessAWB(formData: FormData) {
-  const { userId } = auth();
-  if (!userId) throw new Error("Unauthorized");
-
-  const file = formData.get("file") as File;
-  if (!file) throw new Error("No file uploaded");
-
-  let buffer = Buffer.from(await file.arrayBuffer());
-  const fileName = `awbs/${Date.now()}-${file.name}`;
-
-  // 1. PDF Optimization (v15.2 Optimized)
-  // - Extracts only the first page
-  // - Removes redundant metadata/objects to compress size
   try {
-    const pdfDoc = await PDFDocument.load(buffer);
-    const newPdfDoc = await PDFDocument.create();
-    
-    // Copy the first page
-    const [firstPage] = await newPdfDoc.copyPages(pdfDoc, [0]);
-    newPdfDoc.addPage(firstPage);
-    
-    // Save as a fresh, optimized buffer
-    const optimizedBytes = await newPdfDoc.save({ useObjectStreams: true });
-    buffer = Buffer.from(optimizedBytes);
-  } catch (err) {
-    console.error("PDF Optimization failed, falling back to original:", err);
-  }
+    const { userId } = auth();
+    if (!userId) return { success: false, error: "Unauthorized" };
 
-  // 2. Upload to Cloudflare R2
-  try {
-    await r2.send(
-      new PutObjectCommand({
-        Bucket: BUCKET_NAME,
-        Key: fileName,
-        Body: buffer,
-        ContentType: file.type,
-        Metadata: {
-          "uploaded-by": userId,
-          "retention": "5-years",
-          "optimized": "true"
-        }
-      })
-    );
+    const file = formData.get("file") as File;
+    if (!file) return { success: false, error: "No file uploaded" };
+
+    let buffer = Buffer.from(await file.arrayBuffer());
+    const fileName = `awbs/${Date.now()}-${file.name}`;
+
+    // 1. PDF Optimization (v15.2 Optimized)
+    // - Extracts only the first page
+    // - Removes redundant metadata/objects to compress size
+    try {
+      const pdfDoc = await PDFDocument.load(buffer);
+      const newPdfDoc = await PDFDocument.create();
+      
+      // Copy the first page
+      const [firstPage] = await newPdfDoc.copyPages(pdfDoc, [0]);
+      newPdfDoc.addPage(firstPage);
+      
+      // Save as a fresh, optimized buffer
+      const optimizedBytes = await newPdfDoc.save({ useObjectStreams: true });
+      buffer = Buffer.from(optimizedBytes);
+    } catch (err) {
+      console.error("PDF Optimization failed, falling back to original:", err);
+    }
+
+    // 2. Upload to Cloudflare R2
+    try {
+      await r2.send(
+        new PutObjectCommand({
+          Bucket: BUCKET_NAME,
+          Key: fileName,
+          Body: buffer,
+          ContentType: file.type,
+          Metadata: {
+            "uploaded-by": userId,
+            "retention": "5-years",
+            "optimized": "true"
+          }
+        })
+      );
+    } catch (err: any) {
+      console.error("Cloudflare R2 Upload Failed:", err);
+      return { success: false, error: `R2 Upload Failed: ${err.message}` };
+    }
+
+    const fileUrl = `${process.env.R2_PUBLIC_URL || ""}/${fileName}`;
+
+    // 3. Return the R2 URL to allow client-side parsing
+    return {
+      success: true,
+      url: fileUrl,
+      fileName: file.name
+    };
   } catch (err: any) {
-    console.error("Cloudflare R2 Upload Failed:", err);
-    return { success: false, error: `R2 Upload Failed: ${err.message}` };
+    console.error("UPLOAD_AWB_CRASH:", err);
+    return { success: false, error: `Server Crash during upload: ${err.message}` };
   }
-
-  const fileUrl = `${process.env.R2_PUBLIC_URL || ""}/${fileName}`;
-
-  // 3. Return the R2 URL to allow client-side parsing
-  return {
-    success: true,
-    url: fileUrl,
-    fileName: file.name
-  };
 }
 
 /**
