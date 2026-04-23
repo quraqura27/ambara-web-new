@@ -34,16 +34,16 @@
 - **Premium Command Center Overhaul (April 23)**: Executed a complete visual restyling of the entire dashboard (/app/dashboard). Transitioned from an unstable Tailwind v4 configuration to a stable **Tailwind v3.4.19** baseline. Implemented a cohesive "Glassmorphism" design system, high-fidelity data grids, and refined operational terminals for Ingest, Finance, and Labels.
 - **Tailwind Stability Migration (April 23)**: Resolved persistent layout regressions by purging Tailwind v4 dependencies and implementing a standard `tailwind.config.ts` with premium design tokens. Verified stability via successful production builds and GitHub deployment.
 - **Admin Server Actions**: Converted the Admin Dashboard pending users table to use Next.js Server Actions with `force-dynamic` to allow direct DB updates and smooth production deploys.
-- **Tonnage Source of Truth**: Switched dashboard stats to pull from the `shipments` table for speed and accuracy across all 35+ records.
-- **Dual-Sync Protocol**: Implemented logic to sync weight/pieces between `shipments` (operational) and `awbs` (financial) tables on every write.
-- **Intelligent Unit Display**: Dashboard now switches between KG and MT automatically based on volume size.
+- **AWB-First Financial Truth (April 23)**: Eliminated the Dual-Sync anti-pattern. All volume and financial metrics now derive exclusively from the `awbs` table. Migrated 32 orphaned shipments (116.98 MT) into AWBs. Converted `chargeable_weight` column from TEXT to NUMERIC in production Neon DB. Dashboard uses strict Drizzle ORM `sum()` with explicit `CAST(... AS NUMERIC)` syntax.
+- **Dashboard Error Exposure (April 23)**: Removed silent `catch` blocks in `dashboard-actions.ts`. Errors now propagate via `console.error` + `throw` to surface failures in Vercel logs.
+- **Intelligent Unit Display**: Dashboard switches between KG and MT automatically based on volume size.
 
 ## Current Focus
-- **Phase 3: AWB Ingestion**: Activating the parsing engine to automate PDF data entry into the CRM.
-- **Phase 4: Thermal Labels**: Preparing the layout engine for 4x6 printing.
-- The premium "Command Center" UI overhaul is now live on Vercel. 
-- Monitoring production builds and user feedback on the new high-fidelity layout.
-- The environment is fully deployed on Vercel (`www.ambaraartha.com`). 
+- Dashboard metrics stabilization is **DONE** — 116.98 MT confirmed in production.
+- The premium "Command Center" UI overhaul is live on Vercel (`www.ambaraartha.com`).
+- Purge temporary migration scripts (`sync-awbs.js`, `clean-and-fix.js`, `final-definitive-fix.js`, `prove-fix.js`, `fix-column.js`, `final-fix.js`) after 24h stability confirmation.
 
 ## Next Steps
-- Begin development of Phase 5: Automated Invoice Generation Module (3-stage PDF assembler) upon successful RBAC signoff.
+- **Phase 5: Automated Invoice Generation** — draw directly from `awbs.chargeableWeight` and `awbs.rate`.
+- **Phase 3: AWB Ingestion** — activate the parsing engine for PDF data entry.
+- **Phase 4: Thermal Labels** — prepare the layout engine for 4x6 printing.

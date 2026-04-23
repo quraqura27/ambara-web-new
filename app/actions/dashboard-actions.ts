@@ -43,14 +43,14 @@ export async function getDashboardStats() {
     const [currentVolume, prevVolume, currentInv, prevInv, currentCust, prevCust] = await Promise.all([
       db.select({ value: sql<string>`SUM(CAST(${awbs.chargeableWeight} AS NUMERIC))` }).from(awbs).where(gte(awbs.createdAt, startOfMonth)),
       db.select({ value: sql<string>`SUM(CAST(${awbs.chargeableWeight} AS NUMERIC))` }).from(awbs).where(and(gte(awbs.createdAt, startOfPrevMonth), lte(awbs.createdAt, endOfPrevMonth))),
-      db.select({ value: sum(invoices.totalAmount) }).from(invoices).where(gte(invoices.createdAt, startOfMonth)),
-      db.select({ value: sum(invoices.totalAmount) }).from(invoices).where(and(gte(invoices.createdAt, startOfPrevMonth), lte(invoices.createdAt, endOfPrevMonth))),
+      db.select({ value: sql<string>`SUM("total")` }).from(invoices).where(sql`"invoice_date" >= ${startOfMonth}`),
+      db.select({ value: sql<string>`SUM("total")` }).from(invoices).where(sql`"invoice_date" >= ${startOfPrevMonth} AND "invoice_date" <= ${endOfPrevMonth}`),
       db.select({ value: count() }).from(customers).where(gte(customers.createdAt, startOfCurrentMonth)),
       db.select({ value: count() }).from(customers).where(and(gte(customers.createdAt, startOfPreviousMonth), lte(customers.createdAt, endOfPreviousMonth)))
     ]);
 
     const [totalInvResult, totalCustResult] = await Promise.all([
-      db.select({ value: sum(invoices.totalAmount) }).from(invoices),
+      db.select({ value: sql<string>`SUM("total")` }).from(invoices),
       db.select({ value: count() }).from(customers)
     ]);
 

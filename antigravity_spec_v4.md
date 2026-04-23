@@ -5,10 +5,12 @@ To build a SaaS platform for a freight forwarding company handling global logist
 
 ## Core Stack
 - **Framework**: Next.js (App Router)
-- **Database**: Neon (PostgreSQL) + Drizzle### Data Models & Synchronization
-- **Shipments**: Now includes `chargeableWeight` (numeric), `totalPcs` (integer), and `shipperName` (text) to mirror the production database.
-- **Dual-Sync Strategy**: Every shipment write creates/updates both a `shipment` record (for dashboarding) and an `awb` record (for invoicing).
-- **Metric Formatting**: Tonnage is calculated dynamically as MT (if >= 1000kg) or KG (if < 1000kg).
+- **Database**: Neon (PostgreSQL) + Drizzle ORM (Strict Mode)
+
+### Data Models & Architecture
+- **AWB-First Financial Truth**: All volume/financial metrics derive exclusively from the `awbs` table. The `shipments` table is operational only (tracking, status).
+- **Schema**: `awbs.chargeable_weight` is `NUMERIC` in Postgres (not TEXT). All aggregation uses `SUM(CAST(... AS NUMERIC))`.
+- **Metric Formatting**: Tonnage displays as MT (if >= 1000kg) or KG (if < 1000kg).
 - **Auth**: Clerk (Production Live)
 - **Styling**: Tailwind CSS
 - **Storage**: Cloudflare R2
@@ -28,12 +30,14 @@ To build a SaaS platform for a freight forwarding company handling global logist
 3. **CLI-First**: ALWAYS use the CLI (terminal) for DevOps, status checks, and data fetching if direct access is available. Avoid the browser unless visual verification is required.
 
 ## Current Focus
-- The premium "Command Center" UI is fully deployed on Vercel. 
-- Monitoring production builds and user feedback on the new high-fidelity layout.
-- **Next Phase:** Begin Automated Invoice Generation Module (3-stage PDF assembler) upon successful RBAC signoff.
+- Dashboard metrics stabilization: **Done** (116.98 MT confirmed in production).
+- The premium "Command Center" UI is fully deployed on Vercel.
+- **Next Phase:** Automated Invoice Generation Module drawing from `awbs` table.
 
 ## Active Status
 - Migration: **Done**
 - Clerk Sign Up Flow: **Done**
 - RBAC Middleware: **Done**
+- Dashboard Metrics Fix: **Done**
+- AWB-First Architecture: **Done**
 - Invoice Engine: **Pending**
