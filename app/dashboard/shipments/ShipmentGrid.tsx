@@ -464,6 +464,7 @@ export default function ShipmentGrid({ initialShipments, customers, totalCount, 
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
