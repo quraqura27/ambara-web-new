@@ -10,7 +10,7 @@ import { auth } from "@clerk/nextjs/server";
  * Used for the billing customer dropdown in manifest ingestion.
  */
 export async function getB2BCustomers() {
-  const { userId } = auth();
+  const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
   return await db.select({
@@ -28,7 +28,7 @@ export async function getB2BCustomers() {
  * In-process creation of a billing customer during ingestion.
  */
 export async function quickAddCustomer(name: string) {
-  const { userId } = auth();
+  const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
   const [newCustomer] = await db.insert(customers).values({
@@ -46,7 +46,7 @@ export async function quickAddCustomer(name: string) {
  * Retrieves all CRM profiles (Billing, Shipper, Consignee)
  */
 export async function getAllCustomers() {
-  const { userId } = auth();
+  const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
   return await db.select().from(customers).orderBy(customers.fullName);
@@ -57,7 +57,7 @@ export async function getAllCustomers() {
  * Allows refining auto-provisioned manifest identities.
  */
 export async function updateCustomer(id: number, data: Partial<typeof customers.$inferInsert>) {
-  const { userId } = auth();
+  const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
   return await db.update(customers)

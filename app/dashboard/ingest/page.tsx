@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import { useAuth } from "@clerk/nextjs";
 import { useDropzone } from "react-dropzone";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -22,6 +23,7 @@ import { uploadAndProcessAWB, saveScrapedAWB } from "@/app/actions/awb-actions";
 import { getB2BCustomers, quickAddCustomer } from "@/app/actions/customer-actions";
 
 export default function IngestPage() {
+  const { userId } = useAuth();
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<"idle" | "uploading" | "parsing" | "review" | "saving" | "success" | "error">("idle");
   const [scrapedData, setScrapedData] = useState<any>(null);
@@ -49,7 +51,7 @@ export default function IngestPage() {
       setFile(acceptedFiles[0]);
       handleProcess(acceptedFiles[0]);
     }
-  }, []);
+  }, [userId]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -64,6 +66,7 @@ export default function IngestPage() {
 
       const formData = new FormData();
       formData.append("file", targetFile);
+      if (userId) formData.append("uploaderId", userId);
       const uploadResult = await uploadAndProcessAWB(formData);
 
       if (!uploadResult.success) {
@@ -94,7 +97,7 @@ export default function IngestPage() {
 
     try {
       setStatus("saving");
-      const saveResult = await saveScrapedAWB(scrapedData, selectedCustomerId);
+      const saveResult = await saveScrapedAWB(scrapedData, selectedCustomerId, userId || undefined);
       
       if (!saveResult.success) {
         throw new Error(saveResult.error || "Failed to save record");

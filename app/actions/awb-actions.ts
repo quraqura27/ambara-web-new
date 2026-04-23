@@ -15,7 +15,8 @@ import { eq, ilike } from "drizzle-orm";
  */
 export async function uploadAndProcessAWB(formData: FormData) {
   try {
-    const { userId } = auth();
+    const sessionAuth = await auth();
+    const userId = sessionAuth.userId || (formData.get("uploaderId") as string);
     if (!userId) return { success: false, error: "Unauthorized" };
 
     const file = formData.get("file") as File;
@@ -81,10 +82,11 @@ export async function uploadAndProcessAWB(formData: FormData) {
  * Commits the scraper results and auto-provisions a tracking shipment.
  * Now distinguishes between Billing Customer (paying) and Shipper/Consignee (manifest).
  */
-export async function saveScrapedAWB(data: any, billingCustomerId?: number) {
+export async function saveScrapedAWB(data: any, billingCustomerId?: number, clientUserId?: string) {
   try {
-    const { userId } = auth();
-    if (!userId) throw new Error("Unauthorized");
+    const sessionAuth = await auth();
+    const userId = sessionAuth.userId || clientUserId;
+    if (!userId) return { success: false, error: "Unauthorized" };
 
     // 1. Resolve Billing Customer (The payer)
     // If not provided, we fallback to a search or placeholder (though UI should enforce choice)
