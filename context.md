@@ -23,6 +23,8 @@
     - **Deterministic AWB Scraper**: Proprietary coordinate-locked engine for error-free cargo data extraction.
     - **Thermal Label Engine**: Automated generation of airline-compliant AWB stickers.
 ## Recent Decisions
+- **Phase 2 Shipment Audit (April 23)**: Full audit of shipment management system. Fixed 6 issues: (1) removed stale `parseStatus` writes from shipment-actions.ts and awb-actions.ts, (2) fixed ShipmentGrid missing props (totalCount, page, limit), (3) synced schema.ts with production DB — added 14 missing shipment columns and 6 missing customer columns, (4) fixed `flightDate` → `shipmentDate` mapping in awb-actions.ts, (5) removed misleading hardcoded "+12.5%" trend stat. Data integrity verified: 35 shipments, 36 AWBs, zero orphans.
+- **Dashboard Invoice Column Fix (April 23)**: Fixed production crash caused by `invoices.totalAmount` referencing non-existent `total_amount` column. Actual DB column is `total`. Also fixed `invoices.createdAt` → `invoice_date`. Same bug class as the 0.0 MT issue.
 - **CSS Structural Hardening (April 21)**: Implemented "Immortal Shell" styling in `globals.css` with `!important` layout properties. Created explicit fallbacks for critical Tailwind utilities (flex, grid, responsive containers) to prevent production layout regressions caused by CSS stripping or environment mismatches.
 - **Hydration Sync Fix (April 21)**: Resolved persistent React hydration errors in `ShipmentGrid.tsx` by implementing a deterministic `Intl.DateTimeFormat('en-GB')` formatter, ensuring server-client consistency for shipment dates.
 - **Tailwind v4 Configuration Compatibility (April 21)**: Introduced a minimal `tailwind.config.ts` to ensure the CSS engine initializes correctly in non-standard production build environments.
