@@ -66,6 +66,10 @@ export default function IngestPage() {
       formData.append("file", targetFile);
       const uploadResult = await uploadAndProcessAWB(formData);
 
+      if (!uploadResult.success) {
+        throw new Error(uploadResult.error || "Upload failed. Server rejected the file.");
+      }
+
       setStatus("parsing");
       const scraped = await scrapeAWB(uploadResult.url);
       
@@ -90,7 +94,12 @@ export default function IngestPage() {
 
     try {
       setStatus("saving");
-      await saveScrapedAWB(scrapedData, selectedCustomerId);
+      const saveResult = await saveScrapedAWB(scrapedData, selectedCustomerId);
+      
+      if (!saveResult.success) {
+        throw new Error(saveResult.error || "Failed to save record");
+      }
+      
       setStatus("success");
     } catch (err: any) {
       setError(err.message || "Failed to save record");

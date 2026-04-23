@@ -42,26 +42,28 @@ export async function uploadAndProcessAWB(formData: FormData) {
   }
 
   // 2. Upload to Cloudflare R2
-  await r2.send(
-    new PutObjectCommand({
-      Bucket: BUCKET_NAME,
-      Key: fileName,
-      Body: buffer,
-      ContentType: file.type,
-      Metadata: {
-        "uploaded-by": userId,
-        "retention": "5-years",
-        "optimized": "true"
-      }
-    })
-  );
+  try {
+    await r2.send(
+      new PutObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: fileName,
+        Body: buffer,
+        ContentType: file.type,
+        Metadata: {
+          "uploaded-by": userId,
+          "retention": "5-years",
+          "optimized": "true"
+        }
+      })
+    );
+  } catch (err: any) {
+    console.error("Cloudflare R2 Upload Failed:", err);
+    return { success: false, error: `R2 Upload Failed: ${err.message}` };
+  }
 
   const fileUrl = `${process.env.R2_PUBLIC_URL || ""}/${fileName}`;
 
-  // 2. Trigger Extraction (Note: pdfjs-dist needs a specific setup for server-side)
-  // For the initial version, we will return the R2 URL and allow client-side parsing 
-  // to maintain the $0-cost "Free Scraper" architecture.
-  
+  // 3. Return the R2 URL to allow client-side parsing
   return {
     success: true,
     url: fileUrl,
@@ -75,63 +77,73 @@ export async function uploadAndProcessAWB(formData: FormData) {
  * Now distinguishes between Billing Customer (paying) and Shipper/Consignee (manifest).
  */
 export async function saveScrapedAWB(data: any, billingCustomerId?: number) {
-  const { userId } = auth();
-  if (!userId) throw new Error("Unauthorized");
+  try {
+    const { userId } = auth();
+    if (!userId) throw new Error("Unauthorized");
 
-  // 1. Resolve Billing Customer (The payer)
-  // If not provided, we fallback to a search or placeholder (though UI should enforce choice)
-  let customerId = billingCustomerId;
-  if (!customerId) {
-    customerId = await findOrCreateCustomer("General Walk-in", "b2b");
+    // 1. Resolve Billing Customer (The payer)
+    // If not provided, we fallback to a search or placeholder (though UI should enforce choice)
+    let customerId = billingCustomerId;
+    if (!customerId) {
+      customerId = await findOrCreateCustomer("General Walk-in", "b2b");
+    }
+
+    const billingCustomer = await db.query.customers.findFirst({
+      where: eq(customers.id, customerId)
+    });
+
+    // 2. Resolve Manifest Identities for CRM Memory
+    const shipperId = await findOrCreateCustomer(data.shipper || "Unknown Shipper", "SHIPPER");
+    const consigneeId = await findOrCreateCustomer(data.consignee || "Unknown Consignee", "CONSIGNEE");
+
+    // 3. Create the Tracking Shipment record
+    // Formula: [AA][Country][8-Random][YY][Service]
+    // Country code is strictly from the BILLING CUSTOMER profile
+    const countryCode = billingCustomer?.countryCode || "ID"; 
+    const internalTrx = generateInternalTrackingNo(countryCode, "PP");
+
+    const result = await db.transaction(async (tx) => {
+      const [newShipment] = await tx.insert(shipments).values({
+        internalTrackingNo: internalTrx,
+        trackingNumber: data.awbNumber || `MANUAL-${Date.now()}`,
+        title: data.awbNumber ? `AWB: ${data.awbNumber}` : "Manual Entry",
+        customerId: customerId,
+        status: "RECEIVED",
+        origin: data.origin,
+        destination: data.destination,
+        serviceType: "PP", // Default to Port-to-Port
+        createdBy: userId,
+      }).returning();
+
+      // 4. Insert the AWB manifest and link to Shipment + CRM IDs
+      const [newAwb] = await tx.insert(awbs).values({
+        awbNumber: data.awbNumber,
+        carrier: data.airline,
+        origin: data.origin,
+        destination: data.destination,
+        pieces: parseInt(data.pieces) || 0,
+        chargeableWeight: data.weight?.toString() || "0",
+        shipper: data.shipper, // Raw text from manifest
+        consignee: data.consignee, // Raw text from manifest
+        shipperId: shipperId, // Link to CRM
+        consigneeId: consigneeId, // Link to CRM
+        commodity: data.commodity || "General Cargo",
+        flightNumber: data.flightNumber,
+        shipmentDate: data.flightDate,
+        rawPdfUrl: data.url || data.rawPdfUrl,
+        uploadedBy: userId,
+        shipmentId: newShipment.id, 
+      }).returning();
+
+      return { awb: newAwb, shipment: newShipment };
+    });
+
+    revalidatePath("/dashboard/shipments");
+    return { success: true, ...result };
+  } catch (error: any) {
+    console.error("SAVE_AWB_CRASH:", error);
+    return { success: false, error: error.message || "Failed to save AWB to database." };
   }
-
-  const billingCustomer = await db.query.customers.findFirst({
-    where: eq(customers.id, customerId)
-  });
-
-  // 2. Resolve Manifest Identities for CRM Memory
-  const shipperId = await findOrCreateCustomer(data.shipper || "Unknown Shipper", "SHIPPER");
-  const consigneeId = await findOrCreateCustomer(data.consignee || "Unknown Consignee", "CONSIGNEE");
-
-  // 3. Create the Tracking Shipment record
-  // Formula: [AA][Country][8-Random][YY][Service]
-  // Country code is strictly from the BILLING CUSTOMER profile
-  const countryCode = billingCustomer?.countryCode || "ID"; 
-  const internalTrx = generateInternalTrackingNo(countryCode, "PP");
-
-  const [newShipment] = await db.insert(shipments).values({
-    internalTrackingNo: internalTrx,
-    trackingNumber: data.awbNumber,
-    customerId: customerId,
-    status: "RECEIVED",
-    origin: data.origin,
-    destination: data.destination,
-    serviceType: "PP", // Default to Port-to-Port
-    createdBy: userId,
-  }).returning();
-
-  // 4. Insert the AWB manifest and link to Shipment + CRM IDs
-  const [newAwb] = await db.insert(awbs).values({
-    awbNumber: data.awbNumber,
-    carrier: data.airline,
-    origin: data.origin,
-    destination: data.destination,
-    pieces: parseInt(data.pieces) || 0,
-    chargeableWeight: data.weight?.toString(),
-    shipper: data.shipper, // Raw text from manifest
-    consignee: data.consignee, // Raw text from manifest
-    shipperId: shipperId, // Link to CRM
-    consigneeId: consigneeId, // Link to CRM
-    commodity: data.commodity || "General Cargo",
-    flightNumber: data.flightNumber,
-    shipmentDate: data.flightDate,
-    rawPdfUrl: data.url || data.rawPdfUrl,
-    uploadedBy: userId,
-    shipmentId: newShipment.id, 
-  }).returning();
-
-  revalidatePath("/dashboard/shipments");
-  return { awb: newAwb, shipment: newShipment };
 }
 
 /**

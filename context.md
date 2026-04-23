@@ -23,6 +23,7 @@
     - **Deterministic AWB Scraper**: Proprietary coordinate-locked engine for error-free cargo data extraction.
     - **Thermal Label Engine**: Automated generation of airline-compliant AWB stickers.
 ## Recent Decisions
+- **Phase 3 AWB Ingestion Stabilization (April 23):** Configured `pdfjs-dist` worker initialization in `awb-scraper.ts` to fix silent client-side execution crashes. Enforced strict schema compliance in `awb-actions.ts` by injecting the required `title` field during shipment creation. Wrapped `shipments` and `awbs` database inserts inside a Drizzle transaction to prevent orphaned records. Adhered strictly to the AWB-First Financial Truth protocol by ensuring no Dual-Sync anti-patterns were introduced.
 - **Strict Drizzle Migration (April 23):** Replaced all raw SQL fragments in `dashboard-actions.ts` with type-safe Drizzle ORM syntax. This was achieved by first correcting the `invoices` schema to match the actual production database (adding `subtotal`, `vat_amount`, `total`, etc., and removing phantom columns like `total_amount`).
 - **Phase 2 Shipment Audit (April 23):** Full audit of shipment management system. Fixed 6 issues: (1) removed stale `parseStatus` writes from shipment-actions.ts and awb-actions.ts, (2) fixed ShipmentGrid missing props (totalCount, page, limit), (3) synced schema.ts with production DB — added 14 missing shipment columns and 6 missing customer columns, (4) fixed `flightDate` → `shipmentDate` mapping in awb-actions.ts, (5) removed misleading hardcoded "+12.5%" trend stat. Data integrity verified: 35 shipments, 36 AWBs, zero orphans.
 - **Dashboard Invoice Column Fix (April 23):** Fixed production crash caused by `invoices.totalAmount` referencing non-existent `total_amount` column. Actual DB column is `total`. Also fixed `invoices.createdAt` → `invoice_date`. Same bug class as the 0.0 MT issue.
@@ -42,6 +43,7 @@
 - **Intelligent Unit Display**: Dashboard switches between KG and MT automatically based on volume size.
 
 ## Current Focus
+- Phase 3 AWB Ingestion stabilization is **DONE**.
 - Dashboard metrics stabilization is **DONE** — 116.98 MT confirmed in production.
 - The premium "Command Center" UI overhaul is live on Vercel (`www.ambaraartha.com`).
 - Purge temporary migration scripts (`sync-awbs.js`, `clean-and-fix.js`, `final-definitive-fix.js`, `prove-fix.js`, `fix-column.js`, `final-fix.js`) after 24h stability confirmation.

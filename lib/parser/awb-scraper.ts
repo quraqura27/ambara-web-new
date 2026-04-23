@@ -1,5 +1,8 @@
 import * as pdfjs from 'pdfjs-dist';
 
+if (typeof window !== "undefined") {
+  pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+}
 export interface AWBMetadata {
   awbNumber: string;
   pieces: string;

@@ -23,6 +23,7 @@ To build a SaaS platform for a freight forwarding company handling global logist
 4. **Mandatory Rule Enforcement:** Integrated `SKILL.md`, `CLI-FIRST.md`, and `UI-STYLE.MD` into the global agent instructions to ensure non-negotiable adherence to development standards.
 5. **Premium UI Overhaul (April 23):** Executed a total visual transformation of the dashboard using "Glassmorphism" design patterns and high-density operational components.
 6. **Tailwind v3 Stability Migration:** Downgraded to Tailwind v3.4.19 to resolve build-time CSS stripping issues and ensure layout consistency across all environments.
+7. **Phase 3 AWB Ingestion Stabilization (April 23):** Configured client-side PDF.js worker explicitly to fix execution crashes. Fixed missing `title` constraint on shipments, wrapped multi-table inserts in a transaction, and enforced strict error propagation in `awb-actions.ts`.
 
 ## Global Rules & Constraints
 1. **Visual Excellence**: All web UI must be premium, high-fidelity, and adhere to `UI-STYLE.MD`.
@@ -31,7 +32,7 @@ To build a SaaS platform for a freight forwarding company handling global logist
 4. **Strict Drizzle**: NEVER use raw SQL where a schema mapping can provide type-safe alternatives.
 
 ## Current Focus
-- Automated Invoice Generation Module drawing from `awbs` table.
+- Automated Invoice Generation Module drawing from `awbs` table (Phase 5).
 - Ensuring end-to-end data integrity between CRM and Shipments.
 
 ## Active Status
@@ -40,4 +41,5 @@ To build a SaaS platform for a freight forwarding company handling global logist
 - RBAC Middleware: **Done**
 - Dashboard Metrics Fix: **Done**
 - AWB-First Architecture: **Done**
-- Invoice Engine: **Pending**
+- AWB Ingestion Pipeline (Phase 3): **Done**
+- Invoice Engine (Phase 5): **Pending**
