@@ -64,14 +64,9 @@ export async function uploadAndProcessAWB(formData: FormData) {
       return { success: false, error: `R2 Upload Failed: ${err.message}` };
     }
 
-    // Generate a secure, 1-hour presigned URL for the client-side parser
-    // This removes the dependency on an external R2_PUBLIC_URL configuration
-    const getCommand = new GetObjectCommand({
-      Bucket: BUCKET_NAME,
-      Key: fileName,
-    });
-    
-    const fileUrl = await getSignedUrl(r2, getCommand, { expiresIn: 3600 });
+    // We use an internal API proxy instead of a Presigned URL to avoid
+    // strict Cloudflare R2 CORS policies blocking browser PDF workers.
+    const fileUrl = `/api/pdf?file=${encodeURIComponent(fileName)}`;
 
     // 3. Return the R2 URL to allow client-side parsing
     return {
