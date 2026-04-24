@@ -44,4 +44,5 @@ To build a SaaS platform for a freight forwarding company handling global logist
 - Dashboard Metrics Fix: **Done**
 - AWB-First Architecture: **Done**
 - AWB Ingestion Pipeline (Phase 3): **Done**
+- Marketing Site Next.js Migration: **Pending**
 - Invoice Engine (Phase 5): **Pending**

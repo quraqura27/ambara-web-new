@@ -49,8 +49,9 @@ export async function getDashboardStats() {
     stats.volumeUp = volCurr >= volPrev;
 
   } catch (e) {
-    console.error("DASHBOARD DB ERROR:", e);
-    throw e;
+    console.error("DASHBOARD DB ERROR (getDashboardStats):", e);
+    // Return safe fallback instead of throwing 500 error
+    return stats;
   }
 
   return stats;
@@ -74,27 +75,35 @@ export async function getTonnageData() {
 
   const oldestDateStr = last7Days[0];
 
-  const results = await db.select({
-    date: sql<string>`DATE(${awbs.createdAt})`,
-    total: sql<string>`SUM(CAST(${awbs.chargeableWeight} AS NUMERIC))`
-  })
-  .from(awbs)
-  .where(gte(awbs.createdAt, new Date(oldestDateStr + "T00:00:00.000Z")))
-  .groupBy(sql`DATE(${awbs.createdAt})`);
+  try {
+    const results = await db.select({
+      date: sql<string>`DATE(${awbs.createdAt})`,
+      total: sql<string>`SUM(CAST(${awbs.chargeableWeight} AS NUMERIC))`
+    })
+    .from(awbs)
+    .where(gte(awbs.createdAt, new Date(oldestDateStr + "T00:00:00.000Z")))
+    .groupBy(sql`DATE(${awbs.createdAt})`);
 
-  const dailyVolume = last7Days.map((dateStr) => {
-    const match = results.find(r => {
-      const rDate = r.date instanceof Date ? r.date.toISOString().split('T')[0] : String(r.date).split('T')[0];
-      return rDate === dateStr;
+    const dailyVolume = last7Days.map((dateStr) => {
+      const match = results.find(r => {
+        const rDate = r.date instanceof Date ? r.date.toISOString().split('T')[0] : String(r.date).split('T')[0];
+        return rDate === dateStr;
+      });
+      
+      return {
+        name: new Date(dateStr).toLocaleDateString('en-US', { weekday: 'short' }),
+        volume: Number(match?.total || 0)
+      };
     });
-    
-    return {
-      name: new Date(dateStr).toLocaleDateString('en-US', { weekday: 'short' }),
-      volume: Number(match?.total || 0)
-    };
-  });
 
-  return dailyVolume;
+    return dailyVolume;
+  } catch (e) {
+    console.error("DASHBOARD DB ERROR (getTonnageData):", e);
+    return last7Days.map((dateStr) => ({
+      name: new Date(dateStr).toLocaleDateString('en-US', { weekday: 'short' }),
+      volume: 0
+    }));
+  }
 }
 
 export async function getRecentActivity() {

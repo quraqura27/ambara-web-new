@@ -48,6 +48,7 @@
 - Phase 3 AWB Ingestion stabilization is **DONE**.
 - Dashboard metrics stabilization is **DONE** — 116.98 MT confirmed in production.
 - The premium "Command Center" UI overhaul is live on Vercel (`www.ambaraartha.com`).
+- Marketing site layout script (`layout.js`) syntax fixed and "Client Portal" button integrated into legacy static HTML pages. Next.js React components (`Navbar.tsx` and `Footer.tsx`) have been prepared for future migration.
 - Purge temporary migration scripts (`sync-awbs.js`, `clean-and-fix.js`, `final-definitive-fix.js`, `prove-fix.js`, `fix-column.js`, `final-fix.js`) after 24h stability confirmation.
 
 ## Next Steps
