@@ -7,8 +7,12 @@ import { eq } from "drizzle-orm";
 export const dynamic = "force-dynamic";
 
 export default async function AdminUsersPage() {
-  // Fetch pending users
-  const pendingUsers = await db.select().from(profiles).where(eq(profiles.status, 'PENDING'));
+  let pendingUsers: any[] = [];
+  try {
+    pendingUsers = await db.select().from(profiles).where(eq(profiles.status, 'PENDING'));
+  } catch (e) {
+    console.error("DASHBOARD DB ERROR (AdminUsers):", e);
+  }
 
   return (
     <div className="space-y-6">

@@ -245,33 +245,38 @@ export async function getShipments(limit: number = 10, offset: number = 0) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
-  const [countResult] = await db.select({ total: count() }).from(shipments);
-  const totalCount = Number(countResult.total);
+  try {
+    const [countResult] = await db.select({ total: count() }).from(shipments);
+    const totalCount = Number(countResult.total);
 
-  const data = await db.select({
-    id: shipments.id,
-    internalTrackingNo: shipments.internalTrackingNo,
-    trackingNumber: shipments.trackingNumber,
-    status: shipments.status,
-    origin: shipments.origin,
-    destination: shipments.destination,
-    serviceType: shipments.serviceType,
-    updatedAt: shipments.updatedAt,
-    createdAt: shipments.createdAt,
-    customerId: shipments.customerId,
-    weight: awbs.chargeableWeight,
-    pieces: awbs.pieces,
-    awbNumber: awbs.awbNumber,
-    shipper: awbs.shipper,
-    consignee: awbs.consignee
-  })
-  .from(shipments)
-  .leftJoin(awbs, eq(shipments.id, awbs.shipmentId))
-  .orderBy(desc(shipments.createdAt))
-  .limit(limit)
-  .offset(offset);
+    const data = await db.select({
+      id: shipments.id,
+      internalTrackingNo: shipments.internalTrackingNo,
+      trackingNumber: shipments.trackingNumber,
+      status: shipments.status,
+      origin: shipments.origin,
+      destination: shipments.destination,
+      serviceType: shipments.serviceType,
+      updatedAt: shipments.updatedAt,
+      createdAt: shipments.createdAt,
+      customerId: shipments.customerId,
+      weight: awbs.chargeableWeight,
+      pieces: awbs.pieces,
+      awbNumber: awbs.awbNumber,
+      shipper: awbs.shipper,
+      consignee: awbs.consignee
+    })
+    .from(shipments)
+    .leftJoin(awbs, eq(shipments.id, awbs.shipmentId))
+    .orderBy(desc(shipments.createdAt))
+    .limit(limit)
+    .offset(offset);
 
-  return { shipments: data, totalCount };
+    return { shipments: data, totalCount };
+  } catch (e) {
+    console.error("DASHBOARD DB ERROR (getShipments):", e);
+    return { shipments: [], totalCount: 0 };
+  }
 }
 
 /**
@@ -282,7 +287,12 @@ export async function getCustomers() {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
-  return await db.select().from(customerTable).orderBy(customerTable.fullName);
+  try {
+    return await db.select().from(customerTable).orderBy(customerTable.fullName);
+  } catch (e) {
+    console.error("DASHBOARD DB ERROR (getCustomers):", e);
+    return [];
+  }
 }
 
 /**
