@@ -155,6 +155,7 @@
       <a href="/en/faq">FAQ</a>
     </div>
     <div class="navbar-actions">
+      <a href="/dashboard" class="btn btn-outline btn-sm" style="margin-right:8px;border-color:rgba(255,255,255,0.2);color:white">Client Portal</a>
       <div class="lang-toggle">
         <button data-lang="en" class="active">EN</button>
         <button data-lang="id">ID</button>
@@ -183,7 +184,8 @@
         <a href="/en/blog" style="color:white;text-decoration:none">Blog</a>
         <a href="/en/faq" style="color:white;text-decoration:none">FAQ</a>
       </div>
-      <a href="/en/quote" class="btn btn-primary" style="margin-top:auto;justify-content:center;width:100%">Get Quote</a>
+      <a href="/dashboard" class="btn btn-outline" style="margin-top:auto;justify-content:center;width:100%;margin-bottom:12px;border-color:rgba(255,255,255,0.2);color:white">Client Portal</a>
+      <a href="/en/quote" class="btn btn-primary" style="justify-content:center;width:100%">Get Quote</a>
     </div>
   </div>
 </nav>
@@ -501,26 +503,7 @@
 
 <script src="/app.js?v=2.1"></script>
 <script>
-// Load live stats
-fetch('/api/public-stats').then(r=>r.json()).then(d=>{
-  if(d.tonnage) document.getElementById('stat-tonnage').textContent = parseFloat(d.tonnage).toLocaleString() + ' T';
-  if(d.on_time_rate) document.getElementById('stat-ontime').textContent = d.on_time_rate + '%';
-}).catch(()=>{});
-
-// Load blog preview
-fetch('/api/blog-api?action=list&limit=3').then(r=>r.json()).then(d=>{
-  if(!d.posts?.length) return;
-  document.getElementById('blog-preview').innerHTML = d.posts.map(p=>`
-    <div class="card animate-on-scroll">
-      <div class="badge badge-blue" style="margin-bottom:16px">${p.category||'Guide'}</div>
-      <h3 style="font-size:1.125rem;margin-bottom:12px">${p.title_en}</h3>
-      <p style="font-size:0.875rem;margin-bottom:20px">${p.excerpt_en||''}</p>
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:0.8125rem;color:var(--text-muted)">${new Date(p.published_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</span>
-        <a href="/en/blog/${p.slug}" style="font-size:0.875rem;font-weight:600;color:var(--blue-accent)">Read →</a>
-      </div>
-    </div>`).join('');
-}).catch(()=>{});
+// Removed dead API endpoints (public-stats, blog-api) after backend purge
 </script>
 </body>
 </html>

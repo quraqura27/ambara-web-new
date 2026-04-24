@@ -2,12 +2,8 @@
 
 import { UserButton } from "@clerk/nextjs";
 import { 
-  BarChart3, 
   Package, 
-  FileText, 
   Settings, 
-  PlusCircle, 
-  Tag, 
   Search,
   Menu,
   X,
@@ -21,10 +17,7 @@ import { useState } from "react";
 const navItems = [
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { name: "Shipments", href: "/dashboard/shipments", icon: Package },
-  { name: "Ingest AWB", href: "/dashboard/ingest", icon: PlusCircle },
-  { name: "Labels", href: "/dashboard/labels", icon: Tag },
-  { name: "Finance", href: "/dashboard/finance", icon: FileText },
-  { name: "Settings", href: "/dashboard/settings", icon: Settings },
+  { name: "Admin", href: "/dashboard/admin", icon: ShieldCheck },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

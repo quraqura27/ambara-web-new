@@ -4,11 +4,6 @@ import {
   TrendingUp, 
   TrendingDown, 
   Package, 
-  Users, 
-  CreditCard, 
-  Clock,
-  ArrowUpRight,
-  AlertCircle,
   Activity,
   ChevronRight
 } from "lucide-react";
@@ -33,7 +28,7 @@ export default function DashboardContent({ stats, chartData, activity }: Dashboa
   return (
     <div className="space-y-10">
       {/* Main Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <StatCard 
           href="/dashboard/shipments"
           label="Total Cargo Volume" 
@@ -45,22 +40,13 @@ export default function DashboardContent({ stats, chartData, activity }: Dashboa
           color="blue"
         />
         <StatCard 
-          href="/dashboard/finance"
-          label="Pending Settlement" 
-          value={stats?.invoices || "Rp 0.0"} 
-          change={stats?.invoiceChange || "---"} 
+          href="/dashboard/admin"
+          label="System Integrity" 
+          value="100%" 
+          suffix="Operational"
+          change="ACTIVE" 
           up={true} 
-          icon={CreditCard} 
-          color="emerald"
-        />
-        <StatCard 
-          href="/dashboard/crm"
-          label="Portfolio Growth" 
-          value={stats?.customers?.toString() || "0"} 
-          suffix="Verified"
-          change={stats?.customerChange || "---"} 
-          up={true} 
-          icon={Users} 
+          icon={Activity} 
           color="purple"
         />
       </div>
@@ -154,22 +140,14 @@ export default function DashboardContent({ stats, chartData, activity }: Dashboa
       </div>
 
       {/* Action Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 gap-8">
           <ActionCard 
-            title="Bulk Ingestion Terminal"
-            description="Process multiple AWBs simultaneously using our deterministic scanning engine."
-            href="/dashboard/ingest"
+            title="Logistics Terminal"
+            description="Access the unified shipment grid to manage tracking, routes, and operational status."
+            href="/dashboard/shipments"
             icon={Package}
-            btnText="Launch Scraper"
+            btnText="Open Shipments"
             color="blue"
-          />
-          <ActionCard 
-            title="Financial Settlements"
-            description="Reconcile carrier accounts and manage customer invoicing workflows."
-            href="/dashboard/finance"
-            icon={CreditCard}
-            btnText="View Ledger"
-            color="emerald"
           />
       </div>
     </div>

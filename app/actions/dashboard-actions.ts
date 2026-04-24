@@ -19,44 +19,22 @@ export async function getDashboardStats() {
 
   let stats = {
     volume: "0.0",
-    invoices: "Rp 0",
-    customers: 0,
     volumeChange: "0%",
-    invoiceChange: "0%",
-    customerChange: "0%",
     volumeUp: true,
-    invoiceUp: true,
-    customerUp: true,
   };
 
   try {
-    // Fire all 10 queries concurrently in a single network roundtrip
     const [
-      totalShipmentsResult,
       totalVolumeResult,
       currentVolume,
       prevVolume,
-      currentInv,
-      prevInv,
-      currentCust,
-      prevCust,
-      totalInvResult,
-      totalCustResult
     ] = await Promise.all([
-      db.select({ value: count() }).from(shipments),
       db.select({ value: sql<string>`SUM(CAST(${awbs.chargeableWeight} AS NUMERIC))` }).from(awbs),
       db.select({ value: sql<string>`SUM(CAST(${awbs.chargeableWeight} AS NUMERIC))` }).from(awbs).where(gte(awbs.createdAt, startOfMonth)),
       db.select({ value: sql<string>`SUM(CAST(${awbs.chargeableWeight} AS NUMERIC))` }).from(awbs).where(and(gte(awbs.createdAt, startOfPrevMonth), lte(awbs.createdAt, endOfPrevMonth))),
-      db.select({ value: sum(invoices.total) }).from(invoices).where(gte(invoices.invoiceDate, startOfMonth.toISOString().split('T')[0])),
-      db.select({ value: sum(invoices.total) }).from(invoices).where(and(gte(invoices.invoiceDate, startOfPrevMonth.toISOString().split('T')[0]), lte(invoices.invoiceDate, endOfPrevMonth.toISOString().split('T')[0]))),
-      db.select({ value: count() }).from(customers).where(gte(customers.createdAt, startOfCurrentMonth)),
-      db.select({ value: count() }).from(customers).where(and(gte(customers.createdAt, startOfPreviousMonth), lte(customers.createdAt, endOfPreviousMonth))),
-      db.select({ value: sum(invoices.total) }).from(invoices),
-      db.select({ value: count() }).from(customers)
     ]);
 
     const volTotal = parseFloat(totalVolumeResult[0]?.value || "0");
-    const countTotal = Number(totalShipmentsResult[0]?.value || 0);
 
     // Dynamic Unit Selection
     if (volTotal >= 1000) {
@@ -70,22 +48,6 @@ export async function getDashboardStats() {
     stats.volumeChange = calculatePercentageChange(volCurr, volPrev);
     stats.volumeUp = volCurr >= volPrev;
 
-    // 3. Process Invoices (Currency)
-    const invTotal = Number(totalInvResult[0]?.value || 0);
-    const invCurr = Number(currentInv[0]?.value || 0);
-    const invPrev = Number(prevInv[0]?.value || 0);
-    stats.invoices = formatCurrency(invTotal);
-    stats.invoiceChange = calculatePercentageChange(invCurr, invPrev);
-    stats.invoiceUp = invCurr >= invPrev;
-
-    // 4. Process Customers
-    const custTotal = Number(totalCustResult[0]?.value || 0);
-    const custCurr = Number(currentCust[0]?.value || 0);
-    const custPrev = Number(prevCust[0]?.value || 0);
-    stats.customers = custTotal;
-    stats.customerChange = calculatePercentageChange(custCurr, custPrev);
-    stats.customerUp = custCurr >= custPrev;
-
   } catch (e) {
     console.error("DASHBOARD DB ERROR:", e);
     throw e;
@@ -98,12 +60,6 @@ function calculatePercentageChange(current: number, previous: number) {
   if (previous === 0) return current > 0 ? "100%" : "0%";
   const change = ((current - previous) / previous) * 100;
   return `${Math.abs(change).toFixed(1)}%`;
-}
-
-function formatCurrency(amount: number) {
-  if (amount >= 1_000_000_000) return `Rp ${(amount / 1_000_000_000).toFixed(1)}B`;
-  if (amount >= 1_000_000) return `Rp ${(amount / 1_000_000).toFixed(0)}M`;
-  return `Rp ${amount.toLocaleString()}`;
 }
 
 export async function getTonnageData() {
