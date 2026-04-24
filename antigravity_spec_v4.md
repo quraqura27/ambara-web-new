@@ -17,13 +17,15 @@ To build a SaaS platform for a freight forwarding company handling global logist
 - **Email**: Resend
 
 ## Recent Decisions (Session 4cb81bf1)
-1. **Schema Normalization (April 23):** Synchronized Drizzle `schema.ts` with the production Neon database. Added 14 missing columns to `shipments`, 6 to `customers`, and performed a total overhaul of the `invoices` table to match reality.
-2. **Zero-Raw-SQL Mandate:** Migrated all dashboard aggregation logic from raw SQL to strict, type-safe Drizzle ORM syntax (e.g., `sum(invoices.total)`).
-3. **Phase 2 UI Stabilization:** Fixed broken pagination and data visibility in the Shipment Management module by correcting props-passing and removing stale logic references (`parseStatus`).
-4. **Mandatory Rule Enforcement:** Integrated `SKILL.md`, `CLI-FIRST.md`, and `UI-STYLE.MD` into the global agent instructions to ensure non-negotiable adherence to development standards.
-5. **Premium UI Overhaul (April 23):** Executed a total visual transformation of the dashboard using "Glassmorphism" design patterns and high-density operational components.
-6. **Tailwind v3 Stability Migration:** Downgraded to Tailwind v3.4.19 to resolve build-time CSS stripping issues and ensure layout consistency across all environments.
-7. **Phase 3 AWB Ingestion Stabilization (April 23):** Configured client-side PDF.js worker explicitly to fix execution crashes. Fixed missing `title` constraint on shipments, wrapped multi-table inserts in a transaction, and enforced strict error propagation in `awb-actions.ts`.
+1. **Next.js PDF Proxy API (April 24):** Engineered an internal `/api/pdf` proxy to stream R2 PDFs directly to the Next.js client, completely bypassing Cloudflare's strict browser-side CORS policies on Presigned URLs.
+2. **Server Action Auth Hardening (April 24):** Fixed `Unauthorized` errors in Next.js Server Actions by migrating all `auth()` calls to asynchronous `await auth()` per Clerk v7 specs, and added a dual-layer client-side `useAuth()` fallback payload to prevent Next.js 14 `multipart/form-data` cookie-dropping.
+3. **Schema Normalization (April 23):** Synchronized Drizzle `schema.ts` with the production Neon database. Added 14 missing columns to `shipments`, 6 to `customers`, and performed a total overhaul of the `invoices` table to match reality.
+4. **Zero-Raw-SQL Mandate:** Migrated all dashboard aggregation logic from raw SQL to strict, type-safe Drizzle ORM syntax (e.g., `sum(invoices.total)`).
+5. **Phase 2 UI Stabilization:** Fixed broken pagination and data visibility in the Shipment Management module by correcting props-passing and removing stale logic references (`parseStatus`).
+6. **Mandatory Rule Enforcement:** Integrated `SKILL.md`, `CLI-FIRST.md`, and `UI-STYLE.MD` into the global agent instructions to ensure non-negotiable adherence to development standards.
+7. **Premium UI Overhaul (April 23):** Executed a total visual transformation of the dashboard using "Glassmorphism" design patterns and high-density operational components.
+8. **Tailwind v3 Stability Migration:** Downgraded to Tailwind v3.4.19 to resolve build-time CSS stripping issues and ensure layout consistency across all environments.
+9. **Phase 3 AWB Ingestion Stabilization (April 23):** Configured client-side PDF.js worker explicitly to fix execution crashes. Fixed missing `title` constraint on shipments, wrapped multi-table inserts in a transaction, and enforced strict error propagation in `awb-actions.ts`.
 
 ## Global Rules & Constraints
 1. **Visual Excellence**: All web UI must be premium, high-fidelity, and adhere to `UI-STYLE.MD`.
