@@ -133,3 +133,11 @@ export const profiles = pgTable('profiles', {
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
+export const trackingUpdates = pgTable('tracking_updates', {
+  id: serial('id').primaryKey(),
+  shipmentId: integer('shipment_id').references(() => shipments.id, { onDelete: 'cascade' }),
+  status: text('status').notNull(), // pending, in_transit, delivered, exception
+  description: text('description').notNull(),
+  location: text('location'),
+  timestamp: timestamp('timestamp').defaultNow().notNull(),
+});
