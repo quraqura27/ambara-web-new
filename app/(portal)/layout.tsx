@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { LucideIcon, LayoutDashboard, LogOut, Package, Search, Users } from "lucide-react";
 
 import { searchShipmentByTracking } from "@/actions/shipments";
@@ -28,11 +29,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     <div className="flex min-h-screen overflow-hidden bg-[#0a0a0f] text-slate-100">
       <aside className="z-20 flex w-72 flex-col gap-8 border-r border-white/5 bg-[#0d0d14] p-6">
         <div className="flex items-center gap-3 px-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/20">
-            <Package className="h-6 w-6 text-white" />
-          </div>
           <div>
-            <h1 className="text-lg font-bold leading-none tracking-tight">AMBARA</h1>
+            <Image src="/logo.png" alt="PT Ambara Artha Globaltrans" className="h-auto w-44 invert" width={4000} height={622} priority />
             <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-slate-500">
               Portal v5.0
             </p>

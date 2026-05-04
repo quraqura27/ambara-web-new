@@ -23,9 +23,8 @@ AMBARA.getNavbar = (active = '') => {
     <div class="container">
       <a href="${base}/" class="navbar-brand">
         <div class="navbar-logo">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" stroke="white" stroke-width="2" stroke-linejoin="round"/></svg>
+          <img src="/logo.png" alt="PT Ambara Artha Globaltrans" class="brand-logo-image" width="4000" height="622">
         </div>
-        <div class="navbar-brand-text">AMBARA<span>ARTHA</span></div>
       </a>
       <div class="navbar-links">
         ${links.map(l => `<a href="${l.href}" ${active === l.key ? 'class="active"' : ''}>${l.label[lang]}</a>`).join('')}
@@ -45,7 +44,7 @@ AMBARA.getNavbar = (active = '') => {
   
       <div class="mobile-nav">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;width:100%">
-          <div class="navbar-brand-text" style="color:white">AMBARA<span style="color:var(--blue-accent)">ARTHA</span></div>
+          <div class="navbar-logo"><img src="/logo.png" alt="PT Ambara Artha Globaltrans" class="brand-logo-image" width="4000" height="622"></div>
           <button class="mobile-menu-btn" aria-label="Close" style="color:white;font-size:2rem">&times;</button>
         </div>
         <div class="lang-toggle" style="margin-bottom:32px;width:100%;display:flex;background:rgba(255,255,255,0.1);border-radius:8px">
@@ -77,8 +76,7 @@ AMBARA.getFooter = () => {
       <div class="footer-grid">
         <div>
           <a href="${base}/" class="navbar-brand" style="margin-bottom:20px;display:flex">
-            <div class="navbar-logo" style="margin-right:12px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" stroke="white" stroke-width="2" stroke-linejoin="round"/></svg></div>
-            <div class="navbar-brand-text">AMBARA<span>ARTHA</span></div>
+            <div class="navbar-logo" style="margin-right:12px"><img src="/logo.png" alt="PT Ambara Artha Globaltrans" class="brand-logo-image" width="4000" height="622"></div>
           </a>
           <p style="font-size:0.875rem;margin-bottom:20px">Your secure way for global delivery.</p>
           <div style="font-size:0.875rem;color:var(--text-muted)">

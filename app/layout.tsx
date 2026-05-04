@@ -5,6 +5,14 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Ambara Globaltrans Portal | Command Center",
   description: "Deterministic Operations & Administration Utility",
+  icons: {
+    icon: [
+      { url: "/favicon.ico?v=2", sizes: "any" },
+      { url: "/favicon.png?v=2", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico?v=2",
+    apple: "/favicon.png?v=2",
+  },
 };
 
 export default function RootLayout({

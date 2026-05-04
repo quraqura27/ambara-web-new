@@ -61,7 +61,9 @@ a { text-decoration: none; color: inherit; transition: var(--transition); }
 }
 .navbar .container { display: flex; align-items: center; justify-content: space-between; gap: 32px; }
 .navbar-brand { display: flex; align-items: center; gap: 12px; }
-.navbar-logo { width: 36px; height: 36px; background: var(--blue); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+.navbar-logo { width: 196px; height: auto; display: flex; align-items: center; justify-content: flex-start; }
+.brand-logo-image { display: block; width: 100%; height: auto; filter: invert(1); }
+.footer .navbar-logo { width: 220px; }
 .navbar-brand-text { font-family: var(--font-head); font-weight: 900; font-size: 1rem; letter-spacing: -0.02em; }
 .navbar-brand-text span { color: var(--blue-accent); }
 .navbar-links { display: flex; align-items: center; gap: 32px; }
@@ -157,6 +159,7 @@ body.menu-open { overflow: hidden; }
 }
 @media (max-width: 768px) {
   .navbar-links, .navbar-actions { display: none; }
+  .navbar-logo { width: 176px; max-width: 68vw; }
   .mobile-menu-btn { display: flex; }
   .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
   .footer-grid { grid-template-columns: 1fr; gap: 32px; }

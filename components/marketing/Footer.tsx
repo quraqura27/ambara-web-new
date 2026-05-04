@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { MapPin, Phone, Mail } from 'lucide-react';
 
@@ -58,11 +59,8 @@ export default function Footer({ lang }: FooterProps) {
           <div>
             <Link href={`${base}/`} className="navbar-brand" style={{ marginBottom: '20px', display: 'flex' }}>
               <div className="navbar-logo" style={{ marginRight: '12px' }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" stroke="white" strokeWidth="2" strokeLinejoin="round"/>
-                </svg>
+                <Image src="/logo.png" alt="PT Ambara Artha Globaltrans" className="brand-logo-image" width={4000} height={622} />
               </div>
-              <div className="navbar-brand-text">AMBARA<span>ARTHA</span></div>
             </Link>
             <p style={{ fontSize: '0.875rem', marginBottom: '20px' }}>{tx.tagline}</p>
             <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
