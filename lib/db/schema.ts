@@ -29,7 +29,7 @@ export const shipments = pgTable('shipments', {
   commodity: text('commodity'),
   createdByStaff: integer('created_by_staff'),
   updatedByStaff: integer('updated_by_staff'),
-  createdBy: text('created_by'), // Clerk User ID
+  createdBy: text('created_by'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
@@ -65,7 +65,7 @@ export const awbs = pgTable('awbs', {
   invoiced: boolean('invoiced').default(false).notNull(),
   invoiceId: uuid('invoice_id'),
   uploadedBy: text('uploaded_by').notNull(), // Optional for manual shipments
-  editedBy: text('edited_by'), // Changed to text for Clerk IDs
+  editedBy: text('edited_by'),
   shipmentId: integer('shipment_id'), // Spec v3: Link to the tracking record
   shipperId: integer('shipper_id'), // Link to CRM
   consigneeId: integer('consignee_id'), // Link to CRM
@@ -122,17 +122,6 @@ export const invoices = pgTable('invoices', {
   retainUntil: date('retain_until'),
 });
 
-export const profiles = pgTable('profiles', {
-  id: serial('id').primaryKey(),
-  clerkId: text('clerk_id').unique().notNull(),
-  email: text('email').notNull(),
-  firstName: text('first_name'),
-  lastName: text('last_name'),
-  role: text('role').default('CUSTOMER'), // MASTER_ADMIN, OPERATIONS, FINANCE, CUSTOMER
-  status: text('status').default('PENDING'), // PENDING, ACTIVE, SUSPENDED
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
-});
 export const trackingUpdates = pgTable('tracking_updates', {
   id: serial('id').primaryKey(),
   shipmentId: integer('shipment_id').references(() => shipments.id, { onDelete: 'cascade' }),

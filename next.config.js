@@ -21,7 +21,7 @@ const nextConfig = {
       },
       {
         source: "/en/:path+",
-        destination: "/:path.html",
+        destination: "/:path*.html",
       },
       {
         source: "/id",
@@ -33,7 +33,7 @@ const nextConfig = {
       },
       {
         source: "/id/:path+",
-        destination: "/id/:path.html",
+        destination: "/id/:path*.html",
       },
     ];
   },

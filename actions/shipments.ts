@@ -1,6 +1,5 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
 import { desc, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -19,13 +18,7 @@ function normalizeTrackingNumber(value: FormDataEntryValue | string | null) {
 }
 
 async function requireUser() {
-  const { userId } = await auth();
-
-  if (!userId) {
-    throw new Error("Unauthorized");
-  }
-
-  return userId;
+  throw new Error("Unauthorized");
 }
 
 async function syncTrackingUpdates(shipmentId: number, events: TrackingEvent[]) {

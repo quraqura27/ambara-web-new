@@ -1,6 +1,5 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
 import { and, desc, eq, ilike, inArray, or } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -50,13 +49,7 @@ function readCustomerForm(formData: FormData): CustomerFormValues {
 }
 
 async function requireUser() {
-  const { userId } = await auth();
-
-  if (!userId) {
-    throw new Error("Unauthorized");
-  }
-
-  return userId;
+  throw new Error("Unauthorized");
 }
 
 export async function getCustomers(search?: string) {

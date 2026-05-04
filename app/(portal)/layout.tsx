@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { LucideIcon, LayoutDashboard, LogOut, Package, Search, Users } from "lucide-react";
-import { SignOutButton, UserButton } from "@clerk/nextjs";
 
 import { searchShipmentByTracking } from "@/actions/shipments";
+
+export const dynamic = "force-dynamic";
 
 type NavItemProps = {
   href: string;
@@ -51,7 +52,9 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           <div className="rounded-2xl border border-white/5 bg-gradient-to-b from-white/5 to-transparent p-4">
             <p className="mb-3 text-xs text-slate-500">Logged in as</p>
             <div className="flex items-center gap-3">
-              <UserButton />
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+                AA
+              </div>
               <div className="overflow-hidden">
                 <p className="truncate text-sm font-medium">Internal Staff</p>
                 <p className="text-[10px] font-bold uppercase text-blue-400">Operations</p>
@@ -79,12 +82,10 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
 
             <div className="h-6 w-px bg-white/10" />
 
-            <SignOutButton>
-              <button className="flex items-center gap-2 text-slate-400 transition-colors hover:text-white">
+            <Link className="flex items-center gap-2 text-slate-400 transition-colors hover:text-white" href="/admin.html">
                 <LogOut className="h-5 w-5" />
                 <span className="text-sm font-medium">Sign Out</span>
-              </button>
-            </SignOutButton>
+            </Link>
           </div>
         </header>
 
