@@ -1,4 +1,4 @@
-const { getDB, CORS, response, errorResponse, optionsResponse, verifyToken, getAuthToken } = require('../lib/db');
+const { getDB, CORS, response, errorResponse, optionsResponse, verifyToken, getAuthToken, getCorsHeaders } = require('../lib/db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
