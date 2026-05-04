@@ -20,6 +20,10 @@ const nextConfig = {
         destination: "/index.html",
       },
       {
+        source: "/en/index.html",
+        destination: "/index.html",
+      },
+      {
         source: "/en/:path+",
         destination: "/:path*.html",
       },
