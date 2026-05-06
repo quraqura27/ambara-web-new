@@ -7,9 +7,9 @@ type Database = NeonHttpDatabase<typeof schema>;
 let dbInstance: Database | null = null;
 
 function getDb() {
-  const connectionString = process.env.DATABASE_URL;
+  const connectionString = process.env.DATABASE_URL || process.env.NETLIFY_DATABASE_URL;
   if (!connectionString) {
-    throw new Error('DATABASE_URL is not configured');
+    throw new Error('Database connection string is not configured');
   }
 
   if (!dbInstance) {

@@ -20,7 +20,14 @@ export async function signIn(formData: FormData) {
     redirect("/sign-in?error=missing");
   }
 
-  if (!process.env.JWT_SECRET || !process.env.DATABASE_URL) {
+  const hasSessionSecret =
+    process.env.JWT_SECRET ||
+    process.env.NEXTAUTH_SECRET ||
+    process.env.DATABASE_URL ||
+    process.env.NETLIFY_DATABASE_URL;
+  const hasDatabase = process.env.DATABASE_URL || process.env.NETLIFY_DATABASE_URL;
+
+  if (!hasSessionSecret || !hasDatabase) {
     redirect("/sign-in?error=config");
   }
 
