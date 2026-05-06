@@ -20,7 +20,7 @@ export async function signIn(formData: FormData) {
     redirect("/sign-in?error=missing");
   }
 
-  if (!process.env.JWT_SECRET) {
+  if (!process.env.JWT_SECRET || !process.env.DATABASE_URL) {
     redirect("/sign-in?error=config");
   }
 
