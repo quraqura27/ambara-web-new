@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
 import { customers, shipments } from "@/lib/db/schema";
+import { requirePortalUser } from "@/lib/portal-auth";
 
 const customerTypeValues = ["b2b", "shipper", "consignee"] as const;
 
@@ -49,7 +50,7 @@ function readCustomerForm(formData: FormData): CustomerFormValues {
 }
 
 async function requireUser() {
-  throw new Error("Unauthorized");
+  await requirePortalUser();
 }
 
 export async function getCustomers(search?: string) {

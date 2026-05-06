@@ -2,7 +2,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { LucideIcon, LayoutDashboard, LogOut, Package, Search, Users } from "lucide-react";
 
+import { signOut } from "@/actions/auth";
 import { searchShipmentByTracking } from "@/actions/shipments";
+import { requirePortalUser } from "@/lib/portal-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +26,9 @@ function NavItem({ href, icon: Icon, label }: NavItemProps) {
   );
 }
 
-export default function PortalLayout({ children }: { children: React.ReactNode }) {
+export default async function PortalLayout({ children }: { children: React.ReactNode }) {
+  const user = await requirePortalUser();
+
   return (
     <div className="flex min-h-screen overflow-hidden bg-[#0a0a0f] text-slate-100">
       <aside className="z-20 flex w-72 flex-col gap-8 border-r border-white/5 bg-[#0d0d14] p-6">
@@ -54,8 +58,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                 AA
               </div>
               <div className="overflow-hidden">
-                <p className="truncate text-sm font-medium">Internal Staff</p>
-                <p className="text-[10px] font-bold uppercase text-blue-400">Operations</p>
+                <p className="truncate text-sm font-medium">{user.name}</p>
+                <p className="text-[10px] font-bold uppercase text-blue-400">{user.role}</p>
               </div>
             </div>
           </div>
@@ -80,10 +84,12 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
 
             <div className="h-6 w-px bg-white/10" />
 
-            <Link className="flex items-center gap-2 text-slate-400 transition-colors hover:text-white" href="/admin.html">
+            <form action={signOut}>
+              <button className="flex items-center gap-2 text-slate-400 transition-colors hover:text-white" type="submit">
                 <LogOut className="h-5 w-5" />
                 <span className="text-sm font-medium">Sign Out</span>
-            </Link>
+              </button>
+            </form>
           </div>
         </header>
 

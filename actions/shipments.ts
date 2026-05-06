@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
 import { customers, shipments, trackingUpdates } from "@/lib/db/schema";
+import { requirePortalUser } from "@/lib/portal-auth";
 import { TrackingEvent } from "@/lib/tracking/interface";
 import { trackingProvider } from "@/lib/tracking/mock";
 
@@ -18,7 +19,7 @@ function normalizeTrackingNumber(value: FormDataEntryValue | string | null) {
 }
 
 async function requireUser() {
-  throw new Error("Unauthorized");
+  await requirePortalUser();
 }
 
 async function syncTrackingUpdates(shipmentId: number, events: TrackingEvent[]) {
