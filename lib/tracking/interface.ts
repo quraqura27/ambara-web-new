@@ -1,4 +1,17 @@
-export type ShipmentStatus = 'pending' | 'in_transit' | 'delivered' | 'exception';
+export type ShipmentStatus =
+  | "pending"
+  | "received"
+  | "departed_origin"
+  | "in_transit"
+  | "customs"
+  | "arrived_destination"
+  | "delivered"
+  | "exception"
+  | "cancelled"
+  | "RECEIVED"
+  | "DEPARTED"
+  | "CUSTOMS"
+  | "DELIVERED";
 
 export interface TrackingEvent {
   status: ShipmentStatus;

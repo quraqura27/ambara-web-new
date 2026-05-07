@@ -12,8 +12,8 @@ import {
   User,
 } from "lucide-react";
 
-import { getShipmentByTracking } from "@/actions/shipments";
-import { Button, Card } from "@/components/ui/core";
+import { getShipmentByTracking, updateShipmentTrackingFromForm } from "@/actions/shipments";
+import { Button, Card, Input } from "@/components/ui/core";
 import type { TrackingEvent } from "@/lib/tracking/interface";
 
 type TrackingDetailPageProps = {
@@ -25,6 +25,81 @@ type StatusStepProps = {
   isFirst?: boolean;
   isLast?: boolean;
 };
+
+const fieldClassName =
+  "w-full rounded-lg border border-slate-700 bg-slate-900/50 px-4 py-2 text-sm text-slate-100 outline-none transition-all placeholder:text-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/30";
+
+const statusOptions = [
+  { value: "pending", label: "Pending" },
+  { value: "received", label: "Received" },
+  { value: "departed_origin", label: "Departed Origin" },
+  { value: "in_transit", label: "In Transit" },
+  { value: "customs", label: "Customs" },
+  { value: "arrived_destination", label: "Arrived Destination" },
+  { value: "delivered", label: "Delivered" },
+  { value: "exception", label: "Exception" },
+  { value: "cancelled", label: "Cancelled" },
+];
+
+function normalizeStatusKey(status: string) {
+  const normalized = status.trim().toLowerCase();
+
+  if (normalized === "departed") {
+    return "departed_origin";
+  }
+
+  return normalized;
+}
+
+function formatStatus(status: string) {
+  return normalizeStatusKey(status).replace(/_/g, " ");
+}
+
+function statusBadgeClassName(status: string) {
+  const normalized = normalizeStatusKey(status);
+
+  if (normalized === "delivered") {
+    return "border border-emerald-500/20 bg-emerald-500/10 text-emerald-500";
+  }
+
+  if (normalized === "exception" || normalized === "cancelled") {
+    return "border border-rose-500/20 bg-rose-500/10 text-rose-400";
+  }
+
+  if (
+    normalized === "arrived_destination" ||
+    normalized === "customs" ||
+    normalized === "departed_origin" ||
+    normalized === "in_transit"
+  ) {
+    return "border border-amber-500/20 bg-amber-500/10 text-amber-500";
+  }
+
+  return "border border-blue-500/20 bg-blue-500/10 text-blue-500";
+}
+
+function statusDotClassName(status: string) {
+  const normalized = normalizeStatusKey(status);
+
+  if (normalized === "delivered") {
+    return "bg-emerald-500";
+  }
+
+  if (normalized === "exception" || normalized === "cancelled") {
+    return "bg-rose-400";
+  }
+
+  if (
+    normalized === "arrived_destination" ||
+    normalized === "customs" ||
+    normalized === "departed_origin" ||
+    normalized === "in_transit"
+  ) {
+    return "bg-amber-500";
+  }
+
+  return "bg-blue-500";
+}
 
 function StatusStep({ event, isFirst, isLast }: StatusStepProps) {
   return (
@@ -62,6 +137,7 @@ function StatusStep({ event, isFirst, isLast }: StatusStepProps) {
 export default async function TrackingDetailPage({ params }: TrackingDetailPageProps) {
   const { number } = await params;
   const { shipment, liveData, customer } = await getShipmentByTracking(number);
+  const trackingUpdateAction = updateShipmentTrackingFromForm.bind(null, number);
 
   return (
     <div className="space-y-8">
@@ -77,28 +153,12 @@ export default async function TrackingDetailPage({ params }: TrackingDetailPageP
         </div>
         <div className="ml-auto">
           <span
-            className={`inline-flex items-center rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-widest ${
-              liveData.status === "delivered"
-                ? "border border-emerald-500/20 bg-emerald-500/10 text-emerald-500"
-                : liveData.status === "in_transit"
-                  ? "border border-amber-500/20 bg-amber-500/10 text-amber-500"
-                  : liveData.status === "exception"
-                    ? "border border-rose-500/20 bg-rose-500/10 text-rose-400"
-                    : "border border-blue-500/20 bg-blue-500/10 text-blue-500"
-            }`}
+            className={`inline-flex items-center rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-widest ${statusBadgeClassName(
+              liveData.status,
+            )}`}
           >
-            <div
-              className={`mr-2 h-2 w-2 rounded-full ${
-                liveData.status === "delivered"
-                  ? "bg-emerald-500"
-                  : liveData.status === "in_transit"
-                    ? "bg-amber-500"
-                    : liveData.status === "exception"
-                      ? "bg-rose-400"
-                      : "bg-blue-500"
-              }`}
-            />
-            {liveData.status.replace("_", " ")}
+            <div className={`mr-2 h-2 w-2 rounded-full ${statusDotClassName(liveData.status)}`} />
+            {formatStatus(liveData.status)}
           </span>
         </div>
       </div>
@@ -129,6 +189,63 @@ export default async function TrackingDetailPage({ params }: TrackingDetailPageP
         </div>
 
         <div className="space-y-6 lg:col-span-1">
+          {shipment ? (
+            <Card className="p-6">
+              <h3 className="mb-6 text-xs font-bold uppercase tracking-widest text-slate-500">
+                Update Tracking
+              </h3>
+              <form action={trackingUpdateAction} className="space-y-4">
+                <label className="block space-y-2">
+                  <span className="text-xs font-bold uppercase tracking-widest text-slate-500">
+                    Status
+                  </span>
+                  <select
+                    className={fieldClassName}
+                    defaultValue={normalizeStatusKey(shipment.status)}
+                    name="status"
+                  >
+                    {statusOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="block space-y-2">
+                  <span className="text-xs font-bold uppercase tracking-widest text-slate-500">
+                    Location
+                  </span>
+                  <Input name="location" placeholder="e.g. CGK Cargo Terminal" />
+                </label>
+
+                <label className="block space-y-2">
+                  <span className="text-xs font-bold uppercase tracking-widest text-slate-500">
+                    Description
+                  </span>
+                  <textarea
+                    className={fieldClassName}
+                    name="description"
+                    placeholder="e.g. Cargo departed CGK"
+                    rows={3}
+                  />
+                </label>
+
+                <label className="block space-y-2">
+                  <span className="text-xs font-bold uppercase tracking-widest text-slate-500">
+                    Timestamp
+                  </span>
+                  <Input name="timestamp" type="datetime-local" />
+                </label>
+
+                <Button className="w-full gap-2" type="submit">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Save Tracking Update
+                </Button>
+              </form>
+            </Card>
+          ) : null}
+
           <Card className="p-6">
             <h3 className="mb-6 text-xs font-bold uppercase tracking-widest text-slate-500">
               Owner Information
@@ -192,7 +309,7 @@ export default async function TrackingDetailPage({ params }: TrackingDetailPageP
                   <p>
                     Stored status:{" "}
                     <span className="font-semibold text-slate-200">
-                      {shipment?.status.replace("_", " ") || liveData.status.replace("_", " ")}
+                      {shipment ? formatStatus(shipment.status) : formatStatus(liveData.status)}
                     </span>
                   </p>
                 </div>

@@ -9,19 +9,36 @@ type ShipmentsPageProps = {
 };
 
 function formatStatus(status: string) {
-  return status.replace(/_/g, " ");
+  return normalizeStatusKey(status).replace(/_/g, " ");
+}
+
+function normalizeStatusKey(status: string) {
+  const normalized = status.trim().toLowerCase();
+
+  if (normalized === "departed") {
+    return "departed_origin";
+  }
+
+  return normalized;
 }
 
 function statusClassName(status: string) {
-  if (status === "delivered") {
+  const normalized = normalizeStatusKey(status);
+
+  if (normalized === "delivered") {
     return "border-emerald-500/20 bg-emerald-500/10 text-emerald-500";
   }
 
-  if (status === "exception") {
+  if (normalized === "exception" || normalized === "cancelled") {
     return "border-rose-500/20 bg-rose-500/10 text-rose-400";
   }
 
-  if (status === "in_transit" || status === "departed_origin" || status === "arrived_destination") {
+  if (
+    normalized === "in_transit" ||
+    normalized === "departed_origin" ||
+    normalized === "customs" ||
+    normalized === "arrived_destination"
+  ) {
     return "border-amber-500/20 bg-amber-500/10 text-amber-500";
   }
 
