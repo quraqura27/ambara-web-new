@@ -8,7 +8,7 @@ import { db } from "@/lib/db";
 import { customers, shipments } from "@/lib/db/schema";
 import { requirePortalUser } from "@/lib/portal-auth";
 
-const customerTypeValues = ["b2b", "shipper", "consignee"] as const;
+const customerTypeValues = ["b2b", "retail"] as const;
 
 export type CustomerType = (typeof customerTypeValues)[number];
 
@@ -51,6 +51,22 @@ function readCustomerForm(formData: FormData): CustomerFormValues {
 
 async function requireUser() {
   await requirePortalUser();
+}
+
+async function generateCustomerId() {
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const candidate = `ID-${Math.floor(10000 + Math.random() * 90000)}`;
+    const [existingCustomer] = await db
+      .select({ id: customers.id })
+      .from(customers)
+      .where(eq(customers.customerId, candidate));
+
+    if (!existingCustomer) {
+      return candidate;
+    }
+  }
+
+  return `ID-${Date.now().toString().slice(-8)}`;
 }
 
 export async function getCustomers(search?: string) {
@@ -121,6 +137,9 @@ export async function createCustomer(values: CustomerFormValues) {
     .insert(customers)
     .values({
       ...values,
+      customerId: await generateCustomerId(),
+      country: "Indonesia",
+      countryCode: "ID",
       createdAt: new Date(),
       updatedAt: new Date(),
     })

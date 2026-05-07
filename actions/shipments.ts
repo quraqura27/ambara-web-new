@@ -1,6 +1,6 @@
 "use server";
 
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, ilike, or } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
@@ -180,6 +180,50 @@ export async function searchShipmentByTracking(formData: FormData) {
   redirect(`/shipments/${trackingNumber}`);
 }
 
+export async function getShipments(search?: string) {
+  await requireUser();
+
+  const trimmedSearch = search?.trim();
+  const selectedFields = {
+    id: shipments.id,
+    trackingNumber: shipments.trackingNumber,
+    title: shipments.title,
+    origin: shipments.origin,
+    destination: shipments.destination,
+    status: shipments.status,
+    customerId: shipments.customerId,
+    customerName: shipments.customerName,
+    customerEmail: shipments.customerEmail,
+    customerFullName: customers.fullName,
+    customerCompanyName: customers.companyName,
+    updatedAt: shipments.updatedAt,
+    createdAt: shipments.createdAt,
+  };
+
+  const query = db
+    .select(selectedFields)
+    .from(shipments)
+    .leftJoin(customers, eq(shipments.customerId, customers.id));
+
+  if (!trimmedSearch) {
+    return query.orderBy(desc(shipments.updatedAt));
+  }
+
+  return query
+    .where(
+      or(
+        ilike(shipments.trackingNumber, `%${trimmedSearch}%`),
+        ilike(shipments.title, `%${trimmedSearch}%`),
+        ilike(shipments.origin, `%${trimmedSearch}%`),
+        ilike(shipments.destination, `%${trimmedSearch}%`),
+        ilike(shipments.customerName, `%${trimmedSearch}%`),
+        ilike(customers.fullName, `%${trimmedSearch}%`),
+        ilike(customers.companyName, `%${trimmedSearch}%`),
+      ),
+    )
+    .orderBy(desc(shipments.updatedAt));
+}
+
 export async function getDashboardStats() {
   await requireUser();
 
@@ -217,6 +261,14 @@ export async function createShipmentFromForm(formData: FormData) {
   }
 
   const liveData = await trackingProvider.getTrackingInfo(trackingNumber);
+  const [existingShipment] = await db
+    .select({ trackingNumber: shipments.trackingNumber })
+    .from(shipments)
+    .where(eq(shipments.trackingNumber, trackingNumber));
+
+  if (existingShipment) {
+    redirect(`/shipments/${existingShipment.trackingNumber}`);
+  }
 
   const [newShipment] = await db
     .insert(shipments)

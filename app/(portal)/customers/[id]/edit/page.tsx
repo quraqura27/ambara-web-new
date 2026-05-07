@@ -28,7 +28,7 @@ export default async function EditCustomerPage({ params }: EditCustomerPageProps
         email: customer.email ?? "",
         fullName: customer.fullName ?? "",
         phone: customer.phone ?? "",
-        type: (customer.type as "b2b" | "shipper" | "consignee" | null) ?? "b2b",
+        type: customer.type === "retail" ? "retail" : "b2b",
       }}
     />
   );

@@ -93,8 +93,7 @@ export function CustomerForm({
                 name="type"
               >
                 <option value="b2b">B2B</option>
-                <option value="shipper">Shipper</option>
-                <option value="consignee">Consignee</option>
+                <option value="retail">Retail</option>
               </select>
             </label>
 

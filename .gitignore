@@ -48,3 +48,4 @@ final_report_*.json
 diagnosis_*.txt
 *.lock
 legacy_vault/
+.env*.local
