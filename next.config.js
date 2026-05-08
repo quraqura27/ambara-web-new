@@ -24,6 +24,10 @@ const nextConfig = {
         destination: "/index.html",
       },
       {
+        source: "/en/blog/:slug",
+        destination: "/blog-post.html?slug=:slug",
+      },
+      {
         source: "/en/:path+",
         destination: "/:path*.html",
       },
@@ -34,6 +38,10 @@ const nextConfig = {
       {
         source: "/id/",
         destination: "/id/index.html",
+      },
+      {
+        source: "/id/blog/:slug",
+        destination: "/id/blog-post.html?slug=:slug",
       },
       {
         source: "/id/:path+",
