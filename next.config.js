@@ -25,7 +25,7 @@ const nextConfig = {
       },
       {
         source: "/en/blog/:slug",
-        destination: "/blog-post.html?slug=:slug",
+        destination: "/blog/:slug.html",
       },
       {
         source: "/en/:path+",
@@ -41,7 +41,7 @@ const nextConfig = {
       },
       {
         source: "/id/blog/:slug",
-        destination: "/id/blog-post.html?slug=:slug",
+        destination: "/id/blog/:slug.html",
       },
       {
         source: "/id/:path+",
