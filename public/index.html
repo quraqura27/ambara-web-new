@@ -320,7 +320,7 @@
 <!-- WHY US -->
 <section class="section" style="background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
   <div class="container">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:80px;align-items:center">
       <div class="animate-on-scroll">
         <div class="section-label">The Ambara Standard</div>
         <h2 class="section-title" style="margin-bottom:24px">Reliable CGK cargo support without unclear handoffs</h2>
@@ -356,7 +356,7 @@
               <label class="form-label">Destination / consignee location</label>
               <input type="text" class="form-control" placeholder="City, country, or airport" name="destination">
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px">
               <div class="form-group">
                 <label class="form-label">Estimated weight (kg)</label>
                 <input type="number" class="form-control" placeholder="0.00" name="weight">
