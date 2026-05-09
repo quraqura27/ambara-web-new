@@ -14,6 +14,8 @@ const root = process.cwd();
 const publicDir = path.join(root, "public");
 const blogDir = path.join(publicDir, "blog");
 const idBlogDir = path.join(publicDir, "id", "blog");
+const blogIndexPath = path.join(publicDir, "blog.html");
+const idBlogIndexPath = path.join(publicDir, "id", "blog.html");
 const sitemapPath = path.join(publicDir, "sitemap.xml");
 const blogSourcePath = path.join(root, "content", "blog-posts.json");
 
@@ -57,6 +59,58 @@ function formatDate(value, locale) {
     day: "numeric",
     year: "numeric",
   });
+}
+
+function compactPlainText(value = "", maxLength = 150) {
+  const text = stripHtml(value);
+  return text.length > maxLength ? `${text.slice(0, maxLength - 3).trim()}...` : text;
+}
+
+function renderBlogIndexCard(post, lang) {
+  const isId = lang === "id";
+  const title = isId ? post.title_id : post.title_en;
+  const excerpt = isId
+    ? post.excerpt_id || post.meta_description_id || post.excerpt_en || post.meta_description_en
+    : post.excerpt_en || post.meta_description_en;
+  const locale = isId ? "id-ID" : "en-US";
+  const route = `/${lang}/blog/${post.slug}`;
+  const imageHtml = post.cover_image_url
+    ? `      <img src="${escapeHtml(post.cover_image_url)}" alt="${escapeHtml(title)}" style="width:100%;height:200px;object-fit:cover;border-radius:12px;margin-bottom:20px">\n`
+    : "";
+  const category = post.category || "guides";
+
+  return `    <article class="card animate-on-scroll" data-static-blog-card="${escapeHtml(post.slug)}">
+${imageHtml}      <div class="badge badge-blue" style="margin-bottom:16px">${escapeHtml(category)}</div>
+      <h3 style="font-size:1.125rem;margin-bottom:12px"><a href="${route}" style="color:inherit;text-decoration:none">${escapeHtml(title)}</a></h3>
+      <p style="font-size:0.875rem;margin-bottom:20px">${escapeHtml(compactPlainText(excerpt))}</p>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;gap:16px">
+        <span style="font-size:0.8125rem;color:var(--text-muted)">${escapeHtml(formatDate(post.published_at, locale))}</span>
+        <a href="${route}" class="btn btn-sm btn-outline">${isId ? "Baca" : "Read"} &rarr;</a>
+      </div>
+    </article>`;
+}
+
+function replaceBetweenMarkers(html, startMarker, endMarker, replacement) {
+  const start = html.indexOf(startMarker);
+  const end = html.indexOf(endMarker);
+  if (start === -1 || end === -1 || end < start) {
+    throw new Error(`Missing static blog card markers: ${startMarker} / ${endMarker}`);
+  }
+  return `${html.slice(0, start + startMarker.length)}\n${replacement}\n      ${html.slice(end)}`;
+}
+
+async function writeBlogIndexCards(filePath, posts, lang) {
+  const localizedPosts = lang === "id"
+    ? posts.filter((post) => post.content_id && post.title_id)
+    : posts.filter((post) => post.content_en && post.title_en);
+  const cardsHtml = localizedPosts.map((post) => renderBlogIndexCard(post, lang)).join("\n");
+  const startMarker = "<!-- STATIC_BLOG_CARDS_START -->";
+  const endMarker = "<!-- STATIC_BLOG_CARDS_END -->";
+  let html = await fs.readFile(filePath, "utf8");
+  html = html.replace(/<div class="grid-3" id="blog-grid"(?: data-static-rendered="true" data-static-count="\d+")?>/, `<div class="grid-3" id="blog-grid" data-static-rendered="true" data-static-count="${localizedPosts.length}">`);
+  html = replaceBetweenMarkers(html, startMarker, endMarker, cardsHtml);
+  await fs.writeFile(filePath, html, "utf8");
+  return localizedPosts.length;
 }
 
 function renderPostPage(post, lang) {
@@ -283,6 +337,9 @@ for (const post of posts) {
   }
 }
 
+const englishIndexCards = await writeBlogIndexCards(blogIndexPath, posts, "en");
+const indonesianIndexCards = await writeBlogIndexCards(idBlogIndexPath, posts, "id");
+
 const sitemap = await fs.readFile(sitemapPath, "utf8");
 await fs.writeFile(sitemapPath, appendBlogUrls(removeGeneratedBlogUrls(sitemap), posts), "utf8");
 
@@ -291,4 +348,6 @@ console.log(JSON.stringify({
   publishedPosts: posts.length,
   englishGenerated: posts.length,
   indonesianGenerated: posts.filter((post) => post.content_id).length,
+  englishIndexCards,
+  indonesianIndexCards,
 }, null, 2));
