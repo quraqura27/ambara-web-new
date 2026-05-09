@@ -61,14 +61,19 @@ function optionsResponse() {
 }
 
 async function sendEmail(env, to, subject, html) {
-  if (!env.RESEND_API_KEY) return;
+  if (!env.RESEND_API_KEY) return false;
   try {
-    await fetch('https://api.resend.com/emails', {
+    const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ from: `PT Ambara Artha Globaltrans <${env.EMAIL_FROM || 'noreply@ambaraartha.com'}>`, to: Array.isArray(to) ? to : [to], subject, html })
     });
-  } catch (e) { console.error('Email error:', e.message); }
+    if (!res.ok) {
+      console.error('Email error:', res.status, res.statusText);
+      return false;
+    }
+    return true;
+  } catch (e) { console.error('Email error:', e.message); return false; }
 }
 
 // Generate customer ID: CC-XXXXX
