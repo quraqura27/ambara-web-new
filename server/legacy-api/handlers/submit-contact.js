@@ -2,6 +2,10 @@ const { getDB, response, errorResponse, optionsResponse, sendEmail } = require('
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_BODY_BYTES = 32 * 1024;
+const HONEYPOT_FIELD = 'website_url';
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+const RATE_LIMIT_MAX = 5;
+const rateLimitBuckets = new Map();
 
 const LIMITS = {
   name: 120,
@@ -146,13 +150,69 @@ function badRequest(errors) {
 function parseBody(event) {
   const raw = event.body || '{}';
   if (Buffer.byteLength(raw, 'utf8') > MAX_BODY_BYTES) {
-    return { error: 'Payload too large' };
+    return { error: 'Payload too large', status: 413 };
   }
   try {
     return { body: JSON.parse(raw) };
   } catch {
-    return { error: 'Invalid JSON payload' };
+    return { error: 'Invalid JSON payload', status: 400 };
   }
+}
+
+function getHeader(event, name) {
+  const headers = event.headers || {};
+  const lowerName = name.toLowerCase();
+  return headers[name] || headers[lowerName] || '';
+}
+
+function getClientId(event) {
+  const forwardedFor = getHeader(event, 'x-forwarded-for');
+  if (forwardedFor) return forwardedFor.split(',')[0].trim() || 'unknown';
+  return getHeader(event, 'x-real-ip') || getHeader(event, 'cf-connecting-ip') || 'unknown';
+}
+
+function checkRateLimit(event, endpoint) {
+  const now = Date.now();
+  const clientId = getClientId(event);
+  const key = `${endpoint}:${clientId}`;
+  const existing = rateLimitBuckets.get(key);
+
+  if (!existing || now > existing.resetAt) {
+    rateLimitBuckets.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return { limited: false };
+  }
+
+  if (existing.count >= RATE_LIMIT_MAX) {
+    return { limited: true };
+  }
+
+  existing.count += 1;
+  return { limited: false };
+}
+
+function rateLimitResponse() {
+  return errorResponse('Too many submissions. Please try again later.', 429);
+}
+
+function hasHoneypot(body) {
+  return Boolean(cleanText(body?.[HONEYPOT_FIELD]));
+}
+
+function spamFilteredResponse(endpoint) {
+  if (isDryRun()) {
+    return response({
+      success: true,
+      dryRun: true,
+      valid: false,
+      spamFiltered: true,
+      stored: false,
+      emailSent: false,
+      endpoint,
+      honeypotField: HONEYPOT_FIELD,
+    });
+  }
+
+  return response({ success: true });
 }
 
 function contactEmailPayloads(fields, escaped) {
@@ -254,12 +314,15 @@ exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') return errorResponse('Method not allowed', 405);
 
   const parsed = parseBody(event);
-  if (parsed.error) return badRequest(parsed.error);
+  if (parsed.error) return errorResponse(parsed.error, parsed.status || 400);
 
   const path = event.path;
 
   try {
     if (path.includes('submit-contact')) {
+      if (hasHoneypot(parsed.body)) return spamFilteredResponse('submit-contact');
+      if (checkRateLimit(event, 'submit-contact').limited) return rateLimitResponse();
+
       const fields = normalizeContact(parsed.body);
       const errors = validateContact(fields);
       if (errors.length) return badRequest(errors);
@@ -294,6 +357,9 @@ exports.handler = async (event) => {
     }
 
     if (path.includes('submit-quote')) {
+      if (hasHoneypot(parsed.body)) return spamFilteredResponse('submit-quote');
+      if (checkRateLimit(event, 'submit-quote').limited) return rateLimitResponse();
+
       const fields = normalizeQuote(parsed.body);
       const errors = validateQuote(fields);
       if (errors.length) return badRequest(errors);
@@ -338,4 +404,4 @@ exports.handler = async (event) => {
   }
 };
 
-// TODO: Add spam controls in a follow-up phase: honeypot, rate limiting, and Turnstile.
+// TODO: Add Turnstile in a follow-up phase if spam continues beyond lightweight controls.
