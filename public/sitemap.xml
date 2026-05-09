@@ -136,6 +136,11 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://ambaraartha.com/en/blog/commercial-invoice-mistakes-indonesia-customs</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://ambaraartha.com/en/blog/indonesia-import-document-checklist-before-shipping</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
@@ -171,6 +176,16 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://ambaraartha.com/en/blog/cara-menghitung-chargeable-weight</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://ambaraartha.com/id/blog/cara-menghitung-chargeable-weight</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://ambaraartha.com/en/blog/ambara-artha-launch-2025</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
@@ -187,16 +202,6 @@
   </url>
   <url>
     <loc>https://ambaraartha.com/id/blog/what-is-airway-bill</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://ambaraartha.com/en/blog/cara-menghitung-chargeable-weight</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://ambaraartha.com/id/blog/cara-menghitung-chargeable-weight</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
