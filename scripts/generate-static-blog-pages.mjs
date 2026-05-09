@@ -15,6 +15,7 @@ const publicDir = path.join(root, "public");
 const blogDir = path.join(publicDir, "blog");
 const idBlogDir = path.join(publicDir, "id", "blog");
 const sitemapPath = path.join(publicDir, "sitemap.xml");
+const blogSourcePath = path.join(root, "content", "blog-posts.json");
 
 function escapeHtml(value = "") {
   return String(value)
@@ -221,19 +222,56 @@ function appendBlogUrls(sitemap, posts) {
   return sitemap.replace("</urlset>", `${urls}\n</urlset>`);
 }
 
-const databaseUrl = process.env.DATABASE_URL || process.env.NETLIFY_DATABASE_URL;
-if (!databaseUrl) {
-  throw new Error("DATABASE_URL or NETLIFY_DATABASE_URL is required to generate static blog pages.");
+function isPublished(post) {
+  if (post.status !== "published") return false;
+  if (!post.scheduled_at) return true;
+  return new Date(post.scheduled_at) <= new Date();
 }
 
-const sql = neon(databaseUrl);
-const posts = await sql`
-  SELECT *
-  FROM blog_posts
-  WHERE status = 'published'
-    AND (scheduled_at IS NULL OR scheduled_at <= NOW())
-  ORDER BY published_at DESC
-`;
+function sortPosts(posts) {
+  return [...posts].sort((a, b) => {
+    const aDate = new Date(a.published_at || a.created_at || 0).getTime();
+    const bDate = new Date(b.published_at || b.created_at || 0).getTime();
+    return bDate - aDate;
+  });
+}
+
+async function readPostsFromFile() {
+  const data = JSON.parse(await fs.readFile(blogSourcePath, "utf8"));
+  return sortPosts((data.posts || []).filter(isPublished));
+}
+
+async function readPostsFromDatabase() {
+  const databaseUrl = process.env.DATABASE_URL || process.env.NETLIFY_DATABASE_URL;
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL or NETLIFY_DATABASE_URL is required.");
+  }
+
+  const sql = neon(databaseUrl);
+  const posts = await sql`
+    SELECT *
+    FROM blog_posts
+    WHERE status = 'published'
+      AND (scheduled_at IS NULL OR scheduled_at <= NOW())
+    ORDER BY published_at DESC
+  `;
+  return posts;
+}
+
+async function loadPosts() {
+  if (process.env.BLOG_POST_SOURCE === "file") {
+    return { posts: await readPostsFromFile(), source: "file" };
+  }
+
+  try {
+    return { posts: await readPostsFromDatabase(), source: "database" };
+  } catch (error) {
+    console.warn(`Database blog source unavailable, using ${path.relative(root, blogSourcePath)}: ${error.message}`);
+    return { posts: await readPostsFromFile(), source: "file-fallback" };
+  }
+}
+
+const { posts, source } = await loadPosts();
 
 await fs.mkdir(blogDir, { recursive: true });
 await fs.mkdir(idBlogDir, { recursive: true });
@@ -249,6 +287,7 @@ const sitemap = await fs.readFile(sitemapPath, "utf8");
 await fs.writeFile(sitemapPath, appendBlogUrls(removeGeneratedBlogUrls(sitemap), posts), "utf8");
 
 console.log(JSON.stringify({
+  source,
   publishedPosts: posts.length,
   englishGenerated: posts.length,
   indonesianGenerated: posts.filter((post) => post.content_id).length,
