@@ -60,16 +60,81 @@ function optionsResponse() {
   return { statusCode: 200, headers: CORS, body: '' };
 }
 
-async function sendEmail(env, to, subject, html) {
+function extractEmail(value) {
+  const match = String(value || '').match(/<([^>]+)>$/);
+  return (match ? match[1] : String(value || '')).trim();
+}
+
+function maskEmail(value) {
+  const email = extractEmail(value);
+  return email.replace(/^(.)([^@]*)(@.*)$/, (_, first, _middle, domain) => `${first}***${domain}`);
+}
+
+function emailDomain(value) {
+  const email = extractEmail(value);
+  const match = email.match(/@(.+)$/);
+  return match ? match[1].toLowerCase() : '(unknown)';
+}
+
+function normalizeRecipients(to) {
+  const values = Array.isArray(to) ? to : [to];
+  return values
+    .flatMap((value) => String(value || '').split(','))
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
+function normalizeSender(env) {
+  const sender = String(env.EMAIL_FROM || 'noreply@ambaraartha.com').trim();
+  if (sender.includes('<') && sender.includes('>')) return sender;
+  return `PT Ambara Artha Globaltrans <${sender}>`;
+}
+
+function emailTextFromHtml(html) {
+  return String(html || '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 2000);
+}
+
+async function sendEmail(env, to, subject, html, options = {}) {
   if (!env.RESEND_API_KEY) return false;
+  const from = normalizeSender(env);
+  const recipients = normalizeRecipients(to);
+  const payload = {
+    from,
+    to: recipients,
+    subject,
+    html,
+    text: emailTextFromHtml(html),
+  };
+  if (options.replyTo) payload.reply_to = normalizeRecipients(options.replyTo);
+
   try {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: `PT Ambara Artha Globaltrans <${env.EMAIL_FROM || 'noreply@ambaraartha.com'}>`, to: Array.isArray(to) ? to : [to], subject, html })
+      body: JSON.stringify(payload)
     });
     if (!res.ok) {
-      console.error('Email error:', res.status, res.statusText);
+      let errorBody = {};
+      try { errorBody = await res.json(); } catch {}
+      console.error('Email error:', res.status, res.statusText, {
+        resendErrorName: errorBody.name || errorBody.error || '(none)',
+        resendErrorMessage: errorBody.message || '(none)',
+        from: maskEmail(from),
+        fromDomain: emailDomain(from),
+        recipientCount: recipients.length,
+        recipientDomains: recipients.map(emailDomain),
+        recipients: recipients.map(maskEmail),
+        subjectLength: String(subject || '').length,
+        htmlLength: String(html || '').length,
+        textLength: payload.text.length,
+        hasApiKey: Boolean(env.RESEND_API_KEY),
+      });
       return false;
     }
     return true;
