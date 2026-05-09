@@ -65,14 +65,18 @@ function renderPostPage(post, lang) {
   const content = isId ? post.content_id || post.content_en : post.content_en;
   const excerpt = isId ? post.excerpt_id || post.excerpt_en : post.excerpt_en;
   const metaTitle = (isId ? post.meta_title_id || post.meta_title_en : post.meta_title_en) || title;
-  const metaDescription = compactDescription(
-    isId ? post.meta_description_id : post.meta_description_en,
-    excerpt,
-    content,
-  );
+  const explicitMetaDescription = isId ? post.meta_description_id : post.meta_description_en;
+  const metaDescription = explicitMetaDescription
+    ? stripHtml(explicitMetaDescription)
+    : compactDescription(excerpt, content);
   const route = `/${lang}/blog/${slug}`;
   const canonical = `${SITE_URL}${route}`;
-  const alternate = `${SITE_URL}/${isId ? "en" : "id"}/blog/${slug}`;
+  const alternateLinks = [
+    `  <link rel="alternate" hreflang="en" href="${SITE_URL}/en/blog/${slug}">`,
+    post.content_id
+      ? `  <link rel="alternate" hreflang="id" href="${SITE_URL}/id/blog/${slug}">`
+      : "",
+  ].filter(Boolean).join("\n");
   const image = post.cover_image_url || DEFAULT_IMAGE;
   const tags = normalizeTags(post.tags);
   const locale = isId ? "id-ID" : "en-US";
@@ -117,8 +121,7 @@ function renderPostPage(post, lang) {
   <title>${escapeHtml(metaTitle)} | PT Ambara Artha Globaltrans</title>
   <meta name="description" content="${escapeHtml(metaDescription)}">
   <link rel="canonical" href="${canonical}">
-  <link rel="alternate" hreflang="en" href="${SITE_URL}/en/blog/${slug}">
-  <link rel="alternate" hreflang="id" href="${SITE_URL}/id/blog/${slug}">
+${alternateLinks}
   <meta property="og:title" content="${escapeHtml(metaTitle)} | PT Ambara Artha Globaltrans">
   <meta property="og:description" content="${escapeHtml(metaDescription)}">
   <meta property="og:url" content="${canonical}">

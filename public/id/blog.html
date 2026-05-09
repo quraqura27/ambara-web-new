@@ -80,7 +80,7 @@ function renderPosts(posts, append = false) {
 
 async function loadPosts(append = false) {
   if (!append) offset = 0;
-  const url = `/api/blog-api?action=list&limit=${LIMIT}&offset=${offset}${currentCat?`&category=${currentCat}`:''}`;
+  const url = `/api/blog-api?action=list&lang=id&limit=${LIMIT}&offset=${offset}${currentCat?`&category=${currentCat}`:''}`;
   const res = await fetch(url);
   const data = await res.json();
   total = parseInt(data.total || 0);

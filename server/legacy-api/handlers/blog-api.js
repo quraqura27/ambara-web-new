@@ -16,11 +16,21 @@ exports.handler = async (event) => {
     if (action === 'list' || !action) {
       let posts;
       if (category) {
-        posts = await sql`SELECT id, slug, title_en, title_id, excerpt_en, excerpt_id, category, tags, author, published_at, cover_image_url FROM blog_posts WHERE status = 'published' AND (scheduled_at IS NULL OR scheduled_at <= NOW()) AND category = ${category} ORDER BY published_at DESC LIMIT ${limit} OFFSET ${offset}`;
+        if (lang === 'id') {
+          posts = await sql`SELECT id, slug, title_en, title_id, excerpt_en, excerpt_id, category, tags, author, published_at, cover_image_url FROM blog_posts WHERE status = 'published' AND (scheduled_at IS NULL OR scheduled_at <= NOW()) AND category = ${category} AND COALESCE(content_id, '') != '' ORDER BY published_at DESC LIMIT ${limit} OFFSET ${offset}`;
+        } else {
+          posts = await sql`SELECT id, slug, title_en, title_id, excerpt_en, excerpt_id, category, tags, author, published_at, cover_image_url FROM blog_posts WHERE status = 'published' AND (scheduled_at IS NULL OR scheduled_at <= NOW()) AND category = ${category} ORDER BY published_at DESC LIMIT ${limit} OFFSET ${offset}`;
+        }
       } else {
-        posts = await sql`SELECT id, slug, title_en, title_id, excerpt_en, excerpt_id, category, tags, author, published_at, cover_image_url FROM blog_posts WHERE status = 'published' AND (scheduled_at IS NULL OR scheduled_at <= NOW()) ORDER BY published_at DESC LIMIT ${limit} OFFSET ${offset}`;
+        if (lang === 'id') {
+          posts = await sql`SELECT id, slug, title_en, title_id, excerpt_en, excerpt_id, category, tags, author, published_at, cover_image_url FROM blog_posts WHERE status = 'published' AND (scheduled_at IS NULL OR scheduled_at <= NOW()) AND COALESCE(content_id, '') != '' ORDER BY published_at DESC LIMIT ${limit} OFFSET ${offset}`;
+        } else {
+          posts = await sql`SELECT id, slug, title_en, title_id, excerpt_en, excerpt_id, category, tags, author, published_at, cover_image_url FROM blog_posts WHERE status = 'published' AND (scheduled_at IS NULL OR scheduled_at <= NOW()) ORDER BY published_at DESC LIMIT ${limit} OFFSET ${offset}`;
+        }
       }
-      const total = await sql`SELECT COUNT(*) as count FROM blog_posts WHERE status = 'published' AND (scheduled_at IS NULL OR scheduled_at <= NOW())`;
+      const total = lang === 'id'
+        ? await sql`SELECT COUNT(*) as count FROM blog_posts WHERE status = 'published' AND (scheduled_at IS NULL OR scheduled_at <= NOW()) AND COALESCE(content_id, '') != ''`
+        : await sql`SELECT COUNT(*) as count FROM blog_posts WHERE status = 'published' AND (scheduled_at IS NULL OR scheduled_at <= NOW())`;
       return response({ posts, total: total[0].count });
     }
 
