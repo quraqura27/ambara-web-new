@@ -302,9 +302,11 @@ function dryRunResponse(endpoint, table, emails, extra = {}) {
 
 async function sendAllEmails(emails) {
   const results = [];
-  for (const email of emails) {
+  for (let i = 0; i < emails.length; i += 1) {
+    const email = emails[i];
     const sent = await sendEmail(process.env, email.to, email.subject, email.html);
     results.push(Boolean(sent));
+    if (i < emails.length - 1) await new Promise((resolve) => setTimeout(resolve, 600));
   }
   return results.every(Boolean);
 }

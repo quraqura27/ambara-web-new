@@ -100,6 +100,39 @@ function emailTextFromHtml(html) {
     .slice(0, 2000);
 }
 
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetryableEmailStatus(status) {
+  return status === 429 || status === 500 || status === 502 || status === 503 || status === 504;
+}
+
+function parseRetryAfter(headerValue) {
+  if (!headerValue) return null;
+  const seconds = Number(headerValue);
+  if (Number.isFinite(seconds)) return Math.max(0, seconds * 1000);
+
+  const dateMs = Date.parse(headerValue);
+  if (Number.isFinite(dateMs)) return Math.max(0, dateMs - Date.now());
+
+  return null;
+}
+
+function emailRequestSummary({ from, recipients, subject, html, text, env }) {
+  return {
+    from: maskEmail(from),
+    fromDomain: emailDomain(from),
+    recipientCount: recipients.length,
+    recipientDomains: recipients.map(emailDomain),
+    recipients: recipients.map(maskEmail),
+    subjectLength: String(subject || '').length,
+    htmlLength: String(html || '').length,
+    textLength: String(text || '').length,
+    hasApiKey: Boolean(env.RESEND_API_KEY),
+  };
+}
+
 async function sendEmail(env, to, subject, html, options = {}) {
   if (!env.RESEND_API_KEY) return false;
   const from = normalizeSender(env);
@@ -113,32 +146,57 @@ async function sendEmail(env, to, subject, html, options = {}) {
   };
   if (options.replyTo) payload.reply_to = normalizeRecipients(options.replyTo);
 
-  try {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    if (!res.ok) {
+  const maxRetries = 2;
+  const fallbackDelays = [700, 1500];
+
+  for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) return true;
+
       let errorBody = {};
       try { errorBody = await res.json(); } catch {}
-      console.error('Email error:', res.status, res.statusText, {
+      const summary = {
         resendErrorName: errorBody.name || errorBody.error || '(none)',
         resendErrorMessage: errorBody.message || '(none)',
-        from: maskEmail(from),
-        fromDomain: emailDomain(from),
-        recipientCount: recipients.length,
-        recipientDomains: recipients.map(emailDomain),
-        recipients: recipients.map(maskEmail),
-        subjectLength: String(subject || '').length,
-        htmlLength: String(html || '').length,
-        textLength: payload.text.length,
-        hasApiKey: Boolean(env.RESEND_API_KEY),
-      });
+        attempt: attempt + 1,
+        maxAttempts: maxRetries + 1,
+        ...emailRequestSummary({ from, recipients, subject, html, text: payload.text, env }),
+      };
+
+      if (isRetryableEmailStatus(res.status) && attempt < maxRetries) {
+        const retryAfter = parseRetryAfter(res.headers?.get?.('retry-after'));
+        const delayMs = retryAfter ?? fallbackDelays[attempt] ?? fallbackDelays[fallbackDelays.length - 1];
+        console.warn('Email retry:', res.status, res.statusText, { ...summary, retryDelayMs: delayMs });
+        await wait(delayMs);
+        continue;
+      }
+
+      console.error('Email error:', res.status, res.statusText, summary);
+      return false;
+    } catch (e) {
+      if (attempt < maxRetries) {
+        const delayMs = fallbackDelays[attempt] ?? fallbackDelays[fallbackDelays.length - 1];
+        console.warn('Email retry:', {
+          attempt: attempt + 1,
+          maxAttempts: maxRetries + 1,
+          retryDelayMs: delayMs,
+          errorMessage: e.message,
+          ...emailRequestSummary({ from, recipients, subject, html, text: payload.text, env }),
+        });
+        await wait(delayMs);
+        continue;
+      }
+      console.error('Email error:', e.message);
       return false;
     }
-    return true;
-  } catch (e) { console.error('Email error:', e.message); return false; }
+  }
+
+  return false;
 }
 
 // Generate customer ID: CC-XXXXX
