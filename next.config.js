@@ -9,6 +9,21 @@ const serverActionOrigins = [
 
 const nextConfig = {
   // Support legacy marketing site and consolidated API
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [
+          {
+            type: "host",
+            value: "ambaraartha.com",
+          },
+        ],
+        destination: "https://www.ambaraartha.com/:path*",
+        permanent: true,
+      },
+    ];
+  },
   async rewrites() {
     return [
       {

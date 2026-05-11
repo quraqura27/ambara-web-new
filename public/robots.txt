@@ -1,7 +1,7 @@
 # Standard crawlers
 User-agent: *
 Allow: /
-Sitemap: https://ambaraartha.com/sitemap.xml
+Sitemap: https://www.ambaraartha.com/sitemap.xml
 
 # ===== AI SEARCH ENGINE CRAWLERS =====
 # Explicitly allow AI crawlers for Generative Engine Optimization (GEO)

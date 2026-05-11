@@ -10,27 +10,27 @@
   <meta name="keywords" content="air freight Indonesia, cargo Jakarta, freight forwarder Indonesia, CGK cargo, customs clearance Indonesia, air cargo Indonesia">
   <link rel="canonical" href="/id/">
   <link rel="alternate" hreflang="en" href="/id/">
-  <link rel="alternate" hreflang="id" href="https://ambaraartha.com/id/">
+  <link rel="alternate" hreflang="id" href="https://www.ambaraartha.com/id/">
   <meta property="og:title" content="PT Ambara Artha Globaltrans — Kargo Udara Indonesia">
   <meta property="og:description" content="Indonesia's trusted air freight forwarder based at CGK. Expert customs clearance & global delivery.">
-  <meta property="og:url" content="https://ambaraartha.com/en/">
+  <meta property="og:url" content="https://www.ambaraartha.com/en/">
   <meta property="og:type" content="website">
-  <meta property="og:image" content="https://ambaraartha.com/og-image.jpg">
+  <meta property="og:image" content="https://www.ambaraartha.com/og-image.jpg">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@graph": [
       {
         "@type": ["Organization", "LocalBusiness"],
-        "@id": "https://ambaraartha.com/#organization",
+        "@id": "https://www.ambaraartha.com/#organization",
         "name": "PT Ambara Artha Globaltrans",
         "alternateName": "Ambara Artha",
-        "url": "https://ambaraartha.com",
+        "url": "https://www.ambaraartha.com",
         "logo": {
           "@type": "ImageObject",
-          "url": "https://ambaraartha.com/logo.png"
+          "url": "https://www.ambaraartha.com/logo.png"
         },
-        "image": "https://ambaraartha.com/og-image.jpg",
+        "image": "https://www.ambaraartha.com/og-image.jpg",
         "description": "Freight forwarder kargo udara terpercaya di Indonesia dan agen kepabeanan berlisensi PPJK yang berbasis di Terminal Kargo Bandara Internasional Soekarno-Hatta (CGK), Jakarta. Spesialis barang regulasi, barang berbahaya, dan prosedur kepabeanan Indonesia yang kompleks dengan 40+ tahun pengalaman kepemimpinan.",
         "foundingDate": "2025",
         "numberOfEmployees": {"@type": "QuantitativeValue", "minValue": 10, "maxValue": 50},
@@ -117,14 +117,14 @@
       },
       {
         "@type": "WebSite",
-        "@id": "https://ambaraartha.com/#website",
-        "url": "https://ambaraartha.com",
+        "@id": "https://www.ambaraartha.com/#website",
+        "url": "https://www.ambaraartha.com",
         "name": "PT Ambara Artha Globaltrans",
-        "publisher": {"@id": "https://ambaraartha.com/#organization"},
+        "publisher": {"@id": "https://www.ambaraartha.com/#organization"},
         "inLanguage": ["en", "id"],
         "potentialAction": {
           "@type": "SearchAction",
-          "target": "https://ambaraartha.com/id/?q={search_term_string}",
+          "target": "https://www.ambaraartha.com/id/?q={search_term_string}",
           "query-input": "required name=search_term_string"
         }
       }
@@ -499,16 +499,19 @@ fetch('/api/public-stats').then(r=>r.json()).then(d=>{
 // Load blog preview
 fetch('/api/blog-api?action=list&limit=3').then(r=>r.json()).then(d=>{
   if(!d.posts?.length) return;
-  document.getElementById('blog-preview').innerHTML = d.posts.map(p=>`
+  document.getElementById('blog-preview').innerHTML = d.posts.map(p=>{
+    const postUrl = '/id/blog/' + encodeURIComponent(p.slug || '');
+    return `
     <div class="card animate-on-scroll">
       <div class="badge badge-blue" style="margin-bottom:16px">${p.category||'Guide'}</div>
       <h3 style="font-size:1.125rem;margin-bottom:12px">${p.title_en}</h3>
       <p style="font-size:0.875rem;margin-bottom:20px">${p.excerpt_en||''}</p>
       <div style="display:flex;justify-content:space-between;align-items:center">
         <span style="font-size:0.8125rem;color:var(--text-muted)">${new Date(p.published_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</span>
-        <a href="/id/blog/${p.slug}" style="font-size:0.875rem;font-weight:600;color:var(--blue-accent)">Read →</a>
+        <a ${'href'}="${postUrl}" style="font-size:0.875rem;font-weight:600;color:var(--blue-accent)">Read →</a>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }).catch(()=>{});
 </script>
 </body>

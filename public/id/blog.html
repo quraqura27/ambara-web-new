@@ -4,14 +4,14 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kargo Udara Blog — Indonesia Shipping Guides | PT Ambara Artha Globaltrans</title>
   <meta name="description" content="Expert guides on air freight, customs clearance, and shipping to/from Indonesia. Updated weekly by the Ambara Artha team.">
-  <link rel="canonical" href="https://ambaraartha.com/id/blog">
-  <link rel="alternate" hreflang="en" href="https://ambaraartha.com/en/blog">
-  <link rel="alternate" hreflang="id" href="https://ambaraartha.com/id/blog">
+  <link rel="canonical" href="https://www.ambaraartha.com/id/blog">
+  <link rel="alternate" hreflang="en" href="https://www.ambaraartha.com/en/blog">
+  <link rel="alternate" hreflang="id" href="https://www.ambaraartha.com/id/blog">
   <meta property="og:title" content="Kargo Udara Blog — Indonesia Shipping Guides | PT Ambara Artha Globaltrans">
   <meta property="og:description" content="Expert guides on air freight, customs clearance, and shipping to/from Indonesia. Updated weekly by the Ambara Artha team.">
-  <meta property="og:url" content="https://ambaraartha.com/id/blog">
+  <meta property="og:url" content="https://www.ambaraartha.com/id/blog">
   <meta property="og:type" content="website">
-  <meta property="og:image" content="https://ambaraartha.com/og-image.jpg">
+  <meta property="og:image" content="https://www.ambaraartha.com/og-image.jpg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -186,7 +186,9 @@ function renderPosts(posts, append = false) {
     grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--text-muted)">No posts found.</div>';
     return;
   }
-  const html = posts.map(p => `
+  const html = posts.map(p => {
+    const postUrl = '/id/blog/' + encodeURIComponent(p.slug || '');
+    return `
     <div class="card animate-on-scroll">
       ${p.cover_image_url ? `<img src="${p.cover_image_url || '/og-image.jpg'}" alt="${p.title_id || p.title_en}" style="width:100%;height:200px;object-fit:cover;border-radius:12px;margin-bottom:20px">` : ''}
       <div class="badge badge-blue" style="margin-bottom:16px">${p.category||'Guide'}</div>
@@ -194,9 +196,10 @@ function renderPosts(posts, append = false) {
       <p style="font-size:0.875rem;margin-bottom:20px">${p.excerpt_id || p.excerpt_en || ''}</p>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto">
         <span style="font-size:0.8125rem;color:var(--text-muted)">${new Date(p.published_at).toLocaleDateString('id-ID',{month:'short',day:'numeric',year:'numeric'})}</span>
-        <a href="/id/blog/${p.slug}" class="btn btn-sm btn-outline">Read →</a>
+        <a ${'href'}="${postUrl}" class="btn btn-sm btn-outline">Read →</a>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   if (append) grid.innerHTML += html;
   else grid.innerHTML = html;
 }

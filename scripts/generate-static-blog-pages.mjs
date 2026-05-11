@@ -7,7 +7,7 @@ import { neon } from "@neondatabase/serverless";
 
 dotenv.config({ path: ".env.local", quiet: true });
 
-const SITE_URL = "https://ambaraartha.com";
+const SITE_URL = "https://www.ambaraartha.com";
 const DEFAULT_IMAGE = `${SITE_URL}/og-image.jpg`;
 
 const root = process.cwd();
@@ -254,7 +254,7 @@ document.getElementById('footer-mount').innerHTML = AMBARA.getFooter();
 }
 
 function removeGeneratedBlogUrls(sitemap) {
-  return sitemap.replace(/\s*<url>\s*<loc>https:\/\/ambaraartha\.com\/(?:en|id)\/blog\/[^<]+<\/loc>\s*<changefreq>monthly<\/changefreq>\s*<priority>0\.6<\/priority>\s*<\/url>/g, "");
+  return sitemap.replace(/\s*<url>\s*<loc>https:\/\/(?:www\.)?ambaraartha\.com\/(?:en|id)\/blog\/[^<]+<\/loc>\s*<changefreq>monthly<\/changefreq>\s*<priority>0\.6<\/priority>\s*<\/url>/g, "");
 }
 
 function appendBlogUrls(sitemap, posts) {
