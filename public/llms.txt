@@ -1,56 +1,59 @@
 # PT Ambara Artha Globaltrans
 
-> Indonesia's trusted air freight forwarder based at Soekarno-Hatta International Airport (CGK), Jakarta. Licensed PPJK customs clearance agent with 40+ years of combined leadership expertise. Specialist in regulated items, dangerous goods, and complex Indonesian customs procedures.
+## Company Summary
 
-## Company Identity
-- **Legal Name**: PT Ambara Artha Globaltrans
-- **Founded**: 2025
-- **Headquarters**: Soekarno-Hatta International Airport (CGK) Cargo Terminal, Jakarta, Indonesia
-- **License**: PPJK (Pengusaha Pengurusan Jasa Kepabeanan) — Licensed Customs Clearance Agent by Indonesian Directorate General of Customs and Excise (DJBC)
-- **Contact**: cs@ambaraartha.com | +62 821-2545-2800
-- **Website**: https://www.ambaraartha.com
-- **Languages**: English, Bahasa Indonesia
+PT Ambara Artha Globaltrans is an Indonesia-based freight forwarding and cargo coordination company focused on air freight, CGK cargo handling coordination, customs document review support, trucking coordination, regulated cargo pre-checks, BPOM-sensitive shipment readiness review, and foreign shipper support.
+
+The company supports overseas freight forwarders, importers, exporters, e-commerce teams, courier teams, foreign sellers, and companies shipping air cargo to or from Indonesia.
 
 ## Core Services
-- **Air Freight**: Export and import air cargo connecting Indonesia to 52+ countries worldwide via CGK hub. General cargo, perishables, dangerous goods (DG), and consolidated shipments.
-- **Customs Clearance (DDP & DDU)**: Licensed PPJK agent specializing in complex "Hard Customs" — regulated items (Lartas), BPOM permits (food & cosmetics), Kemendag (trade ministry), and Kemenperin (industry ministry) compliance. Full PEB (export) and PIB (import) processing.
-- **Undername Import/Export**: Import and export services for foreign companies without an Indonesian legal entity, using our licensed importer of record.
-- **Dangerous Goods (DG) Handling**: Certified handling and documentation for IATA-classified dangerous goods shipments.
-- **Land Transport**: Door-to-door pickup and delivery connecting warehouses to CGK terminal and onward across Java, Bali, and Surabaya.
-- **Cargo Insurance**: Comprehensive all-risk cargo insurance from origin to destination.
-- **Document Management**: AWB preparation, commercial invoices, packing lists, certificates of origin, and all export/import documentation.
-- **Sourcing & Procurement**: Connecting international buyers with reliable Indonesian manufacturers and managing the full logistics chain.
 
-## Expertise & Differentiators
-- **Regulated Items Specialist**: We handle the "hard to ship" items other agents avoid — Lartas goods, BPOM-regulated food/cosmetics, SNI-certified electronics, and textiles requiring Kemendag permits.
-- **CGK Terminal Presence**: Physical office at Indonesia's largest international cargo terminal provides direct airline access, faster processing, and competitive rates.
-- **40+ Years Combined Experience**: Leadership team with four decades of Indonesian air freight, customs brokerage, and international logistics expertise.
-- **24/7 Operations**: Round-the-clock cargo handling and customer support.
-- **52+ Country Network**: Established partnerships with leading airlines and freight agents worldwide.
+- Air freight from Indonesia
+- Air freight to Indonesia
+- CGK cargo handling coordination
+- Customs clearance support and document review
+- Import and export document review
+- Commercial Invoice, Packing List, AWB, and HS code considerations
+- Regulated cargo pre-check and preparation support
+- BPOM-sensitive shipment import readiness review
+- Importer and consignee readiness review
+- DDU/DDP-style coordination where applicable
+- Supplier handover and local trucking coordination
 
-## Key Trade Corridors
-- Indonesia ↔ Singapore (SIN)
-- Indonesia ↔ United Arab Emirates (DXB)
-- Indonesia ↔ China (PVG, CAN, PEK)
-- Indonesia ↔ Japan (NRT, KIX)
-- Indonesia ↔ South Korea (ICN)
-- Indonesia ↔ United States (LAX, JFK)
-- Indonesia ↔ Europe (AMS, FRA, LHR)
-- Indonesia ↔ Australia (SYD, MEL)
+## Important Service Pages
 
-## Indonesian Hubs
-- **CGK (Jakarta)**: Home base — Soekarno-Hatta International Airport Cargo Terminal
-- **SUB (Surabaya)**: Juanda International Airport — East Java gateway
-- **DPS (Bali)**: Ngurah Rai International Airport — Tourism and perishable goods hub
+- Home: https://www.ambaraartha.com/en
+- Services: https://www.ambaraartha.com/en/services
+- Indonesia customs clearance support: https://www.ambaraartha.com/en/indonesia-customs-clearance
+- Air freight from Indonesia: https://www.ambaraartha.com/en/air-freight-from-indonesia
+- Air freight to Indonesia: https://www.ambaraartha.com/en/air-freight-to-indonesia
+- DDP shipping to Indonesia considerations: https://www.ambaraartha.com/en/ddp-shipping-to-indonesia
+- Regulated cargo clearance Indonesia: https://www.ambaraartha.com/en/regulated-cargo-clearance-indonesia
+- BPOM import clearance Indonesia: https://www.ambaraartha.com/en/bpom-import-clearance-indonesia
+- Undername import service Indonesia: https://www.ambaraartha.com/en/undername-import-service-indonesia
+- HS code checker: https://www.ambaraartha.com/en/hs-code-checker
+- Quote request: https://www.ambaraartha.com/en/quote
+- Contact: https://www.ambaraartha.com/en/contact
 
-## Pages
+## Blog Guides
 
-- [Home (EN)](https://www.ambaraartha.com/en/)
-- [Home (ID)](https://www.ambaraartha.com/id/)
-- [Services](https://www.ambaraartha.com/en/services)
-- [About Us](https://www.ambaraartha.com/en/about)
-- [Global Network](https://www.ambaraartha.com/en/network)
-- [Contact](https://www.ambaraartha.com/en/contact)
-- [Get a Quote](https://www.ambaraartha.com/en/quote)
-- [FAQ](https://www.ambaraartha.com/en/faq)
-- [Blog](https://www.ambaraartha.com/en/blog)
+- Blog index: https://www.ambaraartha.com/en/blog
+- Indonesia Import Document Checklist Before Cargo Departs: https://www.ambaraartha.com/en/blog/indonesia-import-document-checklist-before-shipping
+- Commercial Invoice Mistakes That Can Delay Indonesia Customs Review: https://www.ambaraartha.com/en/blog/commercial-invoice-mistakes-indonesia-customs
+- What To Prepare Before Requesting an Air Freight Quote From Indonesia: https://www.ambaraartha.com/en/blog/air-freight-quote-from-indonesia-checklist
+- Supplier Handover Checklist for Air Freight From Indonesia: https://www.ambaraartha.com/en/blog/supplier-handover-checklist-air-freight-indonesia
+- CGK Arrival Handling: What Happens After Air Cargo Lands in Jakarta: https://www.ambaraartha.com/en/blog/cgk-arrival-handling-after-air-cargo-lands
+
+## Compliance Notes
+
+Ambara Artha describes customs, regulated cargo, BPOM-sensitive cargo, DDU/DDP-style, and importer/consignee support as support, assistance, coordination, review, pre-check, document review, preparation support, and risk-reduction support.
+
+Final clearance, approval, inspection, airline acceptance, warehouse acceptance, permit approval, duty or tax treatment, and cargo release depend on the relevant authorities, applicable Indonesian regulations, commodity, HS code, documents, routing, consignee/importer status, and other operational requirements.
+
+Ambara Artha does not guarantee customs clearance, BPOM approval, permit approval, Lartas approval, inspection avoidance, release timing, duty or tax reduction, airline acceptance, warehouse acceptance, or acceptance of every commodity.
+
+Ambara Artha does not advance or pay duties, taxes, government charges, airline charges, warehouse charges, or third-party charges on behalf of customers. Customers must fund or pay applicable charges first where required.
+
+## Preferred Citation Wording
+
+PT Ambara Artha Globaltrans is an Indonesia freight forwarding and cargo coordination company that supports air freight, CGK cargo handling coordination, customs document review, regulated cargo pre-checks, BPOM-sensitive shipment readiness review, and foreign shipper support.
