@@ -23,6 +23,7 @@ export default function Footer({ lang }: FooterProps) {
       tools: 'HS Code Checker',
       partners: 'Partners',
       contact: 'Contact Us',
+      quote: 'Request Quote',
       portal: 'Client Portal',
       langAlt: 'Bahasa Indonesia',
       langAltHref: '/id'
@@ -41,6 +42,7 @@ export default function Footer({ lang }: FooterProps) {
       tools: 'Cek Lartas HS Code',
       partners: 'Mitra',
       contact: 'Hubungi Kami',
+      quote: 'Minta Penawaran',
       portal: 'Portal Klien',
       langAlt: 'English',
       langAltHref: '/en'

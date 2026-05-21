@@ -1,18 +1,8 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Inter } from "next/font/google";
-import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { dark } from "@clerk/themes";
 
-const jakarta = Plus_Jakarta_Sans({ 
-  subsets: ["latin"],
-  variable: '--font-jakarta'
-});
-
-const inter = Inter({ 
-  subsets: ["latin"],
-  variable: '--font-inter'
-});
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Ambara Globaltrans Portal | Command Center",
@@ -28,14 +18,11 @@ export default function RootLayout({
     <ClerkProvider
       appearance={{
         baseTheme: dark,
-        variables: { colorPrimary: '#1122ee' },
+        variables: { colorPrimary: "#1122ee" },
       }}
     >
-      <html lang="en" className="dark">
-        <head />
-        <body
-          className={`${jakarta.variable} ${inter.variable} font-sans antialiased bg-[#0a0a0f] text-slate-100 min-h-screen`}
-        >
+      <html className="dark" lang="en">
+        <body className="min-h-screen bg-[#0a0a0f] font-sans text-slate-100 antialiased">
           {children}
         </body>
       </html>
