@@ -4,9 +4,9 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title id="page-title">Blog — PT Ambara Artha Globaltrans</title>
   <meta name="description" id="page-desc" content="Air freight insights from PT Ambara Artha Globaltrans">
-  <link rel="canonical" id="page-canonical" href="https://ambaraartha.com/id/blog">
-  <link rel="alternate" hreflang="en" id="alt-en" href="https://ambaraartha.com/en/blog">
-  <link rel="alternate" hreflang="id" id="alt-id" href="https://ambaraartha.com/id/blog">
+  <link rel="canonical" id="page-canonical" href="https://www.ambaraartha.com/id/blog">
+  <link rel="alternate" hreflang="en" id="alt-en" href="https://www.ambaraartha.com/en/blog">
+  <link rel="alternate" hreflang="id" id="alt-id" href="https://www.ambaraartha.com/id/blog">
   <script type="application/ld+json" id="article-schema"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -88,11 +88,11 @@ function renderPost(post, slugStr) {
   document.title = `${title} | PT Ambara Artha Globaltrans`;
   if(document.getElementById('page-title')) document.getElementById('page-title').textContent = `${title} | PT Ambara Artha Globaltrans`;
   if(document.getElementById('page-desc')) document.getElementById('page-desc').content = metaDesc || excerpt;
-  if(document.getElementById('page-canonical')) document.getElementById('page-canonical').href = `https://ambaraartha.com/id/blog/${slugStr}`;
+  if(document.getElementById('page-canonical')) document.getElementById('page-canonical').href = `https://www.ambaraartha.com/id/blog/${slugStr}`;
 
   // Update Alts
-  if(document.getElementById('alt-en')) document.getElementById('alt-en').href = `https://ambaraartha.com/en/blog/${slugStr}`;
-  if(document.getElementById('alt-id')) document.getElementById('alt-id').href = `https://ambaraartha.com/id/blog/${slugStr}`;
+  if(document.getElementById('alt-en')) document.getElementById('alt-en').href = `https://www.ambaraartha.com/en/blog/${slugStr}`;
+  if(document.getElementById('alt-id')) document.getElementById('alt-id').href = `https://www.ambaraartha.com/id/blog/${slugStr}`;
 
   // Schema
   if(document.getElementById('article-schema')) {
@@ -102,10 +102,10 @@ function renderPost(post, slugStr) {
       "headline": title,
       "description": excerpt,
       "author": { "@type": "Organization", "name": "PT Ambara Artha Globaltrans" },
-      "publisher": { "@type": "Organization", "name": "PT Ambara Artha Globaltrans", "url": "https://ambaraartha.com" },
+      "publisher": { "@type": "Organization", "name": "PT Ambara Artha Globaltrans", "url": "https://www.ambaraartha.com" },
       "datePublished": post.published_at,
       "dateModified": post.updated_at || post.published_at,
-      "url": `https://ambaraartha.com/id/blog/${slugStr}`
+      "url": `https://www.ambaraartha.com/id/blog/${slugStr}`
     });
   }
 
