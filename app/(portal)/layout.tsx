@@ -1,8 +1,12 @@
 import Link from "next/link";
+import Image from "next/image";
 import { LucideIcon, LayoutDashboard, LogOut, Package, Search, Users } from "lucide-react";
-import { SignOutButton, UserButton } from "@clerk/nextjs";
 
+import { signOut } from "@/actions/auth";
 import { searchShipmentByTracking } from "@/actions/shipments";
+import { requirePortalUser } from "@/lib/portal-auth";
+
+export const dynamic = "force-dynamic";
 
 type NavItemProps = {
   href: string;
@@ -22,16 +26,15 @@ function NavItem({ href, icon: Icon, label }: NavItemProps) {
   );
 }
 
-export default function PortalLayout({ children }: { children: React.ReactNode }) {
+export default async function PortalLayout({ children }: { children: React.ReactNode }) {
+  const user = await requirePortalUser();
+
   return (
     <div className="flex min-h-screen overflow-hidden bg-[#0a0a0f] text-slate-100">
       <aside className="z-20 flex w-72 flex-col gap-8 border-r border-white/5 bg-[#0d0d14] p-6">
         <div className="flex items-center gap-3 px-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/20">
-            <Package className="h-6 w-6 text-white" />
-          </div>
           <div>
-            <h1 className="text-lg font-bold leading-none tracking-tight">AMBARA</h1>
+            <Image src="/logo.png" alt="PT Ambara Artha Globaltrans" className="h-auto w-44 invert" width={4000} height={622} priority />
             <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-slate-500">
               Portal v5.0
             </p>
@@ -51,10 +54,12 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           <div className="rounded-2xl border border-white/5 bg-gradient-to-b from-white/5 to-transparent p-4">
             <p className="mb-3 text-xs text-slate-500">Logged in as</p>
             <div className="flex items-center gap-3">
-              <UserButton />
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+                AA
+              </div>
               <div className="overflow-hidden">
-                <p className="truncate text-sm font-medium">Internal Staff</p>
-                <p className="text-[10px] font-bold uppercase text-blue-400">Operations</p>
+                <p className="truncate text-sm font-medium">{user.name}</p>
+                <p className="text-[10px] font-bold uppercase text-blue-400">{user.role}</p>
               </div>
             </div>
           </div>
@@ -79,12 +84,12 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
 
             <div className="h-6 w-px bg-white/10" />
 
-            <SignOutButton>
-              <button className="flex items-center gap-2 text-slate-400 transition-colors hover:text-white">
+            <form action={signOut}>
+              <button className="flex items-center gap-2 text-slate-400 transition-colors hover:text-white" type="submit">
                 <LogOut className="h-5 w-5" />
                 <span className="text-sm font-medium">Sign Out</span>
               </button>
-            </SignOutButton>
+            </form>
           </div>
         </header>
 

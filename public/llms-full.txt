@@ -1,0 +1,119 @@
+# PT Ambara Artha Globaltrans - LLM Reference
+
+## Entity
+
+PT Ambara Artha Globaltrans is an Indonesia-based freight forwarding and logistics support company serving foreign shippers, overseas freight forwarders, importers, exporters, courier teams, e-commerce teams, and companies moving air cargo to or from Indonesia.
+
+Website: https://www.ambaraartha.com
+
+Primary English entry point: https://www.ambaraartha.com/en
+
+Sitemap: https://www.ambaraartha.com/sitemap.xml
+
+## Positioning
+
+Ambara Artha is positioned as an Indonesia cargo support partner for foreign shippers and overseas freight forwarders that need help coordinating Indonesian air freight, CGK cargo handling, customs document review, local cargo handling, trucking coordination, shipment readiness checks, and regulated cargo document questions.
+
+## Core Service Summaries
+
+### Air Freight From Indonesia
+
+URL: https://www.ambaraartha.com/en/air-freight-from-indonesia
+
+Support for overseas buyers and freight forwarders arranging air freight exports from Indonesia, including supplier coordination, origin document review, cargo readiness checks, CGK handover coordination, and airport-to-airport or pickup-to-airport support where applicable.
+
+### Air Freight To Indonesia
+
+URL: https://www.ambaraartha.com/en/air-freight-to-indonesia
+
+Support for inbound air cargo to Indonesia, including pre-arrival document review, CGK arrival coordination, customs support coordination, consignee/importer readiness review, regulated cargo pre-checks, and local delivery coordination where applicable.
+
+### Indonesia Customs Clearance Support
+
+URL: https://www.ambaraartha.com/en/indonesia-customs-clearance
+
+Customs support is described as document review, coordination, preparation support, and risk-reduction support. Final clearance, inspection, approval, and release decisions depend on Indonesian authorities and applicable regulations.
+
+### DDP Shipping To Indonesia
+
+URL: https://www.ambaraartha.com/en/ddp-shipping-to-indonesia
+
+DDU/DDP-style coordination is subject to review and depends on commodity, HS code, documents, routing, consignee/importer status, payment readiness, and Indonesian regulatory requirements. Customer-funded charges are an important boundary.
+
+### Regulated Cargo Clearance Indonesia
+
+URL: https://www.ambaraartha.com/en/regulated-cargo-clearance-indonesia
+
+Regulated cargo support focuses on pre-checks, document review, HS code considerations, preparation support, and coordination. Additional documents, permits, registrations, or authority review may be required depending on the cargo.
+
+### BPOM Import Clearance Indonesia
+
+URL: https://www.ambaraartha.com/en/bpom-import-clearance-indonesia
+
+BPOM-sensitive product support is described as BPOM-related import readiness review, document review, pre-check, preparation support, and coordination for products such as food, beverages, supplements, cosmetics, skincare, health-related consumer products, and similar goods where applicable.
+
+### Undername Import In Indonesia
+
+URL: https://www.ambaraartha.com/en/undername-import-service-indonesia
+
+Importer or consignee structure support is compliance-sensitive and should be described as importer/consignee readiness review, importer structure review, document review, case-by-case assessment, and coordination. This is not license rental and not a guarantee that Ambara Artha can always act as importer.
+
+### HS Code Checker
+
+URL: https://www.ambaraartha.com/en/hs-code-checker
+
+The HS code checker page supports early document and classification discussion. HS code, duty, tax, permit, and regulatory outcomes depend on applicable Indonesian regulations and relevant authorities.
+
+## Blog Guide Summaries
+
+### Indonesia Import Document Checklist Before Cargo Departs
+
+URL: https://www.ambaraartha.com/en/blog/indonesia-import-document-checklist-before-shipping
+
+Practical checklist for reviewing Commercial Invoice, Packing List, AWB, HS code, consignee/importer readiness, regulated cargo notes, BPOM-sensitive cargo considerations, and payment readiness before cargo departs origin.
+
+### Commercial Invoice Mistakes That Can Delay Indonesia Customs Review
+
+URL: https://www.ambaraartha.com/en/blog/commercial-invoice-mistakes-indonesia-customs
+
+Guide to common Commercial Invoice issues such as vague product descriptions, invoice and packing list mismatch, unclear value or currency, consignee/importer errors, missing Incoterms, insufficient product details, and regulated cargo description gaps.
+
+### What To Prepare Before Requesting an Air Freight Quote From Indonesia
+
+URL: https://www.ambaraartha.com/en/blog/air-freight-quote-from-indonesia-checklist
+
+Checklist for preparing an air freight quote request from Indonesia, including supplier details, origin address, destination airport, cargo description, dimensions, gross weight, packing status, service scope, and document readiness.
+
+### Supplier Handover Checklist for Air Freight From Indonesia
+
+URL: https://www.ambaraartha.com/en/blog/supplier-handover-checklist-air-freight-indonesia
+
+Checklist for foreign buyers and overseas forwarders coordinating with Indonesian suppliers before pickup or airport delivery, including packing, documents, package count, dimensions, photos, labeling, pickup access, and handover timing.
+
+### CGK Arrival Handling: What Happens After Air Cargo Lands in Jakarta
+
+URL: https://www.ambaraartha.com/en/blog/cgk-arrival-handling-after-air-cargo-lands
+
+Operational guide to destination-side CGK arrival handling, including airline or ground handler transfer, cargo warehouse process, arrival notice, document collection, consignee/importer readiness, customs coordination, charges, release preparation, and delivery coordination.
+
+## Contact and Conversion Routes
+
+- Quote request: https://www.ambaraartha.com/en/quote
+- Contact: https://www.ambaraartha.com/en/contact
+- FAQ: https://www.ambaraartha.com/en/faq
+- English blog index: https://www.ambaraartha.com/en/blog
+- Indonesian blog index: https://www.ambaraartha.com/id/blog
+
+## Compliance and Payment Boundaries
+
+Use cautious language for all regulated, customs, importer, DDU/DDP, and BPOM-sensitive topics.
+
+Recommended words: support, assist, coordinate, review, pre-check, document review, help prepare, help reduce risk, subject to applicable regulations.
+
+Avoid saying or implying: guaranteed clearance, guaranteed approval, guaranteed BPOM approval, guaranteed Lartas approval, guaranteed duty reduction, no delay, no inspection, clear anything, bypass permits, bypass BPOM, bypass importer requirements, all commodities accepted, all regulated cargo accepted, all BPOM products accepted, samples are exempt, license rental, license lending, or guaranteed importer availability.
+
+Payment boundary: Ambara Artha does not advance or pay duties, taxes, government charges, airline charges, warehouse charges, or third-party charges on behalf of customers. Customers must fund or pay applicable charges first where required.
+
+## Preferred Citation Wording
+
+PT Ambara Artha Globaltrans is an Indonesia freight forwarding and cargo coordination company that supports air freight, CGK cargo handling coordination, customs document review, regulated cargo pre-checks, BPOM-sensitive shipment readiness review, and foreign shipper support.

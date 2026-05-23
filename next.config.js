@@ -9,6 +9,21 @@ const serverActionOrigins = [
 
 const nextConfig = {
   // Support legacy marketing site and consolidated API
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [
+          {
+            type: "host",
+            value: "ambaraartha.com",
+          },
+        ],
+        destination: "https://www.ambaraartha.com/:path*",
+        permanent: true,
+      },
+    ];
+  },
   async rewrites() {
     return [
       {
@@ -18,6 +33,14 @@ const nextConfig = {
       {
         source: "/en/",
         destination: "/index.html",
+      },
+      {
+        source: "/en/index.html",
+        destination: "/index.html",
+      },
+      {
+        source: "/en/blog/:slug",
+        destination: "/blog/:slug.html",
       },
       {
         source: "/en/:path+",
@@ -30,6 +53,10 @@ const nextConfig = {
       {
         source: "/id/",
         destination: "/id/index.html",
+      },
+      {
+        source: "/id/blog/:slug",
+        destination: "/id/blog/:slug.html",
       },
       {
         source: "/id/:path+",

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
 
@@ -33,11 +34,8 @@ export default function Navbar({ lang, active = '' }: NavbarProps) {
       <div className="container">
         <Link href={`${base}/`} className="navbar-brand">
           <div className="navbar-logo">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" stroke="white" strokeWidth="2" strokeLinejoin="round"/>
-            </svg>
+            <Image src="/logo.png" alt="PT Ambara Artha Globaltrans" className="brand-logo-image" width={4000} height={622} priority />
           </div>
-          <div className="navbar-brand-text">AMBARA<span>ARTHA</span></div>
         </Link>
 
         {/* Desktop Links */}
@@ -96,8 +94,8 @@ export default function Navbar({ lang, active = '' }: NavbarProps) {
       {/* Mobile Navigation Overlay */}
       <div className={`mobile-nav ${isMobileMenuOpen ? 'open' : ''}`} style={{ display: isMobileMenuOpen ? 'flex' : 'none' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', width: '100%' }}>
-          <div className="navbar-brand-text" style={{ color: 'white' }}>
-            AMBARA<span style={{ color: 'var(--blue-accent)' }}>ARTHA</span>
+          <div className="navbar-logo">
+            <Image src="/logo.png" alt="PT Ambara Artha Globaltrans" className="brand-logo-image" width={4000} height={622} priority />
           </div>
           <button 
             className="mobile-menu-btn" 

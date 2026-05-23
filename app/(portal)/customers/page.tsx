@@ -23,7 +23,7 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
           </p>
         </div>
         <Link href="/customers/new">
-          <Button className="gap-2">
+          <Button className="gap-2" type="button">
             <Plus className="h-4 w-4" /> Add New Customer
           </Button>
         </Link>

@@ -1,41 +1,15 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 
-const isPublicRoute = createRouteMatcher(["/", "/sign-in(.*)", "/sign-up(.*)", "/api(.*)"]);
-const isProtectedRoute = createRouteMatcher([
-  "/dashboard(.*)",
-  "/customers(.*)",
-  "/shipments(.*)",
-]);
+export function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
 
-export default clerkMiddleware(async (auth, req) => {
-  const url = req.nextUrl.pathname;
-
-  if (
-    url.startsWith("/_next") ||
-    url.includes("/api/auth") ||
-    url.includes("favicon.ico") ||
-    url.endsWith(".png") ||
-    url.endsWith(".svg") ||
-    url.endsWith(".css")
-  ) {
-    return NextResponse.next();
-  }
-
-  if (isPublicRoute(req)) {
-    return NextResponse.next();
-  }
-
-  if (isProtectedRoute(req)) {
-    await auth.protect();
+  if (pathname === "/admin.html" || pathname === "/admin") {
+    return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
   return NextResponse.next();
-});
+}
 
 export const config = {
-  matcher: [
-    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    "/(api|trpc)(.*)",
-  ],
+  matcher: ["/admin", "/admin.html"],
 };
