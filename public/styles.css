@@ -67,7 +67,7 @@ a { text-decoration: none; color: inherit; transition: var(--transition); }
 .navbar-brand-text { font-family: var(--font-head); font-weight: 900; font-size: 1rem; letter-spacing: -0.02em; }
 .navbar-brand-text span { color: var(--blue-accent); }
 .navbar-links { display: flex; align-items: center; gap: 32px; }
-.navbar-links a { font-size: 0.875rem; font-weight: 500; color: var(--text-muted); }
+.navbar-links a { font-size: 0.875rem; font-weight: 500; color: var(--text-muted); white-space: nowrap; }
 .navbar-links a:hover { color: var(--text); }
 .navbar-links a.active { color: var(--blue-accent); }
 .navbar-actions { display: flex; align-items: center; gap: 12px; }
@@ -76,7 +76,7 @@ a { text-decoration: none; color: inherit; transition: var(--transition); }
 .lang-toggle button.active { background: var(--blue); color: white; }
 
 /* BUTTONS */
-.btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; border-radius: 100px; font-family: var(--font-head); font-weight: 700; font-size: 0.875rem; cursor: pointer; transition: var(--transition); border: none; letter-spacing: 0.01em; }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; border-radius: 100px; font-family: var(--font-head); font-weight: 700; font-size: 0.875rem; cursor: pointer; transition: var(--transition); border: none; letter-spacing: 0.01em; white-space: nowrap; }
 .btn-primary { background: var(--blue); color: white; }
 .btn-primary:hover { background: var(--blue-light); transform: translateY(-1px); box-shadow: var(--shadow); }
 .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
