@@ -8,6 +8,7 @@ import {
   ExternalLink,
   MapPin,
   Plane,
+  Printer,
   Truck,
   User,
 } from "lucide-react";
@@ -138,6 +139,7 @@ export default async function TrackingDetailPage({ params }: TrackingDetailPageP
   const { number } = await params;
   const { shipment, liveData, customer } = await getShipmentByTracking(number);
   const trackingUpdateAction = updateShipmentTrackingFromForm.bind(null, number);
+  const consignmentNoteTrackingNo = shipment?.internalTrackingNo ?? "";
 
   return (
     <div className="space-y-8">
@@ -151,7 +153,15 @@ export default async function TrackingDetailPage({ params }: TrackingDetailPageP
           <h2 className="text-3xl font-bold tracking-tight">{number}</h2>
           <p className="mt-1 text-sm text-slate-500">Carrier: {liveData.carrier}</p>
         </div>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-3">
+          {consignmentNoteTrackingNo ? (
+            <Link href={`/shipments/${encodeURIComponent(consignmentNoteTrackingNo)}/consignment-note`}>
+              <Button className="gap-2" variant="secondary">
+                <Printer className="h-4 w-4" />
+                Print CN
+              </Button>
+            </Link>
+          ) : null}
           <span
             className={`inline-flex items-center rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-widest ${statusBadgeClassName(
               liveData.status,

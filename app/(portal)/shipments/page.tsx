@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { ArrowRight, MapPin, Package, Plus, Search, Truck } from "lucide-react";
+import { ArrowRight, MapPin, Package, Plus, Printer, Search, Truck } from "lucide-react";
 
 import { getShipments, searchShipmentByTracking } from "@/actions/shipments";
+import { BulkPrintConsignmentNotesButton } from "@/components/consignment-notes/bulk-print-button";
 import { Button, Card, Input } from "@/components/ui/core";
 
 type ShipmentsPageProps = {
@@ -59,11 +60,14 @@ export default async function ShipmentsPage({ searchParams }: ShipmentsPageProps
             Review stored shipments, search tracking numbers, and open shipment details.
           </p>
         </div>
-        <Link href="/shipments/new">
-          <Button className="gap-2">
-            <Plus className="h-4 w-4" /> Create New Shipment
-          </Button>
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <BulkPrintConsignmentNotesButton />
+          <Link href="/shipments/new">
+            <Button className="gap-2">
+              <Plus className="h-4 w-4" /> Create New Shipment
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <Card className="overflow-visible p-0">
@@ -98,6 +102,7 @@ export default async function ShipmentsPage({ searchParams }: ShipmentsPageProps
           <table className="w-full text-left">
             <thead>
               <tr className="bg-white/5 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                <th className="w-12 px-6 py-4">CN</th>
                 <th className="px-6 py-4">Shipment</th>
                 <th className="px-6 py-4">Route</th>
                 <th className="px-6 py-4">Customer</th>
@@ -113,9 +118,21 @@ export default async function ShipmentsPage({ searchParams }: ShipmentsPageProps
                   shipment.customerCompanyName ||
                   shipment.customerName ||
                   "Unlinked";
+                const cnTrackingNo = shipment.internalTrackingNo ?? "";
+                const canPrintCn = Boolean(cnTrackingNo);
 
                 return (
                   <tr key={shipment.id} className="group transition-colors hover:bg-white/[0.02]">
+                    <td className="px-6 py-4">
+                      <input
+                        aria-label={`Select ${shipment.trackingNumber} for consignment note printing`}
+                        className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-blue-600"
+                        disabled={!canPrintCn}
+                        name="cnTrackingNo"
+                        type="checkbox"
+                        value={cnTrackingNo}
+                      />
+                    </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-full border border-blue-600/20 bg-blue-600/10 text-blue-400">
@@ -162,11 +179,28 @@ export default async function ShipmentsPage({ searchParams }: ShipmentsPageProps
                         : "N/A"}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <Link href={`/shipments/${shipment.trackingNumber}`}>
-                        <Button className="h-auto p-2" variant="ghost">
-                          <ArrowRight className="h-4 w-4" />
-                        </Button>
-                      </Link>
+                      <div className="flex justify-end gap-2">
+                        {canPrintCn ? (
+                          <Link href={`/shipments/${encodeURIComponent(cnTrackingNo)}/consignment-note`}>
+                            <Button
+                              aria-label={`Print consignment note for ${cnTrackingNo}`}
+                              className="h-auto p-2"
+                              variant="ghost"
+                            >
+                              <Printer className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                        ) : null}
+                        <Link href={`/shipments/${shipment.trackingNumber}`}>
+                          <Button
+                            aria-label={`Open shipment ${shipment.trackingNumber}`}
+                            className="h-auto p-2"
+                            variant="ghost"
+                          >
+                            <ArrowRight className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -174,7 +208,7 @@ export default async function ShipmentsPage({ searchParams }: ShipmentsPageProps
 
               {shipments.length === 0 && (
                 <tr>
-                  <td className="px-6 py-12 text-center text-slate-500" colSpan={6}>
+                  <td className="px-6 py-12 text-center text-slate-500" colSpan={7}>
                     <div className="flex flex-col items-center">
                       <Package className="mb-4 h-12 w-12 text-slate-800" />
                       <p className="text-lg font-medium">No shipments found</p>
