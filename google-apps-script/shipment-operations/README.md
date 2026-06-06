@@ -18,6 +18,7 @@ It is prepared for local review only. Do not deploy it or overwrite the currentl
 - Resets `ready_to_generate` to `FALSE` after success so already processed rows do not stay queued.
 - Provides `processReadyShipments()` for rows that were already checked before the trigger existed.
 - Provides `backfillMissingInitialTrackingEvents()` for targeted recovery when an already generated tracking number is missing its initial public event.
+- Provides `syncGeneratedShipmentsToDatabase()` for source-controlled Sheet-to-database sync recovery after the web endpoint is reviewed and configured.
 - Uses `handleShipmentReadyEdit(e)` as the intended production edit-trigger entrypoint.
 
 Bulk milestone updates are processed through `Bulk_Status_Updates` as an append-only event workflow.
@@ -67,6 +68,60 @@ Before generation, the script requires:
 - `delivered`
 - `exception`
 - `cancelled`
+
+## Database Sync Foundation
+
+This source package can sync generated `Shipments` rows to the Ambara database through:
+
+```text
+POST /api/internal/sync-shipment
+```
+
+Do not configure this against Production until the database migration, endpoint URL, secret, and Sheet columns have been reviewed.
+
+Required Apps Script Properties:
+
+- `AMBARA_SYNC_ENDPOINT` - the reviewed sync endpoint URL.
+- `AMBARA_SYNC_SECRET` - the shared secret expected by the web endpoint.
+
+Required new `Shipments` columns:
+
+- `db_sync_status`
+- `db_synced_at`
+- `db_sync_error`
+
+Recommended placement: add the three columns after `internal_notes`, or at the far right of `Shipments` if that is safer for the live Sheet. The script uses header names, so exact position is not required.
+
+Sync payload fields sent to the web endpoint are allowlisted. Private fields such as shipper, consignee, address, phone, and internal notes must never be exposed by public tracking responses.
+
+CN-ready fields supported by the sync payload:
+
+- `shipper_address`
+- `shipper_phone`
+- `consignee_address`
+
+The automatic post-generation hook only writes sync status if the three `db_sync_*` columns exist. If those columns are absent, tracking-number generation continues without attempting database sync.
+
+Manual recovery:
+
+1. Confirm `AMBARA_SYNC_ENDPOINT` and `AMBARA_SYNC_SECRET` are set in Script Properties.
+2. Confirm the three `db_sync_*` columns exist in `Shipments`.
+3. Run `syncGeneratedShipmentsToDatabase()`.
+4. Confirm successful rows show:
+   - `db_sync_status` = `SYNCED`
+   - `db_synced_at` populated
+   - `db_sync_error` blank
+5. Failed rows show `db_sync_status` = `ERROR` and a truncated diagnostic in `db_sync_error`. Fix the cause and rerun the manual recovery function.
+
+Production rollout steps for sync:
+
+1. Apply the reviewed database migration in the target environment.
+2. Deploy the reviewed web app code with `SHEETS_SYNC_SECRET` configured only in the intended environment.
+3. Add the three `db_sync_*` columns to the live Sheet.
+4. Set the two Apps Script Properties.
+5. Install or update the bound Apps Script from this source package.
+6. Run a single reviewed test row before bulk recovery.
+7. Run `syncGeneratedShipmentsToDatabase()` for recovery if needed.
 
 ## Initial Public Tracking Event
 

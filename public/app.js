@@ -116,54 +116,245 @@ async function trackShipment(id) {
   const result = document.getElementById('tracking-result');
   if (!result) return;
   result.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text-muted)"><div style="width:32px;height:32px;border:3px solid var(--blue);border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px"></div>Tracking shipment...</div>`;
-  
+
   try {
     const res = await fetch(`/api/track-shipment?id=${encodeURIComponent(id)}`);
-    const data = await res.json();
+    const data = await readTrackingResponse(res);
     if (!res.ok) {
-      result.innerHTML = `<div class="card" style="text-align:center;padding:40px"><div style="font-size:2rem;margin-bottom:12px">🔍</div><div style="font-weight:700;margin-bottom:8px">Shipment Not Found</div><div style="color:var(--text-muted)">No shipment found for <strong>${id}</strong>. Please check your tracking number.</div></div>`;
+      if (res.status === 404 || data?.code === 'SHIPMENT_NOT_FOUND') {
+        renderShipmentNotFound(result, id);
+      } else {
+        renderTrackingError(result, data, res.status);
+      }
       return;
     }
     renderTrackingResult(data);
   } catch (err) {
-    result.innerHTML = `<div class="card" style="text-align:center;padding:40px;color:var(--red)">Connection error. Please try again.</div>`;
+    renderTrackingError(result);
   }
+}
+
+async function readTrackingResponse(res) {
+  try {
+    return await res.json();
+  } catch (err) {
+    return null;
+  }
+}
+
+function setStyles(el, styles) {
+  Object.entries(styles).forEach(([key, value]) => {
+    el.style[key] = value;
+  });
+  return el;
+}
+
+function createEl(tag, options = {}) {
+  const el = document.createElement(tag);
+  if (options.className) el.className = options.className;
+  if (options.text !== undefined) el.textContent = options.text;
+  if (options.styles) setStyles(el, options.styles);
+  return el;
+}
+
+function appendField(parent, label, value) {
+  const field = createEl('div');
+  field.appendChild(createEl('div', {
+    text: label,
+    styles: {
+      fontSize: '0.75rem',
+      color: 'var(--text-muted)',
+      marginBottom: '4px'
+    }
+  }));
+  field.appendChild(createEl('div', {
+    text: value ?? '-',
+    styles: { fontWeight: '600' }
+  }));
+  parent.appendChild(field);
+}
+
+function renderShipmentNotFound(result, id) {
+  result.replaceChildren();
+  const card = createEl('div', {
+    className: 'card',
+    styles: { textAlign: 'center', padding: '40px' }
+  });
+  card.appendChild(createEl('div', {
+    text: 'Search',
+    styles: { fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '12px' }
+  }));
+  card.appendChild(createEl('div', {
+    text: 'Shipment Not Found',
+    styles: { fontWeight: '700', marginBottom: '8px' }
+  }));
+  const message = createEl('div', {
+    styles: { color: 'var(--text-muted)' }
+  });
+  message.append('No shipment found for ');
+  message.appendChild(createEl('strong', { text: id }));
+  message.append('. Please check your tracking number.');
+  card.appendChild(message);
+  result.appendChild(card);
+}
+
+function renderTrackingError(result, data = null, status = null) {
+  const message = data?.code === 'TRACKING_CONFIG_ERROR'
+    ? 'Tracking service configuration issue. Please contact Ambara support.'
+    : data?.code === 'TRACKING_UPSTREAM_ERROR'
+      ? 'Tracking service is temporarily unavailable. Please try again later.'
+      : status
+        ? 'Tracking lookup failed. Please try again later.'
+        : 'Connection error. Please try again.';
+
+  result.replaceChildren();
+  result.appendChild(createEl('div', {
+    className: 'card',
+    text: message,
+    styles: { textAlign: 'center', padding: '40px', color: 'var(--red)' }
+  }));
 }
 
 function renderTrackingResult(data) {
   const { shipment, events } = data;
-  const statusColors = { pending: '--yellow', in_transit: '--blue-accent', delivered: '--green', delayed: '--red' };
+  const statusColors = {
+    pending: '--yellow',
+    processed: '--blue-accent',
+    in_transit: '--blue-accent',
+    arrived_destination: '--blue-accent',
+    out_for_delivery: '--blue-accent',
+    delivered: '--green',
+    exception: '--red',
+    delayed: '--red',
+    cancelled: '--red'
+  };
   const color = statusColors[shipment.status] || '--text-muted';
-  
-  const eventsHtml = (events || []).map((e, i) => `
-    <div style="display:flex;gap:16px;padding:16px 0;border-bottom:1px solid var(--border)">
-      <div style="width:10px;height:10px;border-radius:50%;background:${i===0?'var(--blue)':'var(--border)'};margin-top:6px;flex-shrink:0"></div>
-      <div>
-        <div style="font-weight:600;font-size:0.9375rem">${e.label}</div>
-        <div style="font-size:0.8125rem;color:var(--text-muted);margin-top:4px">${e.location || ''} · ${formatDate(e.event_time)}</div>
-      </div>
-    </div>`).join('');
 
-  document.getElementById('tracking-result').innerHTML = `
-    <div class="card" style="margin-bottom:20px">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;margin-bottom:24px">
-        <div>
-          <div style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Tracking Number</div>
-          <div style="font-family:var(--font-head);font-size:1.5rem;font-weight:900;letter-spacing:-0.02em">${shipment.tracking_number}</div>
-        </div>
-        <span class="badge" style="background:rgba(var(${color}),0.1);color:var(${color});border-color:rgba(var(${color}),0.3)">${shipment.status?.replace('_',' ').toUpperCase()}</span>
-      </div>
-      <div class="grid-2" style="gap:16px">
-        <div><div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">FROM</div><div style="font-weight:600">${shipment.origin}</div></div>
-        <div><div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">TO</div><div style="font-weight:600">${shipment.destination}</div></div>
-        <div><div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">WEIGHT</div><div style="font-weight:600">${shipment.weight_kg} kg</div></div>
-        <div><div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">PIECES</div><div style="font-weight:600">${shipment.total_pcs} pcs</div></div>
-      </div>
-    </div>
-    <div class="card">
-      <div style="font-family:var(--font-head);font-weight:800;margin-bottom:4px">Tracking History</div>
-      ${eventsHtml || '<div style="color:var(--text-muted);padding:20px 0">No events recorded yet.</div>'}
-    </div>`;
+  const result = document.getElementById('tracking-result');
+  result.replaceChildren();
+
+  const summaryCard = createEl('div', {
+    className: 'card',
+    styles: { marginBottom: '20px' }
+  });
+  const header = createEl('div', {
+    styles: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      flexWrap: 'wrap',
+      gap: '16px',
+      marginBottom: '24px'
+    }
+  });
+  const numberBlock = createEl('div');
+  numberBlock.appendChild(createEl('div', {
+    text: 'Tracking Number',
+    styles: {
+      fontSize: '0.75rem',
+      color: 'var(--text-muted)',
+      textTransform: 'uppercase',
+      letterSpacing: '0.1em',
+      marginBottom: '6px'
+    }
+  }));
+  numberBlock.appendChild(createEl('div', {
+    text: shipment.tracking_number ?? '-',
+    styles: {
+      fontFamily: 'var(--font-head)',
+      fontSize: '1.5rem',
+      fontWeight: '900',
+      letterSpacing: '-0.02em'
+    }
+  }));
+  const badge = createEl('span', {
+    className: 'badge',
+    text: shipment.status ? shipment.status.replace('_', ' ').toUpperCase() : 'UNKNOWN',
+    styles: {
+      background: `rgba(var(${color}),0.1)`,
+      color: `var(${color})`,
+      borderColor: `rgba(var(${color}),0.3)`
+    }
+  });
+  header.append(numberBlock, badge);
+  summaryCard.appendChild(header);
+
+  const grid = createEl('div', {
+    className: 'grid-2',
+    styles: { gap: '16px' }
+  });
+  appendField(grid, 'FROM', shipment.origin);
+  appendField(grid, 'TO', shipment.destination);
+  appendField(grid, 'WEIGHT', shipment.weight_kg == null ? '-' : `${shipment.weight_kg} kg`);
+  appendField(grid, 'PIECES', shipment.total_pcs == null ? '-' : `${shipment.total_pcs} pcs`);
+  summaryCard.appendChild(grid);
+
+  const historyCard = createEl('div', { className: 'card' });
+  historyCard.appendChild(createEl('div', {
+    text: 'Tracking History',
+    styles: {
+      fontFamily: 'var(--font-head)',
+      fontWeight: '800',
+      marginBottom: '4px'
+    }
+  }));
+
+  if (events && events.length) {
+    events.forEach((event, index) => {
+      const item = createEl('div', {
+        styles: {
+          display: 'flex',
+          gap: '16px',
+          padding: '16px 0',
+          borderBottom: '1px solid var(--border)'
+        }
+      });
+      item.appendChild(createEl('div', {
+        styles: {
+          width: '10px',
+          height: '10px',
+          borderRadius: '50%',
+          background: index === events.length - 1 ? 'var(--blue)' : 'var(--border)',
+          marginTop: '6px',
+          flexShrink: '0'
+        }
+      }));
+      const content = createEl('div');
+      content.appendChild(createEl('div', {
+        text: event.label ?? event.status ?? 'Tracking update',
+        styles: { fontWeight: '600', fontSize: '0.9375rem' }
+      }));
+      content.appendChild(createEl('div', {
+        text: [event.location, event.event_time ? formatDate(event.event_time) : null]
+          .filter(Boolean)
+          .join(' · '),
+        styles: {
+          fontSize: '0.8125rem',
+          color: 'var(--text-muted)',
+          marginTop: '4px'
+        }
+      }));
+      if (event.description) {
+        content.appendChild(createEl('div', {
+          text: event.description,
+          styles: {
+            fontSize: '0.8125rem',
+            color: 'var(--text-muted)',
+            marginTop: '4px'
+          }
+        }));
+      }
+      item.appendChild(content);
+      historyCard.appendChild(item);
+    });
+  } else {
+    historyCard.appendChild(createEl('div', {
+      text: 'Shipment found. No public milestones recorded yet.',
+      styles: { color: 'var(--text-muted)', padding: '20px 0' }
+    }));
+  }
+
+  result.append(summaryCard, historyCard);
 }
 
 // Init on DOM ready

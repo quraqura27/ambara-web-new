@@ -195,6 +195,19 @@ function processReadyShipmentsWithoutLock_(sheet) {
       }
 
       writeUpdatesToRow_(sheet, rowNumber, context.headerMap, result.updates);
+      if (typeof syncGeneratedShipmentRowAfterCreate_ === "function") {
+        try {
+          syncGeneratedShipmentRowAfterCreate_(
+            sheet,
+            rowNumber,
+            context,
+            Object.assign({}, rowObject, result.updates),
+            now,
+          );
+        } catch (error) {
+          console.error("Shipment database sync hook failed", error);
+        }
+      }
       addTrackingNumber_(existingNumbers, result.trackingNumber);
       summary.created += 1;
       if (eventResult.appended) {
@@ -274,6 +287,19 @@ function processShipmentRowWithoutLock_(sheet, rowNumber) {
   }
 
   writeUpdatesToRow_(sheet, rowNumber, context.headerMap, result.updates);
+  if (result.generated && typeof syncGeneratedShipmentRowAfterCreate_ === "function") {
+    try {
+      syncGeneratedShipmentRowAfterCreate_(
+        sheet,
+        rowNumber,
+        context,
+        Object.assign({}, rowObject, result.updates),
+        now,
+      );
+    } catch (error) {
+      console.error("Shipment database sync hook failed", error);
+    }
+  }
   return result;
 }
 

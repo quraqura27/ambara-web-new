@@ -6,6 +6,7 @@ const vm = require("node:vm");
 
 const scriptPaths = [
   path.resolve(__dirname, "../Code.gs"),
+  path.resolve(__dirname, "../DatabaseSync.gs"),
   path.resolve(__dirname, "../TrackingMilestones.gs"),
 ];
 const sandbox = {
@@ -406,6 +407,112 @@ test("looks up columns by header name", () => {
   assert.equal(map.internal_tracking_no, 2);
   assert.equal(row.mawb, "999-00000000");
   assert.equal(row.ready_to_generate, true);
+});
+
+test("database sync payload is allowlisted and includes CN address fields", () => {
+  const payload = core.buildShipmentDatabaseSyncPayload_(
+    validRow({
+      internal_tracking_no: "AA26-TEST-0001",
+      shipper_name: "Private shipper",
+      shipper_address: "Private shipper address",
+      shipper_phone: "+62 811-0000-0000",
+      consignee_name: "Private consignee",
+      consignee_address: "Private consignee address",
+      consignee_phone: "+65 8000 0000",
+      internal_notes: "Private notes",
+      db_sync_status: "ERROR",
+      db_sync_error: "Old error",
+    }),
+    core.SHIPMENT_DATABASE_SYNC_CONFIG,
+  );
+
+  assert.equal(payload.internal_tracking_no, "AA26-TEST-0001");
+  assert.equal(payload.shipper_address, "Private shipper address");
+  assert.equal(payload.shipper_phone, "+62 811-0000-0000");
+  assert.equal(payload.consignee_address, "Private consignee address");
+  assert.equal(payload.internal_notes, undefined);
+  assert.equal(payload.db_sync_status, undefined);
+  assert.equal(payload.db_sync_error, undefined);
+});
+
+test("database sync skips rows that are already synced", () => {
+  const decision = core.shouldSyncShipmentDatabaseRow_(
+    validRow({
+      internal_tracking_no: "AA26-TEST-0001",
+      generation_status: "CREATED",
+      db_sync_status: "SYNCED",
+    }),
+    core.SHIPMENT_DATABASE_SYNC_CONFIG,
+  );
+
+  assert.equal(decision.shouldSync, false);
+  assert.equal(decision.reason, "already_synced");
+});
+
+test("database sync writes success status after accepted endpoint response", () => {
+  const now = new Date("2026-06-05T03:00:00.000Z");
+  let request = null;
+  const result = core.syncShipmentRowObjectToDatabase_(
+    validRow({
+      internal_tracking_no: "AA26-TEST-0001",
+      generation_status: "CREATED",
+      shipper_address: "Private shipper address",
+      shipper_phone: "+62 811-0000-0000",
+      consignee_address: "Private consignee address",
+    }),
+    "https://preview.example.com/api/internal/sync-shipment",
+    "test-secret",
+    (endpoint, options) => {
+      request = { endpoint, options };
+      return {
+        getResponseCode: () => 200,
+        getContentText: () =>
+          JSON.stringify({
+            success: true,
+            result: "created",
+            tracking_number: "AA26-TEST-0001",
+          }),
+      };
+    },
+    now,
+    core.SHIPMENT_DATABASE_SYNC_CONFIG,
+  );
+
+  assert.equal(result.ok, true);
+  assert.equal(request.endpoint, "https://preview.example.com/api/internal/sync-shipment");
+  assert.equal(request.options.headers.Authorization, "Bearer test-secret");
+  assert.equal(JSON.parse(request.options.payload).shipper_phone, "+62 811-0000-0000");
+  assert.equal(result.updates.db_sync_status, "SYNCED");
+  assert.equal(result.updates.db_synced_at, now);
+  assert.equal(result.updates.db_sync_error, "");
+});
+
+test("database sync writes structured endpoint errors to Sheet status fields", () => {
+  const result = core.syncShipmentRowObjectToDatabase_(
+    validRow({
+      internal_tracking_no: "AA26-TEST-0001",
+      generation_status: "CREATED",
+    }),
+    "https://preview.example.com/api/internal/sync-shipment",
+    "test-secret",
+    () => ({
+      getResponseCode: () => 400,
+      getContentText: () =>
+        JSON.stringify({
+          success: false,
+          error: {
+            code: "SYNC_INVALID_PAYLOAD",
+            message: "Invalid shipment status",
+          },
+        }),
+    }),
+    new Date("2026-06-05T03:00:00.000Z"),
+    core.SHIPMENT_DATABASE_SYNC_CONFIG,
+  );
+
+  assert.equal(result.ok, false);
+  assert.equal(result.updates.db_sync_status, "ERROR");
+  assert.match(result.updates.db_sync_error, /SYNC_INVALID_PAYLOAD: Invalid shipment status/);
 });
 
 test("appends the initial tracking event exactly once", () => {

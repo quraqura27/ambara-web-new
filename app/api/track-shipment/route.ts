@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
 
     if (!result) {
       return NextResponse.json(
-        { error: "Shipment not found" },
+        { error: "Shipment not found", code: "SHIPMENT_NOT_FOUND" },
         { status: 404, headers: noStoreHeaders },
       );
     }
@@ -57,7 +57,12 @@ export async function GET(request: NextRequest) {
     );
 
     return NextResponse.json(
-      { error: "Internal server error" },
+      {
+        error: isConfigError
+          ? "Tracking service is not configured"
+          : "Tracking service is temporarily unavailable",
+        code: isConfigError ? "TRACKING_CONFIG_ERROR" : "TRACKING_UPSTREAM_ERROR",
+      },
       { status: isUpstreamError ? 502 : 500, headers: noStoreHeaders },
     );
   }
