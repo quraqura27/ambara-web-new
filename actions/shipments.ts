@@ -145,7 +145,13 @@ export async function getShipmentByTracking(trackingNumber: string) {
   const [shipment] = await db
     .select()
     .from(shipments)
-    .where(eq(shipments.trackingNumber, normalizedTrackingNumber));
+    .where(
+      or(
+        eq(shipments.trackingNumber, normalizedTrackingNumber),
+        eq(shipments.internalTrackingNo, normalizedTrackingNumber),
+      ),
+    )
+    .limit(1);
 
   if (!shipment) {
     const liveData = await trackingProvider.getTrackingInfo(normalizedTrackingNumber);
@@ -319,6 +325,7 @@ export async function getShipments(search?: string) {
   const selectedFields = {
     id: shipments.id,
     trackingNumber: shipments.trackingNumber,
+    internalTrackingNo: shipments.internalTrackingNo,
     title: shipments.title,
     origin: shipments.origin,
     destination: shipments.destination,
@@ -345,6 +352,7 @@ export async function getShipments(search?: string) {
     .where(
       or(
         ilike(shipments.trackingNumber, `%${trimmedSearch}%`),
+        ilike(shipments.internalTrackingNo, `%${trimmedSearch}%`),
         ilike(shipments.title, `%${trimmedSearch}%`),
         ilike(shipments.origin, `%${trimmedSearch}%`),
         ilike(shipments.destination, `%${trimmedSearch}%`),
@@ -448,4 +456,3 @@ export async function getCustomersForSelect() {
     .from(customers)
     .orderBy(customers.fullName);
 }
-

@@ -1,8 +1,10 @@
-import { pgTable, text, serial, timestamp, uuid, integer, numeric, date, boolean, bigint, char } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
+import { pgTable, text, serial, timestamp, uuid, integer, numeric, date, boolean, bigint, char, index, uniqueIndex } from 'drizzle-orm/pg-core';
 
 export const shipments = pgTable('shipments', {
   id: serial('id').primaryKey(),
-  trackingNumber: text('tracking_number').notNull(), // Legacy tracking / MAWB
+  trackingNumber: text('tracking_number').notNull(),
+  mawb: text('mawb'),
   title: text('title').notNull(),
   internalTrackingNo: text('internal_tracking_no'), // AA[YY][CC][8digits][SVC]
   customerId: integer('customer_id'),
@@ -12,6 +14,7 @@ export const shipments = pgTable('shipments', {
   serviceType: text('service_type'), // PP, PD, DP, DD
   shipperName: text('shipper_name'),
   shipperAddress: text('shipper_address'),
+  shipperPhone: text('shipper_phone'),
   consigneeName: text('consignee_name'),
   consigneeAddress: text('consignee_address'),
   consigneePhone: text('consignee_phone'),
@@ -32,7 +35,14 @@ export const shipments = pgTable('shipments', {
   createdBy: text('created_by'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
-});
+}, (table) => [
+  index('idx_shipments_mawb')
+    .on(table.mawb)
+    .where(sql`${table.mawb} is not null and btrim(${table.mawb}) <> ''`),
+  uniqueIndex('shipments_internal_tracking_no_unique_idx')
+    .on(table.internalTrackingNo)
+    .where(sql`${table.internalTrackingNo} is not null and btrim(${table.internalTrackingNo}) <> ''`),
+]);
 
 export const staffAccounts = pgTable('staff_accounts', {
   id: serial('id').primaryKey(),

@@ -1,14 +1,18 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import publicTrackingPayload from "./public-tracking-payload";
+import publicTrackingPayload from "./public-tracking-payload.ts";
 
 const { PublicTrackingPayloadError, sanitizeTrackingPayload } = publicTrackingPayload;
 
 const forbiddenKeys = [
   "customer_name",
+  "mawb",
   "shipper_name",
+  "shipper_address",
+  "shipper_phone",
   "consignee_name",
+  "consignee_address",
   "consignee_phone",
   "internal_notes",
   "documents",
@@ -43,6 +47,10 @@ test("sanitizes payload and sorts events chronologically", () => {
       origin: "Jakarta, Indonesia",
       destination: "Sorong, ID",
       customer_name: "Private customer",
+      mawb: "999-00000000",
+      shipper_address: "Private shipper address",
+      shipper_phone: "+62 811-0000-0000",
+      consignee_address: "Private consignee address",
       generation_status: "CREATED",
     },
     events: [
