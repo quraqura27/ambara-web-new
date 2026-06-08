@@ -99,8 +99,11 @@ CN-ready fields supported by the sync payload:
 - `shipper_address`
 - `shipper_phone`
 - `consignee_address`
+- `consignee_phone`
 
 The automatic post-generation hook only writes sync status if the three `db_sync_*` columns exist. If those columns are absent, tracking-number generation continues without attempting database sync.
+
+For staff-facing Consignment Note label steps, see `CN_LABEL_STAFF_WORKFLOW.md`.
 
 Manual recovery:
 
@@ -112,6 +115,8 @@ Manual recovery:
    - `db_synced_at` populated
    - `db_sync_error` blank
 5. Failed rows show `db_sync_status` = `ERROR` and a truncated diagnostic in `db_sync_error`. Fix the cause and rerun the manual recovery function.
+
+Rows with `db_sync_status` already set to `SYNCED` are skipped by `syncGeneratedShipmentsToDatabase()`. To re-sync an already generated row after editing address or phone fields, clear `db_sync_status` or set it to `PENDING`, clear `db_sync_error`, optionally clear `db_synced_at`, and then run `syncGeneratedShipmentsToDatabase()`.
 
 Production rollout steps for sync:
 
