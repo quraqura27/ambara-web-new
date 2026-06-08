@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 import {
   buildBulkConsignmentNotePrintModel,
@@ -8,6 +11,12 @@ import {
   expandShipmentToConsignmentNoteLabels,
   normalizeConsignmentNoteIds,
 } from "./label.ts";
+
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const printCss = readFileSync(
+  resolve(repoRoot, "components/consignment-notes/consignment-note-print.module.css"),
+  "utf8",
+);
 
 function shipment(overrides = {}) {
   return {
@@ -135,4 +144,27 @@ test("excludes MAWB, status, cargo, weight, notes, sync, and generation fields",
     "readyToGenerate",
     "trackingCreatedAt",
   ].forEach((key) => assert.equal(keys.has(key), false, key));
+});
+
+test("print stylesheet fixes the physical 150mm x 100mm landscape label contract", () => {
+  assert.match(printCss, /@page\s*{[\s\S]*size:\s*150mm 100mm;[\s\S]*margin:\s*0;[\s\S]*}/);
+  assert.match(printCss, /\.labelPage\s*{[\s\S]*width:\s*150mm;[\s\S]*height:\s*100mm;/);
+  assert.match(printCss, /box-sizing:\s*border-box;/);
+  assert.match(printCss, /overflow:\s*hidden;/);
+  assert.match(printCss, /page-break-after:\s*always;/);
+  assert.match(printCss, /break-after:\s*page;/);
+  assert.match(printCss, /@media print\s*{[\s\S]*:global\(html\),[\s\S]*:global\(body\)[\s\S]*margin:\s*0 !important;[\s\S]*padding:\s*0 !important;/);
+  assert.match(printCss, /@media print\s*{[\s\S]*\.toolbar,[\s\S]*\.missingPanel\s*{[\s\S]*display:\s*none !important;/);
+  assert.doesNotMatch(printCss, /(^|[;{\s])zoom\s*:/);
+  assert.doesNotMatch(printCss, /(^|[;{\s])transform\s*:/);
+  assert.doesNotMatch(printCss, /\b\d+(?:\.\d+)?v[hw]\b/);
+});
+
+test("print stylesheet clamps long fields inside fixed label sections", () => {
+  assert.match(printCss, /\.fieldValue\s*{[\s\S]*-webkit-line-clamp:\s*2;/);
+  assert.match(printCss, /\.partyName\s*{[\s\S]*-webkit-line-clamp:\s*1;/);
+  assert.match(printCss, /\.partyDetail\s*{[\s\S]*-webkit-line-clamp:\s*2;/);
+  assert.match(printCss, /\.terms\s*{[\s\S]*-webkit-line-clamp:\s*2;/);
+  assert.match(printCss, /\.barcode\s*{[\s\S]*height:\s*10\.5mm;/);
+  assert.match(printCss, /\.qrGraphic,[\s\S]*\.qrGraphic svg\s*{[\s\S]*width:\s*16\.5mm;[\s\S]*height:\s*16\.5mm;/);
 });

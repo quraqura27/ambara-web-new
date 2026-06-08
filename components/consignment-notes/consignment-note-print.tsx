@@ -25,13 +25,15 @@ function valueOrDash(value: string | number | null | undefined) {
 
 function LabelField({
   label,
+  variant,
   value,
 }: {
   label: string;
+  variant?: "compact";
   value: string | number | null | undefined;
 }) {
   return (
-    <div className={styles.field}>
+    <div className={variant === "compact" ? `${styles.field} ${styles.compactField}` : styles.field}>
       <div className={styles.fieldLabel}>{label}</div>
       <div className={styles.fieldValue}>{valueOrDash(value)}</div>
     </div>
@@ -107,7 +109,7 @@ function ConsignmentNoteLabel({ label }: { label: ConsignmentNotePieceViewModel 
         </div>
 
         <div className={styles.qrBox}>
-          <SvgBlock className="" svg={qrSvg} />
+          <SvgBlock className={styles.qrGraphic} svg={qrSvg} />
           <div className={styles.qrLabel}>Track / Lacak</div>
         </div>
       </section>
@@ -137,15 +139,13 @@ function ConsignmentNoteLabel({ label }: { label: ConsignmentNotePieceViewModel 
       </section>
 
       <section className={styles.goodsGrid}>
-        <LabelField label="Goods / Barang" value={label.goodsDescription} />
-        <LabelField label="Commodity / Komoditas" value={label.commodity} />
-        <LabelField label="Chg Wt / Berat Tagih" value={label.chargeableWeight ? `${label.chargeableWeight} kg` : null} />
-      </section>
-
-      <section className={styles.goodsGrid}>
-        <LabelField label="Created / Dibuat" value={label.createdDate} />
-        <LabelField label="Route / Rute" value={`${valueOrDash(label.origin)} -> ${valueOrDash(label.destination)}`} />
-        <LabelField label="Base CN" value={label.trackingNo} />
+        <LabelField label="Goods / Barang" value={label.goodsDescription} variant="compact" />
+        <LabelField label="Commodity / Komoditas" value={label.commodity} variant="compact" />
+        <LabelField
+          label="Chg Wt / Berat Tagih"
+          value={label.chargeableWeight ? `${label.chargeableWeight} kg` : null}
+          variant="compact"
+        />
       </section>
 
       <p className={styles.terms}>{CONSIGNMENT_NOTE_TERMS}</p>
@@ -165,6 +165,10 @@ export function ConsignmentNotePrintDocument({
           <h1>{title}</h1>
           <p>
             {labels.length} label{labels.length === 1 ? "" : "s"} ready for 100 x 150 mm print.
+          </p>
+          <p className={styles.printSettings}>
+            Paper 100 x 150 mm / 4 x 6 in, Landscape, scale 100%, margins none,
+            headers and footers off, fit to page off.
           </p>
         </div>
         <PrintButton />
