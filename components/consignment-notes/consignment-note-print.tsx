@@ -12,9 +12,14 @@ import {
 import styles from "./consignment-note-print.module.css";
 import { PrintButton } from "./print-button";
 
+export type ConsignmentNotePrintMode = "normal" | "rotated";
+
 type ConsignmentNotePrintDocumentProps = {
   labels: ConsignmentNotePieceViewModel[];
   missingTrackingNos?: string[];
+  normalModeHref?: string;
+  printMode?: ConsignmentNotePrintMode;
+  rotatedModeHref?: string;
   title: string;
 };
 
@@ -69,13 +74,13 @@ function SvgBlock({ className, svg }: { className: string; svg: string }) {
   return <div className={className} dangerouslySetInnerHTML={{ __html: svg }} />;
 }
 
-function ConsignmentNoteLabel({ label }: { label: ConsignmentNotePieceViewModel }) {
+function ConsignmentNoteLabel({ label, printMode }: { label: ConsignmentNotePieceViewModel; printMode: ConsignmentNotePrintMode }) {
   const barcodeSvg = generateConsignmentNoteBarcodeSvg(label.barcodeContent);
   const qrSvg = generateConsignmentNoteQrSvg(label.publicTrackingUrl);
   const shipperTitleId = `shipper-${label.trackingNo}-${label.pieceNo}`;
   const consigneeTitleId = `consignee-${label.trackingNo}-${label.pieceNo}`;
 
-  return (
+  const labelContent = (
     <article aria-label={`Consignment note ${label.trackingNo} piece ${label.pieceSequence}`} className={styles.labelPage}>
       <header className={styles.labelHeader}>
         <div className={styles.brandBlock}>
@@ -151,15 +156,29 @@ function ConsignmentNoteLabel({ label }: { label: ConsignmentNotePieceViewModel 
       <p className={styles.terms}>{CONSIGNMENT_NOTE_TERMS}</p>
     </article>
   );
+
+  if (printMode === "rotated") {
+    return <div className={styles.labelFrame}>{labelContent}</div>;
+  }
+
+  return labelContent;
 }
 
 export function ConsignmentNotePrintDocument({
   labels,
   missingTrackingNos = [],
+  normalModeHref,
+  printMode = "normal",
+  rotatedModeHref,
   title,
 }: ConsignmentNotePrintDocumentProps) {
+  const isRotatedMode = printMode === "rotated";
+  const shellClassName = isRotatedMode
+    ? `${styles.printShell} ${styles.rotatedPrintShell}`
+    : styles.printShell;
+
   return (
-    <div className={styles.printShell}>
+    <div className={shellClassName}>
       <div className={styles.toolbar}>
         <div className={styles.toolbarTitle}>
           <h1>{title}</h1>
@@ -167,9 +186,30 @@ export function ConsignmentNotePrintDocument({
             {labels.length} label{labels.length === 1 ? "" : "s"} ready for 100 x 150 mm print.
           </p>
           <p className={styles.printSettings}>
-            Paper 100 x 150 mm / 4 x 6 in, Landscape, scale 100%, margins none,
-            headers and footers off, fit to page off.
+            {isRotatedMode
+              ? "Rotated thermal mode: Paper 100 x 150 mm / 4 x 6 in, Portrait, scale 100%, margins none, headers and footers off, fit to page off."
+              : "Normal mode: Paper 100 x 150 mm / 4 x 6 in, Landscape, scale 100%, margins none, headers and footers off, fit to page off."}
           </p>
+          {(normalModeHref || rotatedModeHref) ? (
+            <div className={styles.modeLinks}>
+              {normalModeHref ? (
+                <a
+                  className={isRotatedMode ? styles.modeLink : `${styles.modeLink} ${styles.activeModeLink}`}
+                  href={normalModeHref}
+                >
+                  Normal / Landscape
+                </a>
+              ) : null}
+              {rotatedModeHref ? (
+                <a
+                  className={isRotatedMode ? `${styles.modeLink} ${styles.activeModeLink}` : styles.modeLink}
+                  href={rotatedModeHref}
+                >
+                  Rotated / Portrait
+                </a>
+              ) : null}
+            </div>
+          ) : null}
         </div>
         <PrintButton />
       </div>
@@ -186,6 +226,7 @@ export function ConsignmentNotePrintDocument({
             <ConsignmentNoteLabel
               key={`${label.trackingNo}-${label.pieceNoPadded}-${label.totalPcsPadded}`}
               label={label}
+              printMode={printMode}
             />
           ))}
         </div>
