@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { ConsignmentNotePrintDocument } from "@/components/consignment-notes/consignment-note-print";
+import {
+  ConsignmentNotePrintDocument,
+  type ConsignmentNotePrintMode,
+} from "@/components/consignment-notes/consignment-note-print";
 import { expandShipmentToConsignmentNoteLabels } from "@/lib/consignment-notes/label";
 
 export const dynamic = "force-dynamic";
@@ -29,15 +32,32 @@ const fixtureLabels = expandShipmentToConsignmentNoteLabels({
   totalPcs: 5,
 });
 
-export default function ConsignmentNotePrintFixturePage() {
+type ConsignmentNotePrintFixturePageProps = {
+  searchParams?: Promise<{ printMode?: string | string[] }>;
+};
+
+function resolvePrintMode(printMode: string | string[] | undefined): ConsignmentNotePrintMode {
+  const value = Array.isArray(printMode) ? printMode[0] : printMode;
+  return value === "rotated" ? "rotated" : "normal";
+}
+
+export default async function ConsignmentNotePrintFixturePage({
+  searchParams,
+}: ConsignmentNotePrintFixturePageProps) {
   // Temporary Preview/dev-only physical print fixture. Remove before Production merge/deploy.
   if (process.env.VERCEL_ENV === "production") {
     notFound();
   }
 
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const printMode = resolvePrintMode(resolvedSearchParams?.printMode);
+
   return (
     <ConsignmentNotePrintDocument
       labels={fixtureLabels}
+      normalModeHref="/dev/cn-label-print-fixture"
+      printMode={printMode}
+      rotatedModeHref="/dev/cn-label-print-fixture?printMode=rotated"
       title="CN Label Print Fixture"
     />
   );
