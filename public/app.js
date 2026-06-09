@@ -92,6 +92,25 @@ function setActiveNav() {
   });
 }
 
+// Homepage stats remark
+function initStatsRemark() {
+  const statsGrid = document.querySelector('.grid-4');
+  if (!statsGrid || document.querySelector('.stats-remark')) return;
+
+  const remark = createEl('div', {
+    className: 'stats-remark animate-on-scroll',
+    text: 'Based on 2026 monthly average performance dataset.',
+    styles: {
+      marginTop: '28px',
+      textAlign: 'center',
+      fontSize: '0.8125rem',
+      color: 'var(--text-muted)'
+    }
+  });
+
+  statsGrid.insertAdjacentElement('afterend', remark);
+}
+
 // Animate on scroll
 function initScrollAnimations() {
   const observer = new IntersectionObserver((entries) => {
@@ -362,6 +381,7 @@ document.addEventListener('DOMContentLoaded', () => {
   LangManager.init();
   initNavbar();
   initMobileMenu();
+  initStatsRemark();
   setActiveNav();
   initScrollAnimations();
 
