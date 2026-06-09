@@ -19,9 +19,117 @@ It is prepared for local review only. Do not deploy it or overwrite the currentl
 - Provides `processReadyShipments()` for rows that were already checked before the trigger existed.
 - Provides `backfillMissingInitialTrackingEvents()` for targeted recovery when an already generated tracking number is missing its initial public event.
 - Provides `syncGeneratedShipmentsToDatabase()` for source-controlled Sheet-to-database sync recovery after the web endpoint is reviewed and configured.
+- Adds a `Quick_Entry` workflow for staff to create, generate, sync, and print new shipments from a simplified intake tab.
 - Uses `handleShipmentReadyEdit(e)` as the intended production edit-trigger entrypoint.
 
 Bulk milestone updates are processed through `Bulk_Status_Updates` as an append-only event workflow.
+
+## Quick Entry Workflow
+
+`Quick_Entry` is the recommended fast manual intake workflow for staff. It avoids making staff fill the full `Shipments` database row directly.
+
+Staff fills only operational input fields, sets `entry_status` to `READY`, and runs:
+
+```text
+Ambara Shipment -> Process Quick Entry Rows
+```
+
+The processor will:
+
+1. Validate required human-input fields.
+2. Append a normalized row to `Shipments`.
+3. Generate `internal_tracking_no`.
+4. Append the initial public tracking event.
+5. Trigger Sheet-to-database sync when sync properties and columns exist.
+6. Write the generated CN number, print link, public tracking link, sync status, and any error back to `Quick_Entry`.
+
+### Quick Entry Setup
+
+Run once after installing the script:
+
+```javascript
+setupQuickEntrySheet();
+```
+
+Or use the custom menu:
+
+```text
+Ambara Shipment -> Setup Quick Entry Sheet
+```
+
+This creates or repairs the `Quick_Entry` tab headers.
+
+### Quick Entry Columns
+
+System/result fields:
+
+- `entry_status`
+- `created_cn`
+- `print_link`
+- `tracking_link`
+- `sync_status`
+- `error`
+
+Staff input fields:
+
+- `customer`
+- `template`
+- `mawb`
+- `service_type`
+- `origin`
+- `origin_iata`
+- `destination`
+- `destination_iata`
+- `shipper_name`
+- `shipper_phone`
+- `shipper_address`
+- `consignee_name`
+- `consignee_phone`
+- `consignee_address`
+- `goods_description`
+- `commodity`
+- `total_pcs`
+- `weight_kg`
+- `chargeable_weight`
+
+Required before processing:
+
+- `customer`
+- `origin`
+- `destination`
+- `shipper_name`
+- `consignee_name`
+- `consignee_phone`
+- `consignee_address`
+- `goods_description`
+- `commodity`
+- `total_pcs`
+- `chargeable_weight`
+
+`weight_kg` defaults to `chargeable_weight` when left blank. `service_type` defaults to `airport_to_airport`. `current_status` is written to `Shipments` as `pending`.
+
+### Quick Entry Statuses
+
+- `DRAFT` - not processed.
+- `READY` - staff wants this row processed.
+- `PROCESSED` - row was appended to `Shipments`, generated, and result links were written.
+- `ERROR` - validation or processing failed; see `error`.
+
+Rerunning the processor skips rows that are not `READY`.
+
+### Print Link Output
+
+After successful processing, staff can click `print_link`. It points to:
+
+```text
+https://www.ambaraartha.com/shipments/<CN>/consignment-note
+```
+
+`tracking_link` points to the public tracking page.
+
+Optional Apps Script property:
+
+- `AMBARA_PORTAL_BASE_URL` - defaults to `https://www.ambaraartha.com` when unset.
 
 ## Why A Ready Row Can Stay Blank
 
@@ -149,16 +257,18 @@ The append path is idempotent. If the same initial event already exists for the 
    - record current triggers from the Apps Script trigger page,
    - do not delete or overwrite the current Web App deployment.
 4. Add `Code.gs` as a new file or merge its contents into the current bound project after checking for naming conflicts.
-5. If using the Apps Script manifest editor, apply `appsscript.json`. It includes the current-spreadsheet scope plus `script.scriptapp`, which is required only for creating or repairing the installable trigger.
-6. Save the project.
-7. Create exactly one installable edit trigger manually, or run `installShipmentGeneratorTrigger()` once:
+5. Add `QuickEntry.gs` for the simplified intake workflow.
+6. If using the Apps Script manifest editor, apply `appsscript.json`. It includes the current-spreadsheet scope plus `script.scriptapp`, which is required only for creating or repairing the installable trigger.
+7. Save the project.
+8. Create exactly one installable edit trigger manually, or run `installShipmentGeneratorTrigger()` once:
    - function: `handleShipmentReadyEdit`,
    - event source: `From spreadsheet`,
    - event type: `On edit`.
-8. `installShipmentGeneratorTrigger()` preserves unrelated triggers, creates the generator trigger if missing, and removes duplicate generator triggers that use the same handler.
-9. Do not add an `onEdit(e)` wrapper for this generator in production. A simple `onEdit(e)` automatic processor must not coexist with the installable trigger, because both can run for the same checkbox edit.
-10. After deployment, manually run `processReadyShipments()` once if any rows were already checked before the trigger existed.
-11. If a shipment was generated before initial-event creation existed, run `backfillMissingInitialTrackingEvents(["AA26-TEST-0001"])` with the appropriate tracking number. This does not alter the shipment row or permanent tracking number.
+9. `installShipmentGeneratorTrigger()` preserves unrelated triggers, creates the generator trigger if missing, and removes duplicate generator triggers that use the same handler.
+10. Do not add an `onEdit(e)` wrapper for this generator in production. A simple `onEdit(e)` automatic processor must not coexist with the installable trigger, because both can run for the same checkbox edit.
+11. After deployment, manually run `setupQuickEntrySheet()` once if using Quick Entry.
+12. After deployment, manually run `processReadyShipments()` once if any rows were already checked before the trigger existed.
+13. If a shipment was generated before initial-event creation existed, run `backfillMissingInitialTrackingEvents(["AA26-TEST-0001"])` with the appropriate tracking number. This does not alter the shipment row or permanent tracking number.
 
 ## Manual Recovery For Already Checked Rows
 
@@ -193,7 +303,7 @@ The checked-in default target list is empty so this package does not carry a pro
 
 Staff should add reviewed customer-visible milestones in `Bulk_Status_Updates`, then use the custom menu:
 
-`Ambara Operations` -> `Process Bulk Tracking Updates`
+`Ambara Shipment` -> `Process Bulk Tracking Updates`
 
 The processor only reads rows where `process_update` is checked. It resolves the value in `internal_tracking_no` against both `Shipments.internal_tracking_no` and `Shipments.mawb`, validates the exact `new_status` / `label` / `description` tuple against `Lists`, appends one public `Tracking_Events` row, updates `Shipments.current_status`, and records `processing_status` plus `processed_at`.
 
@@ -215,61 +325,12 @@ When the current live Apps Script source is available:
 
 1. Preserve any existing `doGet(e)` or public tracking Web App endpoint.
 2. Preserve existing deployment URLs unless a deliberate new deployment version is reviewed and approved.
-3. Add the generator without changing public tracking read behavior.
+3. Add the generator and Quick Entry workflow without changing public tracking read behavior.
 4. Check for naming conflicts before adding this code:
    - `SHIPMENT_GENERATOR_CONFIG`
+   - `QUICK_ENTRY_CONFIG`
    - `handleShipmentReadyEdit`
    - `processReadyShipments`
+   - `processQuickEntryRows`
+   - `setupQuickEntrySheet`
    - helper names ending in `_`
-5. Check trigger conflicts:
-   - do not keep a generator `onEdit(e)` simple trigger,
-   - install only one edit trigger for `handleShipmentReadyEdit`,
-   - confirm no existing trigger already processes `ready_to_generate`.
-6. Check shared constants such as sheet names, header row numbers, and timezone assumptions.
-7. Prefer adding this generator as a separate `.gs` file inside the existing bound Apps Script project if there are no function-name conflicts.
-8. If conflicts exist, rename this generator's helpers before deployment rather than modifying the public tracking endpoint.
-9. The existing public tracking project may already contain an older `appendInitialTrackingEvent_` helper. Keep this generator's `appendInitialTrackingEventForShipment_` path separate unless the older helper is reviewed and updated to validate `Lists` tuples.
-10. Keep `TrackingMilestones.gs` as a separate file unless function-name conflicts are found in the live project.
-
-## Verify Example MAWB `999-00000000`
-
-1. Find the row where `mawb` is `999-00000000`.
-2. Confirm `ready_to_generate` is TRUE and `internal_tracking_no` is blank.
-3. Run `processReadyShipments()`.
-4. Confirm exactly one `internal_tracking_no` was written and matches `AA26-XXXX-XXXX`.
-5. Confirm:
-   - `generation_status` is `CREATED`,
-   - `tracking_created_at` is populated,
-   - `created_at` is populated if it was blank,
-   - `updated_at` is populated,
-   - `ready_to_generate` is FALSE.
-6. Run `processReadyShipments()` again.
-7. Confirm the tracking number did not change and no second number was created.
-8. If you check `ready_to_generate` again on that same row, confirm the tracking number and `CREATED` status stay unchanged.
-
-## Rollback
-
-Before installing, keep a backup of the current bound Apps Script files and trigger list.
-
-To roll back the script:
-
-1. Remove the edit trigger that points to `handleShipmentReadyEdit`, if one was created.
-2. Restore the backed-up Apps Script files.
-3. Save the project.
-4. Do not clear a generated `internal_tracking_no` after it has been shared publicly or operationally.
-5. If rollback is needed before the generated code is used anywhere, manually clear only the cells written by this script on the affected row:
-   - `internal_tracking_no`
-   - `tracking_created_at`
-   - `generation_status`
-   - `created_at`, only if it was blank before generation
-   - `updated_at`, only if you recorded the previous value
-
-## Local Tests
-
-Run the helper tests from the repository root:
-
-```bash
-node --test google-apps-script/shipment-operations/test/core.test.cjs
-```
-
-These tests do not call Google APIs and do not modify the live Sheet.
