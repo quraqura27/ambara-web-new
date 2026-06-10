@@ -9,8 +9,10 @@ AMBARA.getLang = () => {
 AMBARA.getNavbar = (active = '') => {
   const lang = AMBARA.getLang();
   const base = `/${lang}`;
+  const freightForwardingHref = lang === 'id' ? `${base}/services` : `${base}/freight-forwarding-indonesia`;
   const links = [
     { href: `${base}/`, label: { en: 'Home', id: 'Beranda' }, key: 'home' },
+    { href: freightForwardingHref, label: { en: 'Freight Forwarding', id: 'Freight Forwarding' }, key: 'services' },
     { href: `${base}/services`, label: { en: 'Services', id: 'Layanan' }, key: 'services' },
     { href: `${base}/about`, label: { en: 'About', id: 'Tentang' }, key: 'about' },
     { href: `${base}/network`, label: { en: 'Network', id: 'Jaringan' }, key: 'network' },
@@ -65,6 +67,7 @@ AMBARA.getNavbar = (active = '') => {
 AMBARA.getFooter = () => {
   const lang = AMBARA.getLang();
   const base = `/${lang}`;
+  const freightForwardingHref = lang === 'id' ? `${base}/services` : `${base}/freight-forwarding-indonesia`;
   const t = {
     en: { services: 'Services', company: 'Company', support: 'Support', copy: '© 2025–2026 PT Ambara Artha Globaltrans. All rights reserved.' },
     id: { services: 'Layanan', company: 'Perusahaan', support: 'Dukungan', copy: '© 2025–2026 PT Ambara Artha Globaltrans. Hak cipta dilindungi.' }
@@ -88,10 +91,13 @@ AMBARA.getFooter = () => {
         <div>
           <div style="font-weight:700;margin-bottom:20px;font-size:0.875rem;text-transform:uppercase;letter-spacing:0.05em">${tx.services}</div>
           <div style="display:flex;flex-direction:column;gap:12px">
-            <a href="${base}/services" style="font-size:0.875rem;color:var(--text-muted)">Air Freight</a>
-            <a href="${base}/services" style="font-size:0.875rem;color:var(--text-muted)">Customs Clearance</a>
-            <a href="${base}/services" style="font-size:0.875rem;color:var(--text-muted)">Land Transport</a>
-            <a href="${base}/services" style="font-size:0.875rem;color:var(--text-muted)">Cargo Insurance</a>
+            <a href="${freightForwardingHref}" style="font-size:0.875rem;color:var(--text-muted)">Freight Forwarding</a>
+            <a href="${base}/air-freight-to-indonesia" style="font-size:0.875rem;color:var(--text-muted)">Air Freight to Indonesia</a>
+            <a href="${base}/air-freight-from-indonesia" style="font-size:0.875rem;color:var(--text-muted)">Air Freight from Indonesia</a>
+            <a href="${base}/indonesia-customs-clearance" style="font-size:0.875rem;color:var(--text-muted)">Customs Clearance</a>
+            <a href="${base}/undername-import-indonesia" style="font-size:0.875rem;color:var(--text-muted)">Undername Import</a>
+            <a href="${base}/ddp-shipping-indonesia" style="font-size:0.875rem;color:var(--text-muted)">DDP / DDU Shipping</a>
+            <a href="${base}/cgk-air-cargo-agent" style="font-size:0.875rem;color:var(--text-muted)">CGK Air Cargo</a>
           </div>
         </div>
         <div>
