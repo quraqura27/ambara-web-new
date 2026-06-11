@@ -16,7 +16,7 @@ AMBARA.getNavbar = (active = '') => {
     { href: `${base}/services`, label: { en: 'Services', id: 'Layanan' }, key: 'services' },
     { href: `${base}/about`, label: { en: 'About', id: 'Tentang' }, key: 'about' },
     { href: `${base}/network`, label: { en: 'Network', id: 'Jaringan' }, key: 'network' },
-    { href: `${base}/hs-code-checker`, label: { en: 'Free Tools', id: 'Cek Lartas' }, key: 'tools' },
+    { href: `${base}/hs-code-checker`, label: { en: 'HS Code Checker', id: 'Cek Lartas' }, key: 'tools' },
     { href: `${base}/blog`, label: { en: 'Blog', id: 'Blog' }, key: 'blog' },
     { href: `${base}/faq`, label: { en: 'FAQ', id: 'FAQ' }, key: 'faq' },
   ];
