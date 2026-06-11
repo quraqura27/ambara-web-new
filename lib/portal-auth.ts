@@ -3,6 +3,8 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { normalizePortalRole } from "@/lib/portal-roles";
+
 const COOKIE_NAME = "ambara_portal_token";
 
 export type PortalUser = {
@@ -52,7 +54,9 @@ export function createPortalToken(user: PortalUser) {
 
   const now = Math.floor(Date.now() / 1000);
   const header = base64UrlEncode(JSON.stringify({ alg: "HS256", typ: "JWT" }));
-  const payload = base64UrlEncode(JSON.stringify({ ...user, iat: now, exp: now + 60 * 60 * 8 }));
+  const payload = base64UrlEncode(
+    JSON.stringify({ ...user, role: normalizePortalRole(user.role), iat: now, exp: now + 60 * 60 * 8 }),
+  );
   const signature = base64UrlEncode(signInput(`${header}.${payload}`, secret));
 
   return `${header}.${payload}.${signature}`;
@@ -89,7 +93,7 @@ export function verifyPortalToken(token: string): PortalUser | null {
       email: decoded.email,
       id: decoded.id,
       name: decoded.name,
-      role: decoded.role,
+      role: normalizePortalRole(decoded.role),
     };
   } catch {
     return null;
