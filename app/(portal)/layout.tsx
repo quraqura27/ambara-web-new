@@ -1,10 +1,11 @@
 import Link from "next/link";
 import Image from "next/image";
-import { LucideIcon, LayoutDashboard, LogOut, Package, Search, Users } from "lucide-react";
+import { LucideIcon, LayoutDashboard, LogOut, Package, Search, Shield, Users } from "lucide-react";
 
 import { signOut } from "@/actions/auth";
 import { searchShipmentByTracking } from "@/actions/shipments";
 import { requirePortalUser } from "@/lib/portal-auth";
+import { canManageStaffAccounts, normalizePortalRole, portalRoleLabels } from "@/lib/portal-roles";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,8 @@ function NavItem({ href, icon: Icon, label }: NavItemProps) {
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const user = await requirePortalUser();
+  const userRole = normalizePortalRole(user.role);
+  const canManageAccounts = canManageStaffAccounts(user);
 
   return (
     <div className="flex min-h-screen overflow-hidden bg-[#0a0a0f] text-slate-100">
@@ -48,6 +51,9 @@ export default async function PortalLayout({ children }: { children: React.React
           <NavItem href="/dashboard" icon={LayoutDashboard} label="Dashboard" />
           <NavItem href="/customers" icon={Users} label="Customer Directory" />
           <NavItem href="/shipments" icon={Package} label="Shipment Tracking" />
+          {canManageAccounts ? (
+            <NavItem href="/accounts" icon={Shield} label="Staff Accounts" />
+          ) : null}
         </nav>
 
         <div className="mt-auto">
@@ -59,7 +65,9 @@ export default async function PortalLayout({ children }: { children: React.React
               </div>
               <div className="overflow-hidden">
                 <p className="truncate text-sm font-medium">{user.name}</p>
-                <p className="text-[10px] font-bold uppercase text-blue-400">{user.role}</p>
+                <p className="text-[10px] font-bold uppercase text-blue-400">
+                  {portalRoleLabels[userRole]}
+                </p>
               </div>
             </div>
           </div>
