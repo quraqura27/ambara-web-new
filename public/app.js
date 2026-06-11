@@ -1,4 +1,4 @@
-// PT Ambara Artha Globaltrans — Shared JS v2.0
+// PT Ambara Artha Globaltrans — Shared JS v2.3
 
 // Language Management
 const LangManager = {
@@ -129,6 +129,89 @@ function initScrollAnimations() {
     observer.observe(el);
   });
 }
+
+// WhatsApp CTA analytics
+function getWhatsAppServiceCategory() {
+  const bodyCategory = document.body && document.body.getAttribute('data-service-category');
+  if (bodyCategory) return bodyCategory;
+
+  const path = window.location.pathname.replace(/\/$/, '') || '/';
+  const slug = path
+    .replace(/^\/(en|id)\//, '')
+    .replace(/^\//, '')
+    .replace(/\.html$/, '');
+
+  const categories = {
+    '': 'homepage',
+    'en': 'homepage',
+    'id': 'homepage',
+    index: 'homepage',
+    'freight-forwarding-indonesia': 'freight_forwarding',
+    'air-freight-forwarder-indonesia': 'air_freight_forwarder',
+    'indonesia-freight-forwarder-for-overseas-agents': 'overseas_agents',
+    'air-freight-to-indonesia': 'air_import',
+    'air-freight-from-indonesia': 'air_export',
+    'cgk-air-cargo-agent': 'cgk_air_cargo',
+    'dukungan-kargo-udara-cgk': 'cgk_air_cargo',
+    'indonesia-customs-clearance': 'customs_clearance',
+    'regulated-cargo-clearance-indonesia': 'customs_clearance',
+    'bpom-import-clearance-indonesia': 'customs_clearance',
+    'undername-import-indonesia': 'undername_import',
+    'undername-import-service-indonesia': 'undername_import',
+    'dukungan-import-undername-indonesia': 'undername_import',
+    'ddp-shipping-indonesia': 'ddp_shipping',
+    'ddp-shipping-to-indonesia': 'ddp_shipping',
+    'pengiriman-ddp-indonesia': 'ddp_shipping',
+    network: 'network',
+    services: 'services'
+  };
+
+  return categories[slug] || 'general';
+}
+
+function getWhatsAppCtaText(link) {
+  const visibleText = (link.textContent || '').replace(/\s+/g, ' ').trim();
+  return visibleText || link.getAttribute('aria-label') || 'WhatsApp';
+}
+
+function getWhatsAppLinkCategory(link) {
+  const linkCategory = link.getAttribute('data-service-category');
+  const pageCategory = getWhatsAppServiceCategory();
+  if (linkCategory && linkCategory !== 'general') return linkCategory;
+  return pageCategory || linkCategory || 'general';
+}
+
+function trackWhatsAppClick(link) {
+  const payload = {
+    page_path: window.location.pathname,
+    page_title: document.title,
+    cta_location: link.getAttribute('data-cta-location') || 'unknown',
+    service_category: getWhatsAppLinkCategory(link),
+    cta_text: getWhatsAppCtaText(link),
+    destination_url: link.href
+  };
+
+  if (typeof window.gtag === 'function') {
+    window.gtag('event', 'whatsapp_click', payload);
+  }
+
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push({
+    event: 'whatsapp_click',
+    ...payload
+  });
+}
+
+function bindWhatsAppTracking(root = document) {
+  root.querySelectorAll('a[href*="wa.me"], a[href*="api.whatsapp.com"], a[href*="whatsapp"]').forEach(link => {
+    if (link.dataset.whatsappTracked === 'true') return;
+    link.dataset.whatsappTracked = 'true';
+    link.addEventListener('click', () => trackWhatsAppClick(link));
+  });
+}
+
+window.trackWhatsAppClick = trackWhatsAppClick;
+window.bindWhatsAppTracking = bindWhatsAppTracking;
 
 // Tracking form submit
 async function trackShipment(id) {
@@ -384,6 +467,9 @@ document.addEventListener('DOMContentLoaded', () => {
   initStatsRemark();
   setActiveNav();
   initScrollAnimations();
+  bindWhatsAppTracking();
+  window.setTimeout(bindWhatsAppTracking, 250);
+  window.setTimeout(bindWhatsAppTracking, 1000);
 
   // Lang toggle buttons
   document.querySelectorAll('.lang-toggle button').forEach(btn => {
