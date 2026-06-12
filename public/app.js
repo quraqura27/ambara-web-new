@@ -1,4 +1,4 @@
-// PT Ambara Artha Globaltrans — Shared JS v2.3
+// PT Ambara Artha Globaltrans — Shared JS v2.4
 
 // Language Management
 const LangManager = {
@@ -129,6 +129,27 @@ function initScrollAnimations() {
     observer.observe(el);
   });
 }
+
+// Google Analytics 4
+(function () {
+  var measurementId = "G-S3FQR046ZC";
+
+  if (!measurementId || window.__ambaraGa4Loaded) return;
+  window.__ambaraGa4Loaded = true;
+
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = window.gtag || function () {
+    window.dataLayer.push(arguments);
+  };
+
+  var script = document.createElement("script");
+  script.async = true;
+  script.src = "https://www.googletagmanager.com/gtag/js?id=" + encodeURIComponent(measurementId);
+  document.head.appendChild(script);
+
+  window.gtag("js", new Date());
+  window.gtag("config", measurementId);
+})();
 
 // WhatsApp CTA analytics
 function getWhatsAppServiceCategory() {
