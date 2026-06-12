@@ -83,26 +83,23 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/styles.css">
   <style>
-    body { background: #f6fbff; }
+    body { background: var(--bg); }
     .partners-page {
-      --ink: #10233f;
-      --copy: #45566f;
-      --soft: #eef8ff;
-      --soft-aqua: #e8fbf8;
-      --line: rgba(24, 70, 118, 0.12);
-      --navy: #10233f;
-      --aqua: #00b8c7;
-      --blue-soft: #dff1ff;
-      --white-panel: #ffffff;
+      --ink: var(--text);
+      --copy: var(--text-muted);
+      --line: var(--border);
+      --premium-surface: rgba(255,255,255,0.035);
+      --premium-surface-strong: rgba(255,255,255,0.055);
       background:
-        linear-gradient(180deg, rgba(236,248,255,0.92) 0%, #ffffff 42%, #f6fbff 100%);
+        radial-gradient(ellipse 80% 48% at 50% -8%, rgba(17,34,238,0.26), transparent 68%),
+        linear-gradient(180deg, var(--bg) 0%, #0d1119 48%, var(--bg) 100%);
       color: var(--ink);
     }
     .partners-page p { color: var(--copy); }
     .partners-page h1,
     .partners-page h2,
     .partners-page h3 { color: var(--ink); letter-spacing: 0; }
-    .partners-page .section-label { color: #007a95; }
+    .partners-page .section-label { color: var(--blue-accent); }
     @media (max-width: 1320px) {
       .navbar .container {
         gap: 18px;
@@ -143,16 +140,18 @@
       position: relative;
       overflow: hidden;
       padding: 148px 0 72px;
-      border-bottom: 1px solid var(--line);
+      border-bottom: 1px solid var(--border);
     }
     .network-hero::before {
       content: "";
       position: absolute;
       inset: 0;
       background:
-        linear-gradient(120deg, rgba(0,184,199,0.14), rgba(17,34,238,0.05) 45%, transparent 70%),
-        repeating-linear-gradient(90deg, rgba(16,35,63,0.045) 0 1px, transparent 1px 76px),
-        repeating-linear-gradient(0deg, rgba(16,35,63,0.035) 0 1px, transparent 1px 76px);
+        linear-gradient(120deg, rgba(17,34,238,0.24), rgba(0,229,160,0.08) 46%, transparent 74%),
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: auto, 72px 72px, 72px 72px;
+      opacity: 0.9;
       pointer-events: none;
     }
     .network-hero-grid {
@@ -167,9 +166,9 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      border: 1px solid rgba(0,122,149,0.22);
-      background: rgba(255,255,255,0.74);
-      color: #007a95;
+      border: 1px solid rgba(159,167,255,0.28);
+      background: rgba(17,34,238,0.14);
+      color: var(--blue-accent);
       border-radius: 999px;
       padding: 8px 14px;
       font-family: var(--font-head);
@@ -186,12 +185,12 @@
     .hero-lead {
       max-width: 790px;
       font-size: 1.15rem;
-      color: #334763;
+      color: var(--text-muted);
     }
     .hero-support {
       max-width: 820px;
       margin-top: 16px;
-      color: #51647b;
+      color: var(--text-muted);
     }
     .network-actions {
       display: flex;
@@ -200,13 +199,13 @@
       margin-top: 34px;
     }
     .partners-page .btn-outline {
-      color: var(--ink);
-      border-color: rgba(16,35,63,0.22);
-      background: rgba(255,255,255,0.72);
+      color: var(--text);
+      border-color: rgba(159,167,255,0.25);
+      background: rgba(255,255,255,0.03);
     }
     .partners-page .btn-outline:hover {
-      border-color: #00a9bd;
-      color: #007a95;
+      border-color: var(--blue-accent);
+      color: var(--blue-accent);
     }
     .trust-list {
       display: grid;
@@ -220,11 +219,11 @@
       align-items: center;
       gap: 10px;
       min-height: 46px;
-      border: 1px solid var(--line);
-      background: rgba(255,255,255,0.72);
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.035);
       border-radius: 8px;
       padding: 11px 13px;
-      color: var(--ink);
+      color: var(--text);
       font-family: var(--font-head);
       font-size: 0.88rem;
       font-weight: 800;
@@ -232,14 +231,14 @@
     .trust-list svg,
     .network-icon svg {
       flex: 0 0 auto;
-      color: #00a9bd;
+      color: var(--blue-accent);
     }
     .hero-panel {
-      background: rgba(255,255,255,0.86);
-      border: 1px solid var(--line);
-      border-radius: 8px;
+      background: rgba(16,19,26,0.86);
+      border: 1px solid rgba(159,167,255,0.18);
+      border-radius: var(--radius);
       padding: 28px;
-      box-shadow: 0 18px 54px rgba(16,35,63,0.1);
+      box-shadow: 0 18px 54px rgba(0,0,0,0.24);
     }
     .hero-panel-title {
       color: var(--ink);
@@ -262,8 +261,8 @@
       width: 34px;
       height: 34px;
       border-radius: 999px;
-      background: var(--blue-soft);
-      color: #0b67a3;
+      background: var(--blue);
+      color: var(--white);
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -273,7 +272,7 @@
     }
     .process-item strong {
       display: block;
-      color: var(--ink);
+      color: var(--text);
       font-family: var(--font-head);
       font-size: 0.93rem;
       margin-bottom: 2px;
@@ -283,14 +282,17 @@
       line-height: 1.55;
     }
     .light-band {
-      background: var(--white-panel);
-      border-top: 1px solid var(--line);
-      border-bottom: 1px solid var(--line);
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
     }
     .aqua-band {
-      background: linear-gradient(180deg, var(--soft-aqua), #ffffff);
-      border-top: 1px solid var(--line);
-      border-bottom: 1px solid var(--line);
+      background:
+        radial-gradient(ellipse 60% 45% at 80% 0%, rgba(0,229,160,0.08), transparent 70%),
+        linear-gradient(135deg, rgba(17,34,238,0.12), rgba(255,255,255,0.015)),
+        var(--bg);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
     }
     .section-head {
       max-width: 820px;
@@ -312,10 +314,10 @@
     .logo-card,
     .cta-card,
     .faq-card {
-      background: var(--white-panel);
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      box-shadow: 0 10px 34px rgba(16,35,63,0.06);
+      background: var(--premium-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 14px 38px rgba(0,0,0,0.18);
     }
     .network-card {
       padding: 26px;
@@ -334,8 +336,8 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      background: var(--soft);
-      border: 1px solid rgba(0,122,149,0.14);
+      background: rgba(17,34,238,0.14);
+      border: 1px solid rgba(159,167,255,0.2);
     }
     .logo-grid {
       display: grid;
@@ -349,27 +351,27 @@
       justify-content: center;
       gap: 6px;
       padding: 20px;
+      background:
+        linear-gradient(135deg, rgba(17,34,238,0.11), rgba(0,229,160,0.035)),
+        var(--premium-surface);
     }
     .logo-card strong {
-      color: var(--ink);
+      color: var(--text);
       font-family: var(--font-head);
       font-size: 0.96rem;
       line-height: 1.35;
     }
     .logo-card span {
-      color: #67788f;
+      color: var(--blue-accent);
       font-size: 0.78rem;
       line-height: 1.4;
     }
-    .disclaimer {
+    .operational-copy {
       margin-top: 18px;
-      padding: 14px 16px;
-      border-radius: 8px;
-      background: rgba(16,35,63,0.04);
-      border: 1px solid var(--line);
-      color: #5e6f84;
-      font-size: 0.84rem;
-      line-height: 1.65;
+      max-width: 860px;
+      color: var(--text-muted);
+      font-size: 0.96rem;
+      line-height: 1.75;
     }
     .service-links {
       display: flex;
@@ -381,18 +383,18 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      border: 1px solid rgba(16,35,63,0.15);
+      border: 1px solid rgba(159,167,255,0.2);
       border-radius: 999px;
-      background: rgba(255,255,255,0.76);
-      color: var(--ink);
+      background: rgba(255,255,255,0.035);
+      color: var(--text);
       padding: 10px 14px;
       font-family: var(--font-head);
       font-weight: 800;
       font-size: 0.84rem;
     }
     .service-link:hover {
-      border-color: #00a9bd;
-      color: #007a95;
+      border-color: var(--blue-accent);
+      color: var(--blue-accent);
     }
     .split-grid {
       display: grid;
@@ -409,13 +411,13 @@
     }
     .cta-panel {
       background:
-        linear-gradient(135deg, rgba(17,34,238,0.09), rgba(0,184,199,0.13)),
-        #ffffff;
-      border: 1px solid var(--line);
-      border-radius: 8px;
+        linear-gradient(135deg, rgba(17,34,238,0.28), rgba(0,229,160,0.08)),
+        var(--surface);
+      border: 1px solid rgba(159,167,255,0.2);
+      border-radius: var(--radius);
       padding: 42px;
       text-align: center;
-      box-shadow: 0 18px 54px rgba(16,35,63,0.08);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.24);
     }
     .cta-panel h2 {
       margin-bottom: 14px;
@@ -493,6 +495,7 @@
 <body>
 <div id="navbar-mount"></div>
 
+<!-- Compliance guard: no unapproved airline or vendor logos; no customer logos without confirmed relationship and permission; no formal affiliation claims; no customer relationship claims; no /api/content?type=partners; no old dynamic client/partner wall; no external logo hotlinks; no downloaded, generated, or fake logos; no Tupperware, DHL, Shopee, Janio, or other customer/brand names unless explicitly approved. -->
 <main class="partners-page">
   <section class="network-hero">
     <div class="container network-hero-grid">
@@ -583,9 +586,9 @@
       <div class="section-head">
         <div class="section-label">Air freight access</div>
         <h2>Airline Cargo Channels</h2>
-        <p>We arrange air freight through available airline cargo channels, freight vendors, and consolidator networks based on route, capacity, commodity type, transit time, and documentation requirements.</p>
+        <p>Ambara helps coordinate air freight routing through available cargo channels based on route, schedule, cargo type, and required transit time.</p>
       </div>
-      <p style="margin-bottom:18px;color:#334763;font-weight:700">Airline and cargo channels commonly used or available through our vendor network may include:</p>
+      <p style="margin-bottom:18px;color:var(--text);font-weight:700">Cargo channels Ambara can coordinate around may include:</p>
       <!-- TODO: Replace these text-only cargo channel cards with approved local logo assets after permission and file availability are confirmed. -->
       <div class="logo-grid" aria-label="Airline cargo channels">
         <div class="logo-card"><strong>Garuda Indonesia Cargo</strong><span>Airline cargo channel</span></div>
@@ -600,7 +603,7 @@
         <div class="logo-card"><strong>AirAsia / Teleport</strong><span>Airline cargo channel</span></div>
         <div class="logo-card"><strong>Citilink Cargo</strong><span>Airline cargo channel</span></div>
       </div>
-      <p class="disclaimer">Airline names are shown for route and cargo channel reference only. Availability depends on booking confirmation, route, schedule, commodity acceptance, and vendor arrangement. Displayed brands do not imply recommendation, formal affiliation, or direct commercial relationship unless specifically stated. Logos should only be added after local assets, approval, and usage permission are confirmed.</p>
+      <p class="operational-copy">Routing is selected during shipment planning to balance service availability, transit time, documentation readiness, and cargo handling needs.</p>
     </div>
   </section>
 
@@ -609,7 +612,7 @@
       <div class="section-head">
         <div class="section-label">CGK cargo agent support</div>
         <h2>Airport Handling, Warehouse &amp; Regulated Agent Network</h2>
-        <p>We coordinate cargo acceptance, screening, storage, warehouse handling, and airport operations through selected warehouse operators, regulated agents, and cargo facility vendors.</p>
+        <p>Ambara coordinates cargo handling, warehouse movement, screening, and local handover through selected operational vendors based on shipment requirements.</p>
       </div>
       <!-- TODO: Add approved warehouse, regulated agent, airport handling, and cargo facility logo assets only after permission and local files are confirmed. -->
       <div class="grid-3">
@@ -620,7 +623,7 @@
         <article class="network-card"><span class="network-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M5 21V5h14v16"/><path d="M9 9h1"/><path d="M14 9h1"/><path d="M9 13h1"/><path d="M14 13h1"/></svg></span><h3>Terminal and Facility Coordination</h3><p>Coordination with terminal and cargo facility vendors for operational steps required before release or handover.</p></article>
         <article class="network-card"><span class="network-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h11v10H3z"/><path d="M14 11h4l3 3v3h-7z"/><circle cx="7" cy="19" r="2"/><circle cx="18" cy="19" r="2"/></svg></span><h3>Domestic Handover Support</h3><p>Airport-to-door, warehouse-to-hub, and courier handover coordination for selected Indonesia delivery routes.</p></article>
       </div>
-      <p class="disclaimer">Vendor names or logos, when shown, identify operational facilities and service providers that may support shipment handling. Service availability depends on cargo type, route, booking, documentation, and operational confirmation. Logos should only be added after local assets, approval, and usage permission are confirmed.</p>
+      <p class="operational-copy">Each operational step is planned around the shipment profile so cargo can move from airport facility to warehouse, release process, or final handover with clear follow-up.</p>
     </div>
   </section>
 
@@ -647,7 +650,7 @@
       <div class="section-head">
         <div class="section-label">Shipment categories</div>
         <h2>Industries We Support</h2>
-        <p>Shipment experience is described by industry category unless customer relationship and logo usage permission are confirmed.</p>
+        <p>Ambara supports industry-focused shipment planning across commercial, personal, regulated, and time-sensitive cargo categories.</p>
       </div>
       <div class="grid-4">
         <article class="network-card"><h3>E-commerce &amp; Courier Shipments</h3><p>Support for parcel, marketplace, sample, and courier-style shipments requiring Indonesia import/export coordination.</p></article>
@@ -667,7 +670,7 @@
       <div class="section-head">
         <div class="section-label">Credible shipment experience</div>
         <h2>Shipment Experience</h2>
-        <p>We support importers, exporters, trading companies, overseas agents, SMEs, online sellers, and logistics partners across multiple shipment categories. Some shipments may involve branded goods handled through third-party logistics arrangements.</p>
+        <p>Our shipment experience covers multiple industries, including e-commerce, consumer products, perishables, personal effects, and time-critical cargo.</p>
       </div>
       <!-- TODO: Show confirmed direct account brand marks only after Ambara confirms the relationship, usage permission, and local files. -->
       <div class="grid-4" aria-label="Industry and shipment references">
@@ -680,7 +683,7 @@
         <article class="network-card"><h3>Personal Effects &amp; Exhibition Goods</h3><p>Support for personal goods, samples, events, temporary shipments, and special handling categories.</p></article>
         <article class="network-card"><h3>Project Cargo &amp; Time-Critical Shipments</h3><p>Close coordination for urgent, sensitive, oversized, or project-based cargo movements.</p></article>
       </div>
-      <p class="disclaimer">Customer names, brand names, or logos should only be displayed when the relationship and logo usage permission are confirmed. Shipments involving branded goods through third-party logistics arrangements should be described by industry category instead of brand name.</p>
+      <p class="operational-copy">These categories help shippers and overseas agents quickly identify the operational support Ambara can coordinate for similar cargo profiles.</p>
     </div>
   </section>
 
