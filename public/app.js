@@ -3,7 +3,7 @@
 // Language Management
 const LangManager = {
   current: localStorage.getItem('ambara_lang') || 'en',
-  
+
   init() {
     const path = window.location.pathname;
     if (path.startsWith('/id/') || path === '/id') this.current = 'id';
@@ -31,8 +31,8 @@ function initNavbar() {
   const navbar = document.querySelector('.navbar');
   if (!navbar) return;
   window.addEventListener('scroll', () => {
-    navbar.style.background = window.scrollY > 50 
-      ? 'rgba(11,14,20,0.98)' 
+    navbar.style.background = window.scrollY > 50
+      ? 'rgba(11,14,20,0.98)'
       : 'rgba(11,14,20,0.85)';
   });
 }
@@ -41,7 +41,7 @@ function initNavbar() {
 function initMobileMenu() {
   const nav = document.querySelector('.mobile-nav');
   if (!nav) return;
-  
+
   // Detach and append to body to avoid backdrop-filter containing block issues from navbar
   if (nav.parentElement) nav.parentElement.removeChild(nav);
   document.body.appendChild(nav);
@@ -108,8 +108,8 @@ function showToast(message, type = 'success') {
 
 // Format date
 function formatDate(dateStr) {
-  return new Date(dateStr).toLocaleDateString('en-US', { 
-    year: 'numeric', month: 'long', day: 'numeric' 
+  return new Date(dateStr).toLocaleDateString('en-US', {
+    year: 'numeric', month: 'long', day: 'numeric'
   });
 }
 
@@ -143,6 +143,39 @@ function initStatsRemark() {
   });
 
   statsGrid.insertAdjacentElement('afterend', remark);
+}
+
+const AmbaraIcons = {
+  aircraftCargo: '<path d="M3 13.5 21 6l-3 12-6-4-5 5 2-7-6-1.5z"/><path d="m12 14 6-8"/>',
+  customsDocument: '<path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z"/><path d="M14 2v5h5"/><path d="M8 13h5"/><path d="M8 17h8"/><path d="M15 11.5h5"/><path d="M17.5 9v5"/>',
+  documentStack: '<path d="M7 3h9l4 4v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M15 3v5h5"/><path d="M3 7v13a2 2 0 0 0 2 2h11"/><path d="M9 13h7"/><path d="M9 17h5"/>',
+  documentSearch: '<path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h6"/><path d="M14 2v6h6"/><circle cx="15.5" cy="15.5" r="3.5"/><path d="m18 18 3 3"/><path d="M8 11h5"/>',
+  importerId: '<path d="M3 21h18"/><path d="M5 21V7h8v14"/><path d="M13 11h6v10"/><path d="M8 10h2"/><path d="M8 14h2"/><path d="M16 14h1"/><path d="M16 17h1"/><path d="M7 4h5"/>',
+  deliveryRoute: '<path d="M3 7h11v10H3z"/><path d="M14 11h4l3 3v3h-7z"/><circle cx="7" cy="19" r="2"/><circle cx="18" cy="19" r="2"/><path d="M5 4h8"/><path d="M19 5c1.5 1.5 1.5 3.5 0 5"/>',
+  truckRoute: '<path d="M2 7h12v9H2z"/><path d="M14 10h4l4 4v2h-8z"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/><path d="M4 4h6"/><path d="M18 4h3v3"/>',
+  airportCargo: '<path d="M3 21h18"/><path d="M5 21V8l7-5 7 5v13"/><path d="M9 21v-7h6v7"/><path d="m3 12 18-4"/><path d="M8 11v-1"/><path d="M12 10v-1"/><path d="M16 9v-1"/>',
+  warehouseCargo: '<path d="M3 21h18"/><path d="M4 21V9l8-5 8 5v12"/><path d="M7 21v-7h10v7"/><path d="M9 17h6"/><path d="M9 14h6"/><path d="M6 11h12"/>',
+  shieldPackage: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-5"/><path d="M8 7h8"/>',
+  sourcing: '<path d="M3 21V9l6-4 6 4v12"/><path d="M15 13h6v8"/><path d="M7 21v-6h4v6"/><path d="M16.5 16h3"/><path d="M4 12h10"/>',
+  globalAgent: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18"/><path d="M12 3a14 14 0 0 0 0 18"/><path d="M18 18l3 3"/>',
+  importBox: '<path d="M4 8h16v11H4z"/><path d="m12 3 4 4-4 4"/><path d="M4 7h12"/><path d="M8 12h8"/>',
+  exportBox: '<path d="M4 8h16v11H4z"/><path d="m12 3-4 4 4 4"/><path d="M8 7h12"/><path d="M8 12h8"/>',
+  parcelsCourier: '<path d="M4 8h7v7H4z"/><path d="M13 5h7v7h-7z"/><path d="M12 14h8v6h-8z"/><path d="M5 18h4"/><path d="M3 21h18"/>',
+  complianceWarning: '<path d="M10.3 3.9 2.5 18a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M6 21h12"/>',
+  questionDocument: '<path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z"/><path d="M14 2v5h5"/><path d="M10 11a2 2 0 1 1 3.2 1.6c-.8.5-1.2.9-1.2 1.9"/><path d="M12 18h.01"/>',
+  documentAlert: '<path d="M5 3h9l5 5v13H5z"/><path d="M14 3v5h5"/><path d="M8 12h5"/><path d="M8 16h4"/><path d="M17 13v4"/><path d="M17 20h.01"/>',
+  airportClock: '<path d="M3 21h18"/><path d="M5 21V8l7-5 7 5v5"/><path d="M9 21v-7h4"/><circle cx="18" cy="18" r="4"/><path d="M18 16v2l1.5 1"/>',
+  cargoChat: '<path d="M4 6h10v8H4z"/><path d="M14 9h3l3 3v2h-6z"/><circle cx="7" cy="16" r="1.5"/><circle cx="17" cy="16" r="1.5"/><path d="M6 20h9l4 2v-5"/>',
+  routeReview: '<path d="M4 18c4-8 12 0 16-8"/><circle cx="4" cy="18" r="2"/><circle cx="20" cy="10" r="2"/><path d="M8 6h8"/><path d="M12 3v6"/>'
+};
+
+function initAmbaraIcons() {
+  document.querySelectorAll('[data-ambara-icon]').forEach(icon => {
+    const name = icon.getAttribute('data-ambara-icon');
+    if (!AmbaraIcons[name] || icon.querySelector('svg')) return;
+    icon.setAttribute('aria-hidden', 'true');
+    icon.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">${AmbaraIcons[name]}</svg>`;
+  });
 }
 
 // Animate on scroll
@@ -522,6 +555,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initMobileMenu();
   initNavDropdowns();
   initStatsRemark();
+  initAmbaraIcons();
   setActiveNav();
   initScrollAnimations();
   bindWhatsAppTracking();
