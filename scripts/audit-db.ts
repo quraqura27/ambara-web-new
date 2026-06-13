@@ -4,7 +4,12 @@ import { neon } from '@neondatabase/serverless';
 import * as schema from '../lib/db/schema';
 
 async function audit() {
-  const sql = neon(process.env.DATABASE_URL!);
+  const databaseUrl = process.env.NETLIFY_DATABASE_URL_UNPOOLED || process.env.NETLIFY_DATABASE_URL;
+  if (!databaseUrl) {
+    throw new Error('NETLIFY_DATABASE_URL is required for database access.');
+  }
+
+  const sql = neon(databaseUrl);
   const db = drizzle(sql, { schema });
 
   console.log("--- RECENT SHIPMENTS ---");

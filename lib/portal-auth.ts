@@ -23,7 +23,6 @@ function getJwtSecret() {
   return (
     process.env.JWT_SECRET ||
     process.env.NEXTAUTH_SECRET ||
-    process.env.DATABASE_URL ||
     process.env.NETLIFY_DATABASE_URL
   );
 }

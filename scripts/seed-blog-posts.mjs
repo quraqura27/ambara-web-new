@@ -9,10 +9,10 @@ dotenv.config({ path: ".env.local", quiet: true });
 
 const root = process.cwd();
 const blogSourcePath = path.join(root, "content", "blog-posts.json");
-const databaseUrl = process.env.DATABASE_URL || process.env.NETLIFY_DATABASE_URL;
+const databaseUrl = process.env.NETLIFY_DATABASE_URL_UNPOOLED || process.env.NETLIFY_DATABASE_URL;
 
 if (!databaseUrl) {
-  throw new Error("DATABASE_URL or NETLIFY_DATABASE_URL is required to seed blog posts.");
+  throw new Error("NETLIFY_DATABASE_URL is required for database access.");
 }
 
 const data = JSON.parse(await fs.readFile(blogSourcePath, "utf8"));

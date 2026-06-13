@@ -2,11 +2,16 @@
 const { neon } = require('@neondatabase/serverless');
 
 let _sql = null;
-function getDB() {
-  const url = process.env.DATABASE_URL || process.env.NETLIFY_DATABASE_URL;
+function getRuntimeDatabaseUrl(env = process.env) {
+  const url = env.NETLIFY_DATABASE_URL;
   if (!url) {
-    throw new Error('CRITICAL: DATABASE_URL is not configured in the environment variables.');
+    throw new Error('NETLIFY_DATABASE_URL is required for database access.');
   }
+  return url;
+}
+
+function getDB() {
+  const url = getRuntimeDatabaseUrl();
   if (!_sql) _sql = neon(url);
   return _sql;
 }
@@ -266,4 +271,4 @@ function parsePathParam(event, prefix) {
   return parts[0] || event.queryStringParameters?.id || null;
 }
 
-module.exports = { getDB, CORS, getCorsHeaders, getCorsOrigin, ALLOWED_ORIGINS, response, errorResponse, optionsResponse, sendEmail, generateCustomerId, generateTrackingNumber, verifyToken, getAuthToken, requireRole, v1Response, v1Error, parsePathParam, ROLE_ADMIN, ROLE_OPS, ROLE_FINANCE };
+module.exports = { getDB, getRuntimeDatabaseUrl, CORS, getCorsHeaders, getCorsOrigin, ALLOWED_ORIGINS, response, errorResponse, optionsResponse, sendEmail, generateCustomerId, generateTrackingNumber, verifyToken, getAuthToken, requireRole, v1Response, v1Error, parsePathParam, ROLE_ADMIN, ROLE_OPS, ROLE_FINANCE };

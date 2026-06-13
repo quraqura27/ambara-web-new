@@ -1,5 +1,6 @@
 import { neon } from '@neondatabase/serverless';
 import { drizzle, type NeonHttpDatabase } from 'drizzle-orm/neon-http';
+import { getRuntimeDatabaseUrl } from './env';
 import * as schema from './schema';
 
 type Database = NeonHttpDatabase<typeof schema>;
@@ -7,10 +8,7 @@ type Database = NeonHttpDatabase<typeof schema>;
 let dbInstance: Database | null = null;
 
 function getDb() {
-  const connectionString = process.env.DATABASE_URL || process.env.NETLIFY_DATABASE_URL;
-  if (!connectionString) {
-    throw new Error('Database connection string is not configured');
-  }
+  const connectionString = getRuntimeDatabaseUrl();
 
   if (!dbInstance) {
     dbInstance = drizzle(neon(connectionString), { schema });
@@ -27,3 +25,5 @@ export const db = new Proxy({} as Database, {
     return typeof value === 'function' ? value.bind(database) : value;
   },
 });
+
+export { getRuntimeDatabaseUrl };

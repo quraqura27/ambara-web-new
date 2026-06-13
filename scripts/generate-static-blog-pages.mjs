@@ -296,9 +296,9 @@ async function readPostsFromFile() {
 }
 
 async function readPostsFromDatabase() {
-  const databaseUrl = process.env.DATABASE_URL || process.env.NETLIFY_DATABASE_URL;
+  const databaseUrl = process.env.NETLIFY_DATABASE_URL_UNPOOLED || process.env.NETLIFY_DATABASE_URL;
   if (!databaseUrl) {
-    throw new Error("DATABASE_URL or NETLIFY_DATABASE_URL is required.");
+    throw new Error("NETLIFY_DATABASE_URL is required for database access.");
   }
 
   const sql = neon(databaseUrl);

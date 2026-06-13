@@ -23,9 +23,8 @@ export async function signIn(formData: FormData) {
   const hasSessionSecret =
     process.env.JWT_SECRET ||
     process.env.NEXTAUTH_SECRET ||
-    process.env.DATABASE_URL ||
     process.env.NETLIFY_DATABASE_URL;
-  const hasDatabase = process.env.DATABASE_URL || process.env.NETLIFY_DATABASE_URL;
+  const hasDatabase = process.env.NETLIFY_DATABASE_URL;
 
   if (!hasSessionSecret || !hasDatabase) {
     redirect("/sign-in?error=config");
