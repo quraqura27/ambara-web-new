@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, MapPin, Package, Plus, Printer, Search, Truck } from "lucide-react";
+import { ArrowRight, FileUp, MapPin, Package, Plus, Printer, Search, Truck } from "lucide-react";
 
 import { getShipments, searchShipmentByTracking } from "@/actions/shipments";
 import { BulkPrintConsignmentNotesButton } from "@/components/consignment-notes/bulk-print-button";
@@ -62,6 +62,11 @@ export default async function ShipmentsPage({ searchParams }: ShipmentsPageProps
         </div>
         <div className="flex flex-wrap gap-3">
           <BulkPrintConsignmentNotesButton />
+          <Link href="/shipments/bulk-import">
+            <Button className="gap-2" variant="secondary">
+              <FileUp className="h-4 w-4" /> Bulk Import
+            </Button>
+          </Link>
           <Link href="/shipments/new">
             <Button className="gap-2">
               <Plus className="h-4 w-4" /> Create New Shipment

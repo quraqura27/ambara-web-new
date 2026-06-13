@@ -108,7 +108,13 @@ exports.handler = async (event) => {
     const shipment = await sql`SELECT * FROM shipments WHERE id = ${id} AND customer_id = ${decoded.id} LIMIT 1`;
     if (!shipment.length) return errorResponse('Shipment not found', 404);
 
-    const events = await sql`SELECT id, label, location, event_time FROM tracking_events WHERE shipment_id = ${id} ORDER BY event_time DESC`;
+    const events = await sql`
+      SELECT id, label, public_description AS description, location, event_time
+      FROM tracking_events
+      WHERE shipment_id = ${id}
+        AND visible_to_customer = TRUE
+      ORDER BY event_time DESC
+    `;
 
     // Get documents with presigned download URLs
     let documents = [];

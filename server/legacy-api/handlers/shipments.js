@@ -20,7 +20,7 @@ exports.handler = async (event) => {
       const normalizedTrackingNumber = trackingNumber.toUpperCase();
       const shipment = await sql`SELECT s.*, c.full_name, c.company_name, c.type as customer_type FROM shipments s LEFT JOIN customers c ON s.customer_id = c.id WHERE s.tracking_number = ${normalizedTrackingNumber} OR s.internal_tracking_no = ${normalizedTrackingNumber} LIMIT 1`;
       if (!shipment.length) return errorResponse('Shipment not found', 404);
-      const events = await sql`SELECT * FROM tracking_events WHERE shipment_id = ${shipment[0].id} ORDER BY event_time ASC`;
+      const events = await sql`SELECT status, label, public_description, description, location, event_time FROM tracking_events WHERE shipment_id = ${shipment[0].id} AND visible_to_customer = TRUE ORDER BY event_time ASC`;
       // CRITICAL FIX: Removed the documents query from the public tracking endpoint to prevent data leaks.
       return response(toPublicTrackingResponse(shipment[0], events));
     } catch (err) { return errorResponse(err.message, 500); }
@@ -51,7 +51,7 @@ exports.handler = async (event) => {
     if (event.httpMethod === 'GET' && id) {
       const shipment = await sql`SELECT s.*, c.full_name, c.company_name, c.email as customer_email, c.phone as customer_phone, c.type as customer_type, c.country as customer_country FROM shipments s LEFT JOIN customers c ON s.customer_id = c.id WHERE s.id = ${id} LIMIT 1`;
       if (!shipment.length) return errorResponse('Shipment not found', 404);
-      const events = await sql`SELECT * FROM tracking_events WHERE shipment_id = ${id} ORDER BY event_time ASC`;
+      const events = await sql`SELECT status, label, public_description, description, location, event_time FROM tracking_events WHERE shipment_id = ${id} AND visible_to_customer = TRUE ORDER BY event_time ASC`;
       const documents = await sql`SELECT * FROM documents WHERE shipment_id = ${id} ORDER BY uploaded_at DESC`;
       return response({ shipment: shipment[0], events, documents });
     }

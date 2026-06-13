@@ -48,7 +48,7 @@ function toPublicEvent(event) {
   return {
     status: stringValue(source.status),
     label: stringValue(source.label),
-    description: stringValue(source.description),
+    description: stringValue(source.public_description || source.description),
     location: stringValue(source.location),
     event_time: stringValue(source.event_time || source.timestamp),
   };

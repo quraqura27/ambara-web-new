@@ -7,6 +7,7 @@ export const shipments = pgTable('shipments', {
   mawb: text('mawb'),
   title: text('title').notNull(),
   internalTrackingNo: text('internal_tracking_no'), // AA[YY][CC][8digits][SVC]
+  customerReference: text('customer_reference'),
   customerId: integer('customer_id'),
   status: text('status').notNull().default('pending'),
   origin: text('origin').notNull(),
@@ -42,6 +43,186 @@ export const shipments = pgTable('shipments', {
   uniqueIndex('shipments_internal_tracking_no_unique_idx')
     .on(table.internalTrackingNo)
     .where(sql`${table.internalTrackingNo} is not null and btrim(${table.internalTrackingNo}) <> ''`),
+]);
+
+export const parcels = pgTable('parcels', {
+  id: serial('id').primaryKey(),
+  shipmentId: integer('shipment_id').notNull().references(() => shipments.id, { onDelete: 'cascade' }),
+  ambaraParcelId: text('ambara_parcel_id').notNull().unique(),
+  parcelNumber: integer('parcel_number').notNull(),
+  receiverName: text('receiver_name').notNull(),
+  receiverPhone: text('receiver_phone').notNull(),
+  receiverAddress: text('receiver_address').notNull(),
+  destinationCity: text('destination_city').notNull(),
+  postalCode: text('postal_code'),
+  weight: numeric('weight').notNull(),
+  pieces: integer('pieces').notNull().default(1),
+  serviceType: text('service_type'),
+  commodity: text('commodity'),
+  deliveryInstruction: text('delivery_instruction'),
+  codAmount: numeric('cod_amount'),
+  currentStatus: text('current_status').notNull().default('DRAFT'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => [
+  index('parcels_shipment_id_idx').on(table.shipmentId),
+  index('parcels_ambara_parcel_id_idx').on(table.ambaraParcelId),
+  index('parcels_current_status_idx').on(table.currentStatus),
+  index('parcels_receiver_phone_idx').on(table.receiverPhone),
+]);
+
+export const deliveryBatches = pgTable('delivery_batches', {
+  id: serial('id').primaryKey(),
+  batchCode: text('batch_code').notNull().unique(),
+  vendorName: text('vendor_name').notNull(),
+  vendorServiceType: text('vendor_service_type'),
+  handoverDate: date('handover_date'),
+  slaDeadline: timestamp('sla_deadline'),
+  batchStatus: text('batch_status').notNull().default('DRAFT'),
+  totalParcels: integer('total_parcels').notNull().default(0),
+  notes: text('notes'),
+  lastCheckedAt: timestamp('last_checked_at'),
+  lastCheckedBy: integer('last_checked_by'),
+  nextCheckDueAt: timestamp('next_check_due_at'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => [
+  index('delivery_batches_status_idx').on(table.batchStatus),
+  index('delivery_batches_batch_code_idx').on(table.batchCode),
+  index('delivery_batches_sla_deadline_idx').on(table.slaDeadline),
+]);
+
+export const parcelVendorTracking = pgTable('parcel_vendor_tracking', {
+  id: serial('id').primaryKey(),
+  parcelId: integer('parcel_id').notNull().references(() => parcels.id, { onDelete: 'cascade' }),
+  deliveryBatchId: integer('delivery_batch_id').notNull().references(() => deliveryBatches.id, { onDelete: 'cascade' }),
+  vendorName: text('vendor_name').notNull(),
+  vendorTrackingNumber: text('vendor_tracking_number'),
+  vendorTrackingUrl: text('vendor_tracking_url'),
+  vendorReferenceNumber: text('vendor_reference_number'),
+  exportRowId: text('export_row_id'),
+  matchMethod: text('match_method'),
+  matchConfidence: integer('match_confidence'),
+  lastVendorStatus: text('last_vendor_status'),
+  lastVendorEventTime: timestamp('last_vendor_event_time'),
+  podUrl: text('pod_url'),
+  receiverName: text('receiver_name'),
+  matchedAt: timestamp('matched_at'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => [
+  index('parcel_vendor_tracking_parcel_idx').on(table.parcelId),
+  index('parcel_vendor_tracking_batch_idx').on(table.deliveryBatchId),
+  uniqueIndex('parcel_vendor_tracking_vendor_tracking_unique_idx')
+    .on(table.vendorTrackingNumber)
+    .where(sql`${table.vendorTrackingNumber} is not null and btrim(${table.vendorTrackingNumber}) <> ''`),
+  uniqueIndex('parcel_vendor_tracking_export_row_unique_idx')
+    .on(table.exportRowId)
+    .where(sql`${table.exportRowId} is not null and btrim(${table.exportRowId}) <> ''`),
+]);
+
+export const trackingEvents = pgTable('tracking_events', {
+  id: serial('id').primaryKey(),
+  shipmentId: integer('shipment_id').notNull().references(() => shipments.id, { onDelete: 'cascade' }),
+  parcelId: integer('parcel_id').references(() => parcels.id, { onDelete: 'cascade' }),
+  statusCode: text('status_code').notNull().default('pending'),
+  status: text('status'),
+  label: text('label').notNull(),
+  publicDescription: text('public_description'),
+  description: text('description'),
+  internalNote: text('internal_note'),
+  location: text('location'),
+  eventTime: timestamp('event_time').defaultNow().notNull(),
+  source: text('source').notNull().default('manual'),
+  visibleToCustomer: boolean('visible_to_customer').notNull().default(true),
+  createdBy: integer('created_by'),
+  state: text('state').default('done'),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => [
+  index('tracking_events_shipment_id_idx').on(table.shipmentId),
+  index('tracking_events_parcel_id_idx').on(table.parcelId),
+  index('tracking_events_event_time_idx').on(table.eventTime),
+  index('tracking_events_visible_idx').on(table.visibleToCustomer),
+]);
+
+export const vendorStatusMapping = pgTable('vendor_status_mapping', {
+  id: serial('id').primaryKey(),
+  vendorName: text('vendor_name').notNull().default('*'),
+  vendorRawStatus: text('vendor_raw_status').notNull(),
+  ambaraStatusCode: text('ambara_status_code').notNull(),
+  publicDescriptionTemplate: text('public_description_template'),
+  isException: boolean('is_exception').notNull().default(false),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => [
+  uniqueIndex('vendor_status_mapping_unique_idx').on(table.vendorName, table.vendorRawStatus),
+]);
+
+export const bulkShipmentImportJobs = pgTable('bulk_shipment_import_jobs', {
+  id: serial('id').primaryKey(),
+  uploadedFilename: text('uploaded_filename'),
+  totalRows: integer('total_rows').notNull().default(0),
+  validRows: integer('valid_rows').notNull().default(0),
+  errorRows: integer('error_rows').notNull().default(0),
+  warningRows: integer('warning_rows').notNull().default(0),
+  createdShipments: integer('created_shipments').notNull().default(0),
+  createdParcels: integer('created_parcels').notNull().default(0),
+  status: text('status').notNull().default('pending'),
+  createdBy: integer('created_by'),
+  createdAt: timestamp('created_at').defaultNow(),
+  completedAt: timestamp('completed_at'),
+});
+
+export const bulkShipmentImportItems = pgTable('bulk_shipment_import_items', {
+  id: serial('id').primaryKey(),
+  importJobId: integer('import_job_id').notNull().references(() => bulkShipmentImportJobs.id, { onDelete: 'cascade' }),
+  rowNumber: integer('row_number').notNull(),
+  shipmentId: integer('shipment_id').references(() => shipments.id, { onDelete: 'set null' }),
+  parcelId: integer('parcel_id').references(() => parcels.id, { onDelete: 'set null' }),
+  customerReference: text('customer_reference'),
+  receiverName: text('receiver_name'),
+  validationStatus: text('validation_status').notNull(),
+  errorMessage: text('error_message'),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => [
+  index('bulk_shipment_import_items_job_idx').on(table.importJobId),
+]);
+
+export const bulkUpdateJobs = pgTable('bulk_update_jobs', {
+  id: serial('id').primaryKey(),
+  deliveryBatchId: integer('delivery_batch_id').references(() => deliveryBatches.id, { onDelete: 'set null' }),
+  updateType: text('update_type').notNull(),
+  source: text('source').notNull(),
+  uploadedFilename: text('uploaded_filename'),
+  totalRows: integer('total_rows').notNull().default(0),
+  matchedRows: integer('matched_rows').notNull().default(0),
+  unmatchedRows: integer('unmatched_rows').notNull().default(0),
+  duplicateRows: integer('duplicate_rows').notNull().default(0),
+  status: text('status').notNull().default('pending'),
+  createdBy: integer('created_by'),
+  createdAt: timestamp('created_at').defaultNow(),
+  completedAt: timestamp('completed_at'),
+}, (table) => [
+  index('bulk_update_jobs_batch_idx').on(table.deliveryBatchId),
+]);
+
+export const bulkUpdateItems = pgTable('bulk_update_items', {
+  id: serial('id').primaryKey(),
+  bulkUpdateJobId: integer('bulk_update_job_id').notNull().references(() => bulkUpdateJobs.id, { onDelete: 'cascade' }),
+  parcelId: integer('parcel_id').references(() => parcels.id, { onDelete: 'set null' }),
+  vendorTrackingNumber: text('vendor_tracking_number'),
+  oldStatus: text('old_status'),
+  newStatus: text('new_status'),
+  vendorRawStatus: text('vendor_raw_status'),
+  eventTime: timestamp('event_time'),
+  receiverName: text('receiver_name'),
+  podUrl: text('pod_url'),
+  matchStatus: text('match_status').notNull(),
+  errorMessage: text('error_message'),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => [
+  index('bulk_update_items_job_idx').on(table.bulkUpdateJobId),
+  index('bulk_update_items_parcel_idx').on(table.parcelId),
 ]);
 
 export const staffAccounts = pgTable('staff_accounts', {

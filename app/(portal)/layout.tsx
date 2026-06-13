@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { LucideIcon, LayoutDashboard, LogOut, Package, Search, Shield, Users } from "lucide-react";
+import { ClipboardList, LucideIcon, LayoutDashboard, LogOut, Package, Search, Shield, Users } from "lucide-react";
 
 import { signOut } from "@/actions/auth";
 import { searchShipmentByTracking } from "@/actions/shipments";
@@ -51,6 +51,7 @@ export default async function PortalLayout({ children }: { children: React.React
           <NavItem href="/dashboard" icon={LayoutDashboard} label="Dashboard" />
           <NavItem href="/customers" icon={Users} label="Customer Directory" />
           <NavItem href="/shipments" icon={Package} label="Shipment Tracking" />
+          <NavItem href="/delivery-batches" icon={ClipboardList} label="Delivery Batches" />
           {canManageAccounts ? (
             <NavItem href="/accounts" icon={Shield} label="Staff Accounts" />
           ) : null}

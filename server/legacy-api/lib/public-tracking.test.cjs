@@ -14,6 +14,11 @@ const forbiddenKeys = [
   'consignee_address',
   'consignee_phone',
   'internal_notes',
+  'internal_note',
+  'created_by',
+  'vendor_raw_status',
+  'bulk_update_job_id',
+  'error_message',
   'documents',
 ];
 
@@ -60,6 +65,11 @@ test('legacy public tracking response is shipment-field allowlisted', () => {
         location: 'Jakarta',
         event_time: '2026-06-05T02:00:00.000Z',
         updated_by: 'Bulk_Status_Updates row 2',
+        internal_note: 'Private vendor account message',
+        created_by: 99,
+        vendor_raw_status: 'BAD_VENDOR_ERROR',
+        bulk_update_job_id: 123,
+        error_message: 'Raw vendor exception',
       },
     ],
   );

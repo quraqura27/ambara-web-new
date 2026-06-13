@@ -19,6 +19,11 @@ const forbiddenKeys = [
   "generation_status",
   "tracking_created_at",
   "updated_by",
+  "internal_note",
+  "created_by",
+  "vendor_raw_status",
+  "bulk_update_job_id",
+  "error_message",
 ];
 
 function collectKeys(value: unknown, keys = new Set<string>()) {
@@ -61,6 +66,11 @@ test("sanitizes payload and sorts events chronologically", () => {
         location: "Jakarta, Indonesia",
         event_time: "2026-06-04T19:35:05.987Z",
         updated_by: "Bulk_Status_Updates row 2",
+        internal_note: "Private vendor account message",
+        created_by: 99,
+        vendor_raw_status: "BAD_VENDOR_ERROR",
+        bulk_update_job_id: 123,
+        error_message: "Raw vendor exception",
       },
       {
         status: "pending",

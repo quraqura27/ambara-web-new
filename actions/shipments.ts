@@ -1,11 +1,11 @@
 "use server";
 
-import { desc, eq, ilike, or } from "drizzle-orm";
+import { and, desc, eq, ilike, or } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
-import { customers, shipments, trackingUpdates } from "@/lib/db/schema";
+import { customers, shipments, trackingEvents, trackingUpdates } from "@/lib/db/schema";
 import { requirePortalUser } from "@/lib/portal-auth";
 import { TrackingEvent } from "@/lib/tracking/interface";
 import { trackingProvider } from "@/lib/tracking/mock";
@@ -17,7 +17,11 @@ const trackingStatusValues = [
   "in_transit",
   "customs",
   "arrived_destination",
+  "out_for_delivery",
   "delivered",
+  "delivery_issue",
+  "return_in_progress",
+  "on_hold",
   "exception",
   "cancelled",
 ] as const;
@@ -45,6 +49,22 @@ function normalizeStoredStatus(value: string | null | undefined): TrackingEvent[
 
   if (status === "departed") {
     return "departed_origin";
+  }
+
+  if (status === "out_for_delivery") {
+    return "out_for_delivery";
+  }
+
+  if (status === "delivery_issue") {
+    return "delivery_issue";
+  }
+
+  if (status === "return_in_progress") {
+    return "return_in_progress";
+  }
+
+  if (status === "on_hold") {
+    return "on_hold";
   }
 
   if (trackingStatusValues.includes(status as TrackingStatusValue)) {
@@ -89,6 +109,26 @@ async function requireUser() {
 }
 
 async function getPersistedTrackingEvents(shipmentId: number) {
+  const visibleEvents = await db
+    .select()
+    .from(trackingEvents)
+    .where(
+      and(
+        eq(trackingEvents.shipmentId, shipmentId),
+        eq(trackingEvents.visibleToCustomer, true),
+      ),
+    )
+    .orderBy(desc(trackingEvents.eventTime));
+
+  if (visibleEvents.length > 0) {
+    return visibleEvents.map((event) => ({
+      status: normalizeStoredStatus(event.status ?? event.statusCode),
+      description: event.publicDescription || event.description || event.label,
+      location: event.location ?? undefined,
+      timestamp: event.eventTime,
+    }));
+  }
+
   const persistedUpdates = await db
     .select()
     .from(trackingUpdates)

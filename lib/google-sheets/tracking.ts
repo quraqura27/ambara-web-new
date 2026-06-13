@@ -1,10 +1,15 @@
 import "server-only";
 
+import { and, asc, eq, or } from "drizzle-orm";
+
+import { db } from "@/lib/db";
+import { shipments, trackingEvents } from "@/lib/db/schema";
 import {
   isNotFoundPayload,
   PublicTrackingPayloadError,
   type PublicTrackingResult,
   sanitizeTrackingPayload,
+  sortTrackingEventsChronologically,
 } from "./public-tracking-payload";
 
 const trackingCacheTtlMs = 15_000;
@@ -61,6 +66,74 @@ function objectValue(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
+async function findDatabaseTrackingResult(
+  trackingInput: string,
+): Promise<PublicTrackingResult | null> {
+  const normalizedTrackingInput = trackingInput.trim().toUpperCase();
+
+  if (!normalizedTrackingInput) {
+    return null;
+  }
+
+  const [shipment] = await db
+    .select()
+    .from(shipments)
+    .where(
+      or(
+        eq(shipments.trackingNumber, normalizedTrackingInput),
+        eq(shipments.internalTrackingNo, normalizedTrackingInput),
+      ),
+    )
+    .limit(1);
+
+  if (!shipment) {
+    return null;
+  }
+
+  const events = await db
+    .select()
+    .from(trackingEvents)
+    .where(
+      and(
+        eq(trackingEvents.shipmentId, shipment.id),
+        eq(trackingEvents.visibleToCustomer, true),
+      ),
+    )
+    .orderBy(asc(trackingEvents.eventTime));
+
+  return {
+    shipment: {
+      tracking_number: shipment.trackingNumber,
+      internal_tracking_no: shipment.internalTrackingNo,
+      legacy_tracking_number: null,
+      title: shipment.title,
+      status: shipment.status,
+      origin: shipment.origin,
+      destination: shipment.destination,
+      service_type: shipment.serviceType,
+      goods_description: shipment.goodsDescription,
+      origin_iata: shipment.originIata,
+      destination_iata: shipment.destinationIata,
+      total_pcs: shipment.totalPcs,
+      weight_kg: shipment.weightKg ? Number(shipment.weightKg) : null,
+      chargeable_weight: shipment.chargeableWeight ? Number(shipment.chargeableWeight) : null,
+      cargo_type: shipment.cargoType,
+      commodity: shipment.commodity,
+      created_at: shipment.createdAt?.toISOString() ?? null,
+      updated_at: shipment.updatedAt?.toISOString() ?? null,
+    },
+    events: sortTrackingEventsChronologically(
+      events.map((event) => ({
+        status: event.status ?? event.statusCode,
+        label: event.label,
+        description: event.publicDescription ?? event.description,
+        location: event.location,
+        event_time: event.eventTime.toISOString(),
+      })),
+    ),
+  };
+}
+
 export async function findPublicTrackingResult(
   trackingInput: string,
 ): Promise<PublicTrackingResult | null> {
@@ -72,7 +145,24 @@ export async function findPublicTrackingResult(
     return cached.data;
   }
 
-  const webAppUrl = getTrackingWebAppUrl();
+  let webAppUrl: URL;
+
+  try {
+    webAppUrl = getTrackingWebAppUrl();
+  } catch (error) {
+    const databaseResult = await findDatabaseTrackingResult(trimmedTrackingInput);
+
+    if (databaseResult) {
+      getCache().set(cacheKey, {
+        data: databaseResult,
+        expiresAt: Date.now() + trackingCacheTtlMs,
+      });
+      return databaseResult;
+    }
+
+    throw error;
+  }
+
   webAppUrl.searchParams.set("id", trimmedTrackingInput);
 
   let response: Response;
@@ -86,7 +176,8 @@ export async function findPublicTrackingResult(
   }
 
   if (response.status === 404) {
-    return null;
+    const databaseResult = await findDatabaseTrackingResult(trimmedTrackingInput);
+    return databaseResult;
   }
 
   if (!response.ok) {
@@ -105,7 +196,8 @@ export async function findPublicTrackingResult(
   const data = objectValue(payload);
 
   if (isNotFoundPayload(data)) {
-    return null;
+    const databaseResult = await findDatabaseTrackingResult(trimmedTrackingInput);
+    return databaseResult;
   }
 
   let result: PublicTrackingResult;
