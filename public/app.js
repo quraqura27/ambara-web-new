@@ -61,6 +61,40 @@ function initMobileMenu() {
   }));
 }
 
+// Desktop dropdowns
+function initNavDropdowns() {
+  document.querySelectorAll('.nav-dropdown').forEach(dropdown => {
+    const trigger = dropdown.querySelector('.nav-dropdown-trigger');
+    if (!trigger) return;
+
+    trigger.addEventListener('click', event => {
+      event.stopPropagation();
+      const isOpen = dropdown.classList.toggle('open');
+      trigger.setAttribute('aria-expanded', String(isOpen));
+      document.querySelectorAll('.nav-dropdown.open').forEach(other => {
+        if (other === dropdown) return;
+        other.classList.remove('open');
+        other.querySelector('.nav-dropdown-trigger')?.setAttribute('aria-expanded', 'false');
+      });
+    });
+  });
+
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.nav-dropdown.open').forEach(dropdown => {
+      dropdown.classList.remove('open');
+      dropdown.querySelector('.nav-dropdown-trigger')?.setAttribute('aria-expanded', 'false');
+    });
+  });
+
+  document.addEventListener('keydown', event => {
+    if (event.key !== 'Escape') return;
+    document.querySelectorAll('.nav-dropdown.open').forEach(dropdown => {
+      dropdown.classList.remove('open');
+      dropdown.querySelector('.nav-dropdown-trigger')?.setAttribute('aria-expanded', 'false');
+    });
+  });
+}
+
 // Toast notifications
 function showToast(message, type = 'success') {
   const existing = document.querySelector('.toast');
@@ -183,6 +217,7 @@ function getWhatsAppServiceCategory() {
     'ddp-shipping-indonesia': 'ddp_shipping',
     'ddp-shipping-to-indonesia': 'ddp_shipping',
     'pengiriman-ddp-indonesia': 'ddp_shipping',
+    'document-preparation': 'document_preparation',
     network: 'network',
     services: 'services'
   };
@@ -485,6 +520,7 @@ document.addEventListener('DOMContentLoaded', () => {
   LangManager.init();
   initNavbar();
   initMobileMenu();
+  initNavDropdowns();
   initStatsRemark();
   setActiveNav();
   initScrollAnimations();

@@ -106,6 +106,11 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.ambaraartha.com/en/document-preparation</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.ambaraartha.com/en/faq</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -152,6 +157,11 @@
   </url>
   <url>
     <loc>https://www.ambaraartha.com/id/hs-code-checker</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.ambaraartha.com/id/document-preparation</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>

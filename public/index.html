@@ -114,60 +114,7 @@
 </head>
 <body>
 
-<!-- NAVBAR -->
-<nav class="navbar">
-  <div class="container">
-    <a href="/en/" class="navbar-brand">
-      <div class="navbar-logo">
-        <img src="/logo.png" alt="PT Ambara Artha Globaltrans" class="brand-logo-image" width="4000" height="622">
-      </div>
-    </a>
-    <div class="navbar-links">
-      <a href="/en/" class="active">Home</a>
-      <a href="/en/freight-forwarding-indonesia">Freight Forwarding</a>
-      <a href="/en/services">Services</a>
-      <a href="/en/about">About</a>
-      <a href="/en/network">Network</a>
-      <a href="/en/hs-code-checker">HS Code Checker</a>
-      <a href="/en/blog">Blog</a>
-      <a href="/en/faq">FAQ</a>
-    </div>
-    <div class="navbar-actions">
-      <a href="/dashboard" class="btn btn-outline btn-sm" style="margin-right:8px;border-color:rgba(255,255,255,0.2);color:white">Client Portal</a>
-      <div class="lang-toggle">
-        <button data-lang="en" class="active">EN</button>
-        <button data-lang="id">ID</button>
-      </div>
-      <a href="/en/quote" class="btn btn-primary btn-sm">Get Quote</a>
-    </div>
-    <button class="mobile-menu-btn" aria-label="Menu">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-    </button>
-  </div>
-  <div class="mobile-nav">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;width:100%">
-        <div class="navbar-logo"><img src="/logo.png" alt="PT Ambara Artha Globaltrans" class="brand-logo-image" width="4000" height="622"></div>
-        <button class="mobile-menu-btn" aria-label="Close" style="color:white;font-size:2rem">&times;</button>
-      </div>
-      <div class="lang-toggle" style="margin-bottom:32px;width:100%;display:flex;background:rgba(255,255,255,0.1);border-radius:8px">
-        <button data-lang="en" class="active" style="flex:1;color:white;border-color:transparent">EN</button>
-        <button data-lang="id" style="flex:1;color:white;border-color:transparent">ID</button>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:24px;font-size:1.25rem;font-weight:600">
-        <a href="/en/" style="color:white;text-decoration:none">Home</a>
-        <a href="/en/freight-forwarding-indonesia" style="color:white;text-decoration:none">Freight Forwarding</a>
-        <a href="/en/services" style="color:white;text-decoration:none">Services</a>
-        <a href="/en/about" style="color:white;text-decoration:none">About</a>
-        <a href="/en/network" style="color:white;text-decoration:none">Network</a>
-        <a href="/en/hs-code-checker" style="color:white;text-decoration:none">HS Code Checker</a>
-        <a href="/en/blog" style="color:white;text-decoration:none">Blog</a>
-        <a href="/en/faq" style="color:white;text-decoration:none">FAQ</a>
-      </div>
-      <a href="/dashboard" class="btn btn-outline" style="margin-top:auto;justify-content:center;width:100%;margin-bottom:12px;border-color:rgba(255,255,255,0.2);color:white">Client Portal</a>
-      <a href="/en/quote" class="btn btn-primary" style="justify-content:center;width:100%">Get Quote</a>
-    </div>
-  </div>
-</nav>
+<div id="navbar-mount"></div>
 
 <!-- HERO -->
 <section class="hero">
@@ -534,8 +481,10 @@
   <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
 </a>
 
+<script src="/layout.js?v=2.4"></script>
 <script src="/app.js?v=2.4"></script>
 <script>
+document.getElementById('navbar-mount').innerHTML = AMBARA.getNavbar('home');
 // Removed dead API endpoints (public-stats, blog-api) after backend purge
 </script>
 </body>
