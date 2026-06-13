@@ -55,3 +55,7 @@ diagnosis_*.txt
 *.lock
 legacy_vault/
 .env*.local
+
+# local one-off audit scripts
+/scripts/deep-audit*.js
+/scripts/*audit*.local.*
