@@ -99,6 +99,58 @@ CREATE TABLE IF NOT EXISTS tracking_events (
   created_at           TIMESTAMP DEFAULT NOW()
 );
 
+ALTER TABLE tracking_events
+  ADD COLUMN IF NOT EXISTS parcel_id INTEGER REFERENCES parcels(id) ON DELETE CASCADE,
+  ADD COLUMN IF NOT EXISTS status_code TEXT DEFAULT 'pending',
+  ADD COLUMN IF NOT EXISTS public_description TEXT,
+  ADD COLUMN IF NOT EXISTS internal_note TEXT,
+  ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'manual',
+  ADD COLUMN IF NOT EXISTS visible_to_customer BOOLEAN DEFAULT TRUE,
+  ADD COLUMN IF NOT EXISTS created_by INTEGER;
+
+UPDATE tracking_events
+SET status_code = COALESCE(NULLIF(status, ''), 'pending')
+WHERE status_code IS NULL OR status_code = '';
+
+UPDATE tracking_events
+SET source = 'manual'
+WHERE source IS NULL OR source = '';
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'tracking_events'
+      AND column_name = 'visibility'
+  ) THEN
+    EXECUTE 'UPDATE tracking_events
+      SET visible_to_customer = CASE
+        WHEN COALESCE(visibility, ''public'') = ''public'' THEN TRUE
+        ELSE FALSE
+      END';
+  END IF;
+END $$;
+
+UPDATE tracking_events
+SET visible_to_customer = TRUE
+WHERE visible_to_customer IS NULL;
+
+UPDATE tracking_events
+SET public_description = description
+WHERE public_description IS NULL
+  AND visible_to_customer = TRUE
+  AND description IS NOT NULL;
+
+ALTER TABLE tracking_events
+  ALTER COLUMN status_code SET DEFAULT 'pending',
+  ALTER COLUMN status_code SET NOT NULL,
+  ALTER COLUMN source SET DEFAULT 'manual',
+  ALTER COLUMN source SET NOT NULL,
+  ALTER COLUMN visible_to_customer SET DEFAULT TRUE,
+  ALTER COLUMN visible_to_customer SET NOT NULL;
+
 CREATE INDEX IF NOT EXISTS tracking_events_shipment_id_idx ON tracking_events (shipment_id);
 CREATE INDEX IF NOT EXISTS tracking_events_parcel_id_idx ON tracking_events (parcel_id);
 CREATE INDEX IF NOT EXISTS tracking_events_event_time_idx ON tracking_events (event_time);
