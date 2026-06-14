@@ -807,7 +807,7 @@ export function publicDescriptionForStatus(statusCode: AmbaraStatusCode) {
     DELIVERED: "Shipment has been delivered successfully.",
     DELIVERY_ISSUE: "Delivery attempt could not be completed. Our team is monitoring the next update.",
     RETURN_IN_PROGRESS: "Shipment is being returned by the delivery partner.",
-    ON_HOLD: "Shipment is pending further delivery update.",
+    ON_HOLD: "Shipment is pending further update.",
   };
 
   return descriptions[statusCode];
@@ -981,6 +981,40 @@ export function generateAmbaraTrackingNumber(random = Math.random) {
     );
 
   return `AA26-${segment()}-${segment()}`;
+}
+
+export function normalizeAmbaraTrackingNumberInput(value: unknown) {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  return value.trim().replace(/^[,\s]+/, "").trim().toUpperCase();
+}
+
+export async function resolveAmbaraTrackingNumber(
+  input: unknown,
+  trackingNumberExists: (trackingNumber: string) => Promise<boolean>,
+  random = Math.random,
+) {
+  const manualTrackingNumber = normalizeAmbaraTrackingNumberInput(input);
+
+  if (manualTrackingNumber) {
+    if (await trackingNumberExists(manualTrackingNumber)) {
+      throw new Error(`Tracking number ${manualTrackingNumber} already exists.`);
+    }
+
+    return { generated: false, trackingNumber: manualTrackingNumber };
+  }
+
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const trackingNumber = generateAmbaraTrackingNumber(random);
+
+    if (!(await trackingNumberExists(trackingNumber))) {
+      return { generated: true, trackingNumber };
+    }
+  }
+
+  throw new Error("Unable to generate a unique tracking number.");
 }
 
 export function buildAmbaraParcelId(trackingNumber: string, parcelNumber: number) {

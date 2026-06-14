@@ -7,8 +7,14 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { customers, shipments, trackingEvents, trackingUpdates } from "@/lib/db/schema";
 import { requirePortalUser } from "@/lib/portal-auth";
+import {
+  buildCustomerVisibleTrackingEvent,
+  isDuplicateCustomerVisibleEvent,
+  normalizePublicTrackingInput,
+} from "@/lib/tracking/public-events";
 import { TrackingEvent } from "@/lib/tracking/interface";
 import { trackingProvider } from "@/lib/tracking/mock";
+import { resolveAmbaraTrackingNumber } from "@/lib/vendor-tracking/core";
 
 const trackingStatusValues = [
   "pending",
@@ -33,7 +39,7 @@ function normalizeTrackingNumber(value: FormDataEntryValue | string | null) {
     return "";
   }
 
-  return value.trim().toUpperCase();
+  return normalizePublicTrackingInput(value);
 }
 
 function normalizeOptionalText(value: FormDataEntryValue | string | null) {
@@ -105,7 +111,76 @@ function parseTrackingTimestamp(value: FormDataEntryValue | string | null) {
 }
 
 async function requireUser() {
-  await requirePortalUser();
+  return requirePortalUser();
+}
+
+async function shipmentTrackingNumberExists(trackingNumber: string) {
+  const [existingShipment] = await db
+    .select({ id: shipments.id })
+    .from(shipments)
+    .where(
+      or(
+        eq(shipments.trackingNumber, trackingNumber),
+        eq(shipments.internalTrackingNo, trackingNumber),
+      ),
+    )
+    .limit(1);
+
+  return Boolean(existingShipment);
+}
+
+async function createCustomerVisibleTrackingEvent(input: {
+  createdBy?: number | null;
+  eventTime?: Date;
+  internalNote?: string;
+  location?: string;
+  shipmentId: number;
+  source: string;
+  status: string;
+}) {
+  const publicEvent = buildCustomerVisibleTrackingEvent(input.status);
+  const [latestVisibleEvent] = await db
+    .select({
+      publicDescription: trackingEvents.publicDescription,
+      status: trackingEvents.status,
+      statusCode: trackingEvents.statusCode,
+    })
+    .from(trackingEvents)
+    .where(
+      and(
+        eq(trackingEvents.shipmentId, input.shipmentId),
+        eq(trackingEvents.visibleToCustomer, true),
+      ),
+    )
+    .orderBy(desc(trackingEvents.eventTime))
+    .limit(1);
+
+  if (isDuplicateCustomerVisibleEvent(latestVisibleEvent, publicEvent)) {
+    return { created: false, publicEvent };
+  }
+
+  await db.insert(trackingEvents).values({
+    shipmentId: input.shipmentId,
+    statusCode: publicEvent.statusCode,
+    status: publicEvent.status,
+    label: publicEvent.label,
+    publicDescription: publicEvent.publicDescription,
+    description: publicEvent.publicDescription,
+    internalNote: input.internalNote || null,
+    location: input.location || null,
+    eventTime: input.eventTime ?? new Date(),
+    source: input.source,
+    visibleToCustomer: true,
+    createdBy: input.createdBy ?? null,
+    state: "done",
+    createdAt: new Date(),
+  });
+
+  return { created: true, publicEvent };
+}
+
+function redirectWithCreateError(message: string): never {
+  redirect(`/shipments/new?error=${encodeURIComponent(message)}`);
 }
 
 async function getPersistedTrackingEvents(shipmentId: number) {
@@ -313,19 +388,24 @@ export async function updateShipmentTrackingFromForm(
   trackingNumber: string,
   formData: FormData,
 ) {
-  await requireUser();
+  const user = await requireUser();
 
   const normalizedTrackingNumber = normalizeTrackingNumber(trackingNumber);
   const status = normalizeManualStatus(formData.get("status"));
   const location = normalizeOptionalText(formData.get("location"));
-  const description =
-    normalizeOptionalText(formData.get("description")) || defaultTrackingDescription(status);
+  const internalNote = normalizeOptionalText(formData.get("description"));
   const timestamp = parseTrackingTimestamp(formData.get("timestamp"));
+  const publicEvent = buildCustomerVisibleTrackingEvent(status);
 
   const [shipment] = await db
     .select()
     .from(shipments)
-    .where(eq(shipments.trackingNumber, normalizedTrackingNumber));
+    .where(
+      or(
+        eq(shipments.trackingNumber, normalizedTrackingNumber),
+        eq(shipments.internalTrackingNo, normalizedTrackingNumber),
+      ),
+    );
 
   if (!shipment) {
     throw new Error("Shipment not found");
@@ -333,10 +413,19 @@ export async function updateShipmentTrackingFromForm(
 
   await db.insert(trackingUpdates).values({
     shipmentId: shipment.id,
-    status,
-    description,
+    status: publicEvent.status,
+    description: publicEvent.publicDescription || defaultTrackingDescription(status),
     location: location || null,
     timestamp,
+  });
+  await createCustomerVisibleTrackingEvent({
+    createdBy: user.id,
+    eventTime: timestamp,
+    internalNote,
+    location,
+    shipmentId: shipment.id,
+    source: "manual_portal_update",
+    status,
   });
 
   await db
@@ -427,18 +516,14 @@ export async function getDashboardStats() {
 }
 
 export async function createShipmentFromForm(formData: FormData) {
-  await requireUser();
+  const user = await requireUser();
 
-  const trackingNumber = normalizeTrackingNumber(formData.get("trackingNumber"));
   const title = (formData.get("title") as string | null)?.trim() || "";
   const origin = (formData.get("origin") as string | null)?.trim() || "";
   const destination = (formData.get("destination") as string | null)?.trim() || "";
   const customerIdRaw = formData.get("customerId") as string | null;
   const customerId = customerIdRaw ? Number.parseInt(customerIdRaw, 10) : null;
-
-  if (!trackingNumber) {
-    throw new Error("Tracking number is required");
-  }
+  let trackingNumber = "";
 
   if (!title) {
     throw new Error("Shipment title is required");
@@ -448,34 +533,54 @@ export async function createShipmentFromForm(formData: FormData) {
     throw new Error("Origin and destination are required");
   }
 
-  const liveData = await trackingProvider.getTrackingInfo(trackingNumber);
-  const [existingShipment] = await db
-    .select({ trackingNumber: shipments.trackingNumber })
-    .from(shipments)
-    .where(eq(shipments.trackingNumber, trackingNumber));
-
-  if (existingShipment) {
-    redirect(`/shipments/${existingShipment.trackingNumber}`);
+  try {
+    const resolvedTracking = await resolveAmbaraTrackingNumber(
+      formData.get("trackingNumber"),
+      shipmentTrackingNumberExists,
+    );
+    trackingNumber = resolvedTracking.trackingNumber;
+  } catch (error) {
+    redirectWithCreateError(
+      error instanceof Error ? error.message : "Tracking number could not be generated.",
+    );
   }
 
   const [newShipment] = await db
     .insert(shipments)
     .values({
       trackingNumber,
+      internalTrackingNo: trackingNumber,
       title,
       origin,
       destination,
       customerId: Number.isNaN(customerId ?? NaN) ? null : customerId,
-      status: liveData.status,
+      status: "pending",
+      createdByStaff: user.id,
+      updatedByStaff: user.id,
+      createdBy: user.email,
       createdAt: new Date(),
       updatedAt: new Date(),
     })
     .returning();
 
-  await syncTrackingUpdates(newShipment.id, liveData.events);
+  const { publicEvent } = await createCustomerVisibleTrackingEvent({
+    createdBy: user.id,
+    location: origin,
+    shipmentId: newShipment.id,
+    source: "manual_shipment_create",
+    status: "SHIPMENT_CREATED",
+  });
+  await db.insert(trackingUpdates).values({
+    shipmentId: newShipment.id,
+    status: publicEvent.status,
+    description: publicEvent.publicDescription,
+    location: origin,
+    timestamp: new Date(),
+  });
 
   revalidatePath("/dashboard");
   revalidatePath("/shipments");
+  revalidatePath(`/shipments/${trackingNumber}`);
 
   if (customerId && !Number.isNaN(customerId)) {
     revalidatePath(`/customers/${customerId}`);

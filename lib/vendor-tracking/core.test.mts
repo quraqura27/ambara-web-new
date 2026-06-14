@@ -3,13 +3,16 @@ import test from "node:test";
 
 import {
   buildVendorUploadRows,
+  generateAmbaraTrackingNumber,
   mapVendorStatus,
   matchVendorStatusRows,
   matchVendorTrackingRows,
+  normalizeAmbaraTrackingNumberInput,
   parseDelimitedText,
   parseVendorReturnRows,
   prepareBulkShipmentImport,
   publicDescriptionForStatus,
+  resolveAmbaraTrackingNumber,
   type MatchableBatchParcel,
 } from "./core.ts";
 
@@ -79,6 +82,48 @@ test("builds vendor upload rows with required Ambara references", () => {
 
   assert.equal(rows[0]?.ambara_parcel_id, "AA26-TEST-0001-001");
   assert.equal(rows[0]?.export_row_id, "BATCH-0001");
+});
+
+test("bulk import tracking generator still creates Ambara tracking numbers", () => {
+  assert.equal(generateAmbaraTrackingNumber(() => 0), "AA26-AAAA-AAAA");
+});
+
+test("normalizes manual tracking number overrides", () => {
+  assert.equal(normalizeAmbaraTrackingNumberInput(" ,aa26-test-0001 "), "AA26-TEST-0001");
+});
+
+test("manual create without tracking number generates a unique one", async () => {
+  const resolved = await resolveAmbaraTrackingNumber("", async () => false, () => 0);
+
+  assert.deepEqual(resolved, {
+    generated: true,
+    trackingNumber: "AA26-AAAA-AAAA",
+  });
+});
+
+test("manual create retries generated tracking numbers until unique", async () => {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const randomValues = [
+    ...Array.from({ length: 8 }, () => 0),
+    ...Array.from({ length: 8 }, () => 1 / alphabet.length),
+  ];
+  const resolved = await resolveAmbaraTrackingNumber(
+    "",
+    async (trackingNumber) => trackingNumber === "AA26-AAAA-AAAA",
+    () => randomValues.shift() ?? 0,
+  );
+
+  assert.deepEqual(resolved, {
+    generated: true,
+    trackingNumber: "AA26-BBBB-BBBB",
+  });
+});
+
+test("manual duplicate tracking number override is rejected", async () => {
+  await assert.rejects(
+    resolveAmbaraTrackingNumber("AA26-EXISTING-0001", async () => true),
+    /Tracking number AA26-EXISTING-0001 already exists\./,
+  );
 });
 
 test("matches vendor tracking import by Ambara parcel ID and export row ID", () => {

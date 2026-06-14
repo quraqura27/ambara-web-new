@@ -2,12 +2,32 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 import { createShipmentFromForm, getCustomersForSelect } from "@/actions/shipments";
-import { Button, Card, Input } from "@/components/ui/core";
+import { Button, Card, Input, cn } from "@/components/ui/core";
 
 const fieldClassName =
   "w-full rounded-lg border border-slate-700 bg-slate-900/50 px-4 py-2 text-sm text-slate-100 outline-none transition-all placeholder:text-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/30";
 
-export default async function NewShipmentPage() {
+type NewShipmentPageProps = {
+  searchParams?: Promise<{ error?: string }>;
+};
+
+function MessageBanner({ error }: { error?: string }) {
+  if (!error) return null;
+
+  return (
+    <div
+      className={cn(
+        "rounded-lg border px-4 py-3 text-sm",
+        "border-rose-500/20 bg-rose-500/10 text-rose-300",
+      )}
+    >
+      {error}
+    </div>
+  );
+}
+
+export default async function NewShipmentPage({ searchParams }: NewShipmentPageProps) {
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const customers = await getCustomersForSelect();
 
   return (
@@ -26,18 +46,22 @@ export default async function NewShipmentPage() {
         </div>
       </div>
 
+      <MessageBanner error={resolvedSearchParams?.error} />
+
       <Card className="p-8">
         <form action={createShipmentFromForm} className="space-y-6">
           <div className="grid gap-6 md:grid-cols-2">
             <label className="space-y-2">
               <span className="text-xs font-bold uppercase tracking-widest text-slate-500">
-                Tracking Number *
+                Tracking Number
               </span>
               <Input
                 name="trackingNumber"
-                placeholder="e.g. AMB-8291-7492"
-                required
+                placeholder="Tracking number will be auto-generated on save"
               />
+              <span className="block text-xs text-slate-500">
+                Leave blank unless you need to preserve an existing Ambara tracking number.
+              </span>
             </label>
 
             <label className="space-y-2">

@@ -4,6 +4,7 @@ import { and, asc, eq, or } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { shipments, trackingEvents } from "@/lib/db/schema";
+import { normalizePublicTrackingInput } from "@/lib/tracking/public-events";
 import {
   isNotFoundPayload,
   PublicTrackingPayloadError,
@@ -69,7 +70,7 @@ function objectValue(value: unknown): Record<string, unknown> | null {
 async function findDatabaseTrackingResult(
   trackingInput: string,
 ): Promise<PublicTrackingResult | null> {
-  const normalizedTrackingInput = trackingInput.trim().toUpperCase();
+  const normalizedTrackingInput = normalizePublicTrackingInput(trackingInput);
 
   if (!normalizedTrackingInput) {
     return null;
@@ -137,12 +138,27 @@ async function findDatabaseTrackingResult(
 export async function findPublicTrackingResult(
   trackingInput: string,
 ): Promise<PublicTrackingResult | null> {
-  const trimmedTrackingInput = trackingInput.trim();
-  const cacheKey = normalizeTrackingValue(trimmedTrackingInput);
+  const normalizedTrackingInput = normalizePublicTrackingInput(trackingInput);
+  const cacheKey = normalizeTrackingValue(normalizedTrackingInput);
+
+  if (!normalizedTrackingInput) {
+    return null;
+  }
+
   const cached = getCache().get(cacheKey);
 
   if (cached && cached.expiresAt > Date.now()) {
     return cached.data;
+  }
+
+  const databaseResult = await findDatabaseTrackingResult(normalizedTrackingInput);
+
+  if (databaseResult) {
+    getCache().set(cacheKey, {
+      data: databaseResult,
+      expiresAt: Date.now() + trackingCacheTtlMs,
+    });
+    return databaseResult;
   }
 
   let webAppUrl: URL;
@@ -150,20 +166,10 @@ export async function findPublicTrackingResult(
   try {
     webAppUrl = getTrackingWebAppUrl();
   } catch (error) {
-    const databaseResult = await findDatabaseTrackingResult(trimmedTrackingInput);
-
-    if (databaseResult) {
-      getCache().set(cacheKey, {
-        data: databaseResult,
-        expiresAt: Date.now() + trackingCacheTtlMs,
-      });
-      return databaseResult;
-    }
-
     throw error;
   }
 
-  webAppUrl.searchParams.set("id", trimmedTrackingInput);
+  webAppUrl.searchParams.set("id", normalizedTrackingInput);
 
   let response: Response;
 
@@ -176,8 +182,7 @@ export async function findPublicTrackingResult(
   }
 
   if (response.status === 404) {
-    const databaseResult = await findDatabaseTrackingResult(trimmedTrackingInput);
-    return databaseResult;
+    return null;
   }
 
   if (!response.ok) {
@@ -196,8 +201,7 @@ export async function findPublicTrackingResult(
   const data = objectValue(payload);
 
   if (isNotFoundPayload(data)) {
-    const databaseResult = await findDatabaseTrackingResult(trimmedTrackingInput);
-    return databaseResult;
+    return null;
   }
 
   let result: PublicTrackingResult;
