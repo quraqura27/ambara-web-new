@@ -1,11 +1,12 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ClipboardList, LucideIcon, LayoutDashboard, LogOut, Package, Search, Shield, Users } from "lucide-react";
+import { ClipboardList, FileSpreadsheet, LucideIcon, LayoutDashboard, LogOut, Package, Search, Shield, Users } from "lucide-react";
 
 import { signOut } from "@/actions/auth";
 import { searchShipmentByTracking } from "@/actions/shipments";
 import { requirePortalUser } from "@/lib/portal-auth";
 import { canManageStaffAccounts, normalizePortalRole, portalRoleLabels } from "@/lib/portal-roles";
+import { canExportShipments } from "@/lib/shipment-export/core";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,7 @@ export default async function PortalLayout({ children }: { children: React.React
   const user = await requirePortalUser();
   const userRole = normalizePortalRole(user.role);
   const canManageAccounts = canManageStaffAccounts(user);
+  const canExportShipmentData = canExportShipments(user);
 
   return (
     <div className="flex min-h-screen overflow-hidden bg-[#0a0a0f] text-slate-100">
@@ -51,6 +53,9 @@ export default async function PortalLayout({ children }: { children: React.React
           <NavItem href="/dashboard" icon={LayoutDashboard} label="Dashboard" />
           <NavItem href="/customers" icon={Users} label="Customer Directory" />
           <NavItem href="/shipments" icon={Package} label="Shipment Tracking" />
+          {canExportShipmentData ? (
+            <NavItem href="/shipments/export" icon={FileSpreadsheet} label="Shipment Export" />
+          ) : null}
           <NavItem href="/delivery-batches" icon={ClipboardList} label="Delivery Batches" />
           {canManageAccounts ? (
             <NavItem href="/accounts" icon={Shield} label="Staff Accounts" />

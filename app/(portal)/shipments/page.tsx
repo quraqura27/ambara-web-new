@@ -1,9 +1,11 @@
 import Link from "next/link";
-import { ArrowRight, FileUp, MapPin, Package, Plus, Printer, Search, Truck } from "lucide-react";
+import { ArrowRight, Download, FileUp, MapPin, Package, Plus, Printer, Search, Truck } from "lucide-react";
 
 import { getShipments, searchShipmentByTracking } from "@/actions/shipments";
 import { BulkPrintConsignmentNotesButton } from "@/components/consignment-notes/bulk-print-button";
 import { Button, Card, Input } from "@/components/ui/core";
+import { requirePortalUser } from "@/lib/portal-auth";
+import { canExportShipments } from "@/lib/shipment-export/core";
 
 type ShipmentsPageProps = {
   searchParams?: Promise<{ search?: string }>;
@@ -49,6 +51,8 @@ function statusClassName(status: string) {
 export default async function ShipmentsPage({ searchParams }: ShipmentsPageProps) {
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const search = resolvedSearchParams?.search?.trim() ?? "";
+  const user = await requirePortalUser();
+  const canExportShipmentData = canExportShipments(user);
   const shipments = await getShipments(search);
 
   return (
@@ -62,6 +66,13 @@ export default async function ShipmentsPage({ searchParams }: ShipmentsPageProps
         </div>
         <div className="flex flex-wrap gap-3">
           <BulkPrintConsignmentNotesButton />
+          {canExportShipmentData ? (
+            <Link href="/shipments/export">
+              <Button className="gap-2" variant="secondary">
+                <Download className="h-4 w-4" /> Export
+              </Button>
+            </Link>
+          ) : null}
           <Link href="/shipments/bulk-import">
             <Button className="gap-2" variant="secondary">
               <FileUp className="h-4 w-4" /> Bulk Import
