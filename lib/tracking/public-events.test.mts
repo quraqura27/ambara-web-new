@@ -22,7 +22,7 @@ test("maps delivered to customer-safe public tracking text", () => {
 
 test("maps manual shipment creation to received-information public text", () => {
   assert.deepEqual(buildCustomerVisibleTrackingEvent("SHIPMENT_CREATED"), {
-    label: "Shipment Created",
+    label: "Shipment Information Received",
     publicDescription: "Shipment information has been received.",
     status: "pending",
     statusCode: "DRAFT",

@@ -12,7 +12,7 @@ type ExistingTrackingEvent = {
 };
 
 const shipmentCreatedEvent = {
-  label: "Shipment Created",
+  label: "Shipment Information Received",
   publicDescription: "Shipment information has been received.",
   status: "pending",
   statusCode: "DRAFT",

@@ -1,11 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
-
-import { getSheetsSyncAuthError } from "@/lib/sheet-sync/auth";
-import { upsertSheetShipmentToDatabase } from "@/lib/sheet-sync/database";
-import {
-  parseSheetShipmentPayload,
-  SheetShipmentPayloadError,
-} from "@/lib/sheet-sync/payload";
+import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -14,6 +7,9 @@ const noStoreHeaders = {
   "Cache-Control": "no-store",
 };
 
+const disabledMessage =
+  "Google Sheets import has been disabled. Use manual shipment input or bulk shipment import.";
+
 function jsonResponse(body: unknown, status = 200) {
   return NextResponse.json(body, {
     status,
@@ -21,72 +17,15 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
-export async function POST(request: NextRequest) {
-  const authError = getSheetsSyncAuthError(request.headers);
-  if (authError) {
-    return jsonResponse(
-      {
-        success: false,
-        error: {
-          code: authError.code,
-          message: authError.message,
-        },
+export async function POST() {
+  return jsonResponse(
+    {
+      success: false,
+      error: {
+        code: "GOOGLE_SHEETS_IMPORT_DISABLED",
+        message: disabledMessage,
       },
-      authError.status,
-    );
-  }
-
-  let payload: unknown;
-  try {
-    payload = await request.json();
-  } catch {
-    return jsonResponse(
-      {
-        success: false,
-        error: {
-          code: "SYNC_INVALID_JSON",
-          message: "Request body must be valid JSON",
-        },
-      },
-      400,
-    );
-  }
-
-  try {
-    const parsed = parseSheetShipmentPayload(payload);
-    const result = await upsertSheetShipmentToDatabase(parsed.values);
-
-    return jsonResponse({
-      success: true,
-      result: result.action,
-      tracking_number: parsed.trackingNumber,
-      shipment_id: result.id,
-    });
-  } catch (error) {
-    if (error instanceof SheetShipmentPayloadError) {
-      return jsonResponse(
-        {
-          success: false,
-          error: {
-            code: error.code,
-            message: error.message,
-            details: error.details,
-          },
-        },
-        400,
-      );
-    }
-
-    console.error("Sheet shipment sync failed");
-    return jsonResponse(
-      {
-        success: false,
-        error: {
-          code: "SYNC_DATABASE_ERROR",
-          message: "Shipment sync failed",
-        },
-      },
-      500,
-    );
-  }
+    },
+    410,
+  );
 }

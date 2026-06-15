@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import {
-  findPublicTrackingResult,
-  TrackingWebAppConfigError,
-  TrackingWebAppUpstreamError,
-} from "@/lib/google-sheets/tracking";
+import { findPublicTrackingResult } from "@/lib/tracking/public-tracking";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -47,23 +43,14 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(result, { headers: noStoreHeaders });
   } catch (error) {
-    const isConfigError = error instanceof TrackingWebAppConfigError;
-    const isUpstreamError = error instanceof TrackingWebAppUpstreamError;
-
-    console.error(
-      isConfigError
-        ? "Tracking web app URL is not configured"
-        : "Tracking web app lookup failed",
-    );
+    console.error("Public tracking lookup failed");
 
     return NextResponse.json(
       {
-        error: isConfigError
-          ? "Tracking service is not configured"
-          : "Tracking service is temporarily unavailable",
-        code: isConfigError ? "TRACKING_CONFIG_ERROR" : "TRACKING_UPSTREAM_ERROR",
+        error: "Tracking service is temporarily unavailable",
+        code: "TRACKING_DATABASE_ERROR",
       },
-      { status: isUpstreamError ? 502 : 500, headers: noStoreHeaders },
+      { status: 500, headers: noStoreHeaders },
     );
   }
 }

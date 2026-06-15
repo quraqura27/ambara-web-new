@@ -1,6 +1,7 @@
 export type ShipmentStatus =
   | "pending"
   | "received"
+  | "processed"
   | "departed_origin"
   | "in_transit"
   | "customs"

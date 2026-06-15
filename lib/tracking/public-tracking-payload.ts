@@ -35,7 +35,7 @@ export type PublicTrackingResult = {
 };
 
 export class PublicTrackingPayloadError extends Error {
-  constructor(message = "Tracking web app response is invalid") {
+  constructor(message = "Public tracking payload is invalid") {
     super(message);
     this.name = "PublicTrackingPayloadError";
   }
@@ -140,13 +140,13 @@ export function sanitizeTrackingPayload(payload: unknown): PublicTrackingResult 
   const data = objectValue(payload);
 
   if (!data || isNotFoundPayload(data)) {
-    throw new PublicTrackingPayloadError("Tracking web app response is missing shipment data");
+    throw new PublicTrackingPayloadError("Public tracking payload is missing shipment data");
   }
 
   const shipment = toPublicShipment(data.shipment);
 
   if (!shipment) {
-    throw new PublicTrackingPayloadError("Tracking web app response is missing shipment data");
+    throw new PublicTrackingPayloadError("Public tracking payload is missing shipment data");
   }
 
   const events = Array.isArray(data.events)
