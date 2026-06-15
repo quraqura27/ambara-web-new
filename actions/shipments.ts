@@ -1,6 +1,6 @@
 "use server";
 
-import { and, desc, eq, ilike, or } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, or } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
@@ -249,10 +249,34 @@ export async function getShipmentByTracking(trackingNumber: string) {
         lastSyncAt: new Date(),
       },
       customer: null,
+      parcels: [],
     };
   }
 
-  const persistedEvents = await getPersistedTrackingEvents(shipment.id);
+  const [persistedEvents, shipmentParcels] = await Promise.all([
+    getPersistedTrackingEvents(shipment.id),
+    db
+      .select({
+        id: parcels.id,
+        ambaraParcelId: parcels.ambaraParcelId,
+        parcelNumber: parcels.parcelNumber,
+        receiverName: parcels.receiverName,
+        receiverPhone: parcels.receiverPhone,
+        receiverAddress: parcels.receiverAddress,
+        destinationCity: parcels.destinationCity,
+        postalCode: parcels.postalCode,
+        weight: parcels.weight,
+        pieces: parcels.pieces,
+        serviceType: parcels.serviceType,
+        commodity: parcels.commodity,
+        deliveryInstruction: parcels.deliveryInstruction,
+        codAmount: parcels.codAmount,
+        currentStatus: parcels.currentStatus,
+      })
+      .from(parcels)
+      .where(eq(parcels.shipmentId, shipment.id))
+      .orderBy(asc(parcels.parcelNumber)),
+  ]);
   const events = persistedEvents.length
     ? persistedEvents
     : [
@@ -283,6 +307,7 @@ export async function getShipmentByTracking(trackingNumber: string) {
       lastSyncAt,
     },
     customer,
+    parcels: shipmentParcels,
   };
 }
 

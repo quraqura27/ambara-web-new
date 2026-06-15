@@ -135,11 +135,35 @@ function StatusStep({ event, isFirst, isLast }: StatusStepProps) {
   );
 }
 
+function displayValue(value: number | string | null | undefined) {
+  if (value === null || value === undefined || value === "") {
+    return "-";
+  }
+
+  return String(value);
+}
+
+function DetailItem({
+  label,
+  value,
+}: {
+  label: string;
+  value: number | string | null | undefined;
+}) {
+  return (
+    <div className="space-y-1">
+      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{label}</p>
+      <p className="break-words text-sm font-medium text-slate-200">{displayValue(value)}</p>
+    </div>
+  );
+}
+
 export default async function TrackingDetailPage({ params }: TrackingDetailPageProps) {
   const { number } = await params;
-  const { shipment, liveData, customer } = await getShipmentByTracking(number);
+  const { shipment, liveData, customer, parcels } = await getShipmentByTracking(number);
   const trackingUpdateAction = updateShipmentTrackingFromForm.bind(null, number);
   const consignmentNoteTrackingNo = shipment?.internalTrackingNo ?? "";
+  const primaryParcel = parcels[0];
 
   return (
     <div className="space-y-8">
@@ -196,6 +220,95 @@ export default async function TrackingDetailPage({ params }: TrackingDetailPageP
               ))}
             </div>
           </Card>
+
+          {shipment ? (
+            <Card className="p-8">
+              <h3 className="mb-6 text-xs font-bold uppercase tracking-widest text-slate-500">
+                Shipment Details
+              </h3>
+
+              <div className="grid gap-8 md:grid-cols-2">
+                <div className="space-y-5">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-600">
+                    Customer and service
+                  </p>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <DetailItem label="Customer reference" value={shipment.customerReference} />
+                    <DetailItem label="AWB number" value={shipment.mawb} />
+                    <DetailItem label="Customer name" value={shipment.customerName} />
+                    <DetailItem label="Service type" value={shipment.serviceType} />
+                  </div>
+                </div>
+
+                <div className="space-y-5">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-600">
+                    Cargo
+                  </p>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <DetailItem
+                      label="Commodity"
+                      value={shipment.commodity ?? primaryParcel?.commodity}
+                    />
+                    <DetailItem label="Cargo type" value={shipment.cargoType} />
+                    <DetailItem label="Pieces" value={shipment.totalPcs ?? primaryParcel?.pieces} />
+                    <DetailItem
+                      label="Gross weight"
+                      value={shipment.weightKg ?? primaryParcel?.weight}
+                    />
+                    <DetailItem label="Chargeable weight" value={shipment.chargeableWeight} />
+                    <DetailItem label="Description" value={shipment.goodsDescription} />
+                  </div>
+                </div>
+
+                <div className="space-y-5">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-600">
+                    Shipper
+                  </p>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <DetailItem label="Name" value={shipment.shipperName} />
+                    <DetailItem label="Phone" value={shipment.shipperPhone} />
+                    <DetailItem label="Address" value={shipment.shipperAddress} />
+                  </div>
+                </div>
+
+                <div className="space-y-5">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-600">
+                    Receiver / consignee
+                  </p>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <DetailItem
+                      label="Name"
+                      value={shipment.consigneeName ?? primaryParcel?.receiverName}
+                    />
+                    <DetailItem
+                      label="Phone"
+                      value={shipment.consigneePhone ?? primaryParcel?.receiverPhone}
+                    />
+                    <DetailItem label="Destination city" value={primaryParcel?.destinationCity} />
+                    <DetailItem label="Postal code" value={primaryParcel?.postalCode} />
+                    <DetailItem
+                      label="Address"
+                      value={shipment.consigneeAddress ?? primaryParcel?.receiverAddress}
+                    />
+                    <DetailItem
+                      label="Delivery instruction"
+                      value={primaryParcel?.deliveryInstruction}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {primaryParcel ? (
+                <div className="mt-8 border-t border-white/5 pt-6">
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <DetailItem label="Ambara parcel ID" value={primaryParcel.ambaraParcelId} />
+                    <DetailItem label="Parcel status" value={primaryParcel.currentStatus} />
+                    <DetailItem label="COD amount" value={primaryParcel.codAmount} />
+                  </div>
+                </div>
+              ) : null}
+            </Card>
+          ) : null}
         </div>
 
         <div className="space-y-6 lg:col-span-1">
