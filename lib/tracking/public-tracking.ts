@@ -114,7 +114,6 @@ export async function findPublicTrackingResult(
   return {
     shipment: {
       tracking_number: shipment.trackingNumber,
-      internal_tracking_no: shipment.internalTrackingNo,
       legacy_tracking_number: null,
       title: shipment.title,
       status: shipment.status,

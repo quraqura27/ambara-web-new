@@ -15,6 +15,7 @@ const forbiddenKeys = [
   "consignee_address",
   "consignee_phone",
   "internal_notes",
+  "internal_tracking_no",
   "documents",
   "generation_status",
   "tracking_created_at",
@@ -48,6 +49,7 @@ test("sanitizes payload and sorts events chronologically", () => {
   const result = sanitizeTrackingPayload({
     shipment: {
       tracking_number: "AA26-K6AR-997L",
+      internal_tracking_no: "AA26-PRIVATE-ALIAS",
       status: "processed",
       origin: "Jakarta, Indonesia",
       destination: "Sorong, ID",

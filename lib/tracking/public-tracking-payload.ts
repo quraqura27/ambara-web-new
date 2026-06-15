@@ -10,7 +10,6 @@ export type PublicTrackingEvent = {
 
 export type PublicShipment = {
   tracking_number: string | null;
-  internal_tracking_no: string | null;
   legacy_tracking_number: string | null;
   title: string | null;
   status: string | null;
@@ -75,7 +74,6 @@ function toPublicShipment(value: unknown): PublicShipment | null {
 
   return {
     tracking_number: stringValue(shipment.tracking_number),
-    internal_tracking_no: stringValue(shipment.internal_tracking_no),
     legacy_tracking_number: stringValue(shipment.legacy_tracking_number),
     title: stringValue(shipment.title),
     status: stringValue(shipment.status),
