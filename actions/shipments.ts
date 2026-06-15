@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { customers, parcels, shipments, trackingEvents, trackingUpdates } from "@/lib/db/schema";
 import { requirePortalUser } from "@/lib/portal-auth";
+import { canEditShipmentDetails } from "@/lib/portal-roles";
 import {
   buildCustomerVisibleTrackingEvent,
   isDuplicateCustomerVisibleEvent,
@@ -17,6 +18,12 @@ import {
   type ManualShipmentFormValues,
   parseManualShipmentForm,
 } from "@/lib/shipments/manual-create";
+import {
+  buildShipmentEditUpdates,
+  ShipmentEditFormError,
+  type ShipmentEditFormValues,
+  parseShipmentEditForm,
+} from "@/lib/shipments/edit";
 import { TrackingEvent } from "@/lib/tracking/interface";
 import { resolveAmbaraTrackingNumber } from "@/lib/vendor-tracking/core";
 
@@ -186,6 +193,12 @@ async function createCustomerVisibleTrackingEvent(input: {
 
 function redirectWithCreateError(message: string): never {
   redirect(`/shipments/new?error=${encodeURIComponent(message)}`);
+}
+
+function redirectWithEditError(trackingNumber: string, message: string): never {
+  redirect(
+    `/shipments/${encodeURIComponent(trackingNumber)}/edit?error=${encodeURIComponent(message)}`,
+  );
 }
 
 function fallbackTrackingEvent(input: {
@@ -437,6 +450,83 @@ export async function updateShipmentTrackingFromForm(
   }
 
   redirect(`/shipments/${normalizedTrackingNumber}`);
+}
+
+export async function updateShipmentDetails(trackingNumber: string, formData: FormData) {
+  const user = await requireUser();
+
+  if (!canEditShipmentDetails(user)) {
+    throw new Error("Superadmin access is required to edit shipment details.");
+  }
+
+  const normalizedTrackingNumber = normalizeTrackingNumber(trackingNumber);
+  if (!normalizedTrackingNumber) {
+    redirect("/shipments");
+  }
+
+  let input: ShipmentEditFormValues;
+  try {
+    input = parseShipmentEditForm(formData);
+  } catch (error) {
+    if (error instanceof ShipmentEditFormError) {
+      redirectWithEditError(normalizedTrackingNumber, error.message);
+    }
+
+    throw error;
+  }
+
+  const [shipment] = await db
+    .select()
+    .from(shipments)
+    .where(
+      or(
+        eq(shipments.trackingNumber, normalizedTrackingNumber),
+        eq(shipments.internalTrackingNo, normalizedTrackingNumber),
+      ),
+    )
+    .limit(1);
+
+  if (!shipment) {
+    redirectWithEditError(normalizedTrackingNumber, "Shipment was not found.");
+  }
+
+  const shipmentParcels = await db
+    .select({ id: parcels.id })
+    .from(parcels)
+    .where(eq(parcels.shipmentId, shipment.id))
+    .orderBy(asc(parcels.parcelNumber))
+    .limit(2);
+
+  const updates = buildShipmentEditUpdates(input, user.id);
+
+  await db
+    .update(shipments)
+    .set(updates.shipment)
+    .where(eq(shipments.id, shipment.id));
+
+  if (shipmentParcels.length === 1) {
+    await db
+      .update(parcels)
+      .set(updates.parcel)
+      .where(eq(parcels.id, shipmentParcels[0].id));
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/shipments");
+  revalidatePath(`/shipments/${shipment.trackingNumber}`);
+  revalidatePath(`/shipments/${shipment.trackingNumber}/edit`);
+
+  if (shipment.customerId) {
+    revalidatePath(`/customers/${shipment.customerId}`);
+  }
+
+  if (input.customerId && input.customerId !== shipment.customerId) {
+    revalidatePath(`/customers/${input.customerId}`);
+  }
+
+  redirect(
+    `/shipments/${shipment.trackingNumber}?notice=${encodeURIComponent("Shipment details updated.")}`,
+  );
 }
 
 export async function getShipments(search?: string) {

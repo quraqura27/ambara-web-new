@@ -7,6 +7,7 @@ import {
   Clock,
   ExternalLink,
   MapPin,
+  Pencil,
   Plane,
   Printer,
   Truck,
@@ -15,10 +16,13 @@ import {
 
 import { getShipmentByTracking, updateShipmentTrackingFromForm } from "@/actions/shipments";
 import { Button, Card, Input } from "@/components/ui/core";
+import { getPortalUser } from "@/lib/portal-auth";
+import { canEditShipmentDetails } from "@/lib/portal-roles";
 import type { TrackingEvent } from "@/lib/tracking/interface";
 
 type TrackingDetailPageProps = {
   params: Promise<{ number: string }>;
+  searchParams?: Promise<{ error?: string; notice?: string }>;
 };
 
 type StatusStepProps = {
@@ -158,15 +162,39 @@ function DetailItem({
   );
 }
 
-export default async function TrackingDetailPage({ params }: TrackingDetailPageProps) {
+function MessageBanner({ error, notice }: { error?: string; notice?: string }) {
+  if (!error && !notice) return null;
+
+  return (
+    <div
+      className={
+        error
+          ? "rounded-lg border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-300"
+          : "rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300"
+      }
+    >
+      {error || notice}
+    </div>
+  );
+}
+
+export default async function TrackingDetailPage({
+  params,
+  searchParams,
+}: TrackingDetailPageProps) {
   const { number } = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const user = await getPortalUser();
   const { shipment, liveData, customer, parcels } = await getShipmentByTracking(number);
   const trackingUpdateAction = updateShipmentTrackingFromForm.bind(null, number);
   const consignmentNoteTrackingNo = shipment?.internalTrackingNo ?? "";
   const primaryParcel = parcels[0];
+  const canEditShipment = shipment && canEditShipmentDetails(user);
 
   return (
     <div className="space-y-8">
+      <MessageBanner error={resolvedSearchParams?.error} notice={resolvedSearchParams?.notice} />
+
       <div className="flex items-center gap-4">
         <Link href="/shipments">
           <Button className="h-auto rounded-full p-2" variant="ghost">
@@ -199,6 +227,17 @@ export default async function TrackingDetailPage({ params }: TrackingDetailPageP
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
+          {canEditShipment ? (
+            <div className="flex justify-end">
+              <Link href={`/shipments/${encodeURIComponent(number)}/edit`}>
+                <Button className="gap-2" variant="secondary">
+                  <Pencil className="h-4 w-4" />
+                  Edit Shipment
+                </Button>
+              </Link>
+            </div>
+          ) : null}
+
           <Card className="p-8">
             <div className="mb-10 flex items-center justify-between">
               <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">
