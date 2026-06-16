@@ -74,7 +74,10 @@ function ConsignmentNoteLabel({ label }: { label: ConsignmentNotePieceViewModel 
   const consigneeTitleId = `consignee-${label.trackingNo}-${label.pieceNo}`;
 
   return (
-    <article aria-label={`Consignment note ${label.trackingNo} piece ${label.pieceSequence}`} className={styles.labelPage}>
+    <article
+      aria-label={`Consignment note ${label.trackingNo} piece ${label.pieceSequence}`}
+      className={`${styles.labelPage} cn-label`}
+    >
       <header className={styles.labelHeader}>
         <div className={styles.brandBlock}>
           <Image
