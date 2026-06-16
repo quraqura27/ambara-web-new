@@ -167,7 +167,7 @@ export function ConsignmentNotePrintDocument({
         <div className={styles.toolbarTitle}>
           <h1>{title}</h1>
           <p>
-            {labels.length} label{labels.length === 1 ? "" : "s"} ready for 100 x 150 mm print.
+            {labels.length} label{labels.length === 1 ? "" : "s"} ready for 150 x 100 mm print.
           </p>
         </div>
         <PrintButton />
