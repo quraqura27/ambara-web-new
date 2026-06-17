@@ -80,7 +80,7 @@
   max-width: 150mm !important;
   max-height: 100mm !important;
   margin: 0 !important;
-  padding: 2.6mm;
+  padding: 3mm;
   box-sizing: border-box;
   overflow: hidden;
   break-after: page;
@@ -110,84 +110,90 @@
   display: grid;
   grid-template-columns: 1fr auto;
   align-items: start;
-  gap: 2mm;
+  gap: 2.5mm;
+  min-height: 12.2mm;
   border-bottom: 0.35mm solid #111827;
-  padding-bottom: 0.8mm;
+  padding-bottom: 1mm;
 }
 
 .brandBlock {
   display: flex;
   align-items: center;
-  gap: 1.8mm;
+  gap: 2.4mm;
   min-width: 0;
 }
 
 .logo {
-  width: 30mm;
+  width: 36mm;
   height: auto;
   object-fit: contain;
 }
 
 .companyName {
   margin: 0;
-  font-size: 8.5pt;
+  font-size: 10.5pt;
+  font-weight: 900;
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+
+.website {
+  margin: 0.9mm 0 0;
+  font-size: 7.3pt;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.pieceBox {
+  border: 0.35mm solid #111827;
+  min-width: 21mm;
+  min-height: 11.2mm;
+  padding: 1mm 1.2mm;
+  text-align: center;
+}
+
+.pieceLabel {
+  font-size: 5.1pt;
   font-weight: 900;
   line-height: 1;
   text-transform: uppercase;
 }
 
-.website {
-  margin: 0.55mm 0 0;
-  font-size: 6.5pt;
-  font-weight: 700;
-}
-
-.pieceBox {
-  border: 0.35mm solid #111827;
-  min-width: 18mm;
-  padding: 0.75mm 1.1mm;
-  text-align: center;
-}
-
-.pieceLabel {
-  font-size: 4.7pt;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
 .pieceValue {
-  margin-top: 0.2mm;
-  font-size: 14pt;
+  margin-top: 0.55mm;
+  font-size: 17pt;
   font-weight: 900;
   line-height: 1;
 }
 
 .trackingBand {
   display: grid;
-  grid-template-columns: 1fr 20mm;
-  gap: 2mm;
-  margin-top: 0.9mm;
+  grid-template-columns: 1fr 24mm;
+  gap: 2.5mm;
+  margin-top: 1mm;
+  min-height: 28mm;
   align-items: stretch;
 }
 
 .eyebrow {
-  font-size: 5pt;
+  font-size: 5.4pt;
   font-weight: 900;
+  line-height: 1;
   text-transform: uppercase;
   letter-spacing: 0;
 }
 
 .trackingNo {
-  margin-top: 0.2mm;
-  font-size: 15.5pt;
+  margin-top: 0.45mm;
+  font-size: 18pt;
   font-weight: 900;
   line-height: 1;
   word-break: break-word;
 }
 
 .barcode {
-  margin-top: 0.7mm;
-  height: 10.5mm;
+  margin-top: 1mm;
+  height: 15.5mm;
   overflow: hidden;
 }
 
@@ -198,29 +204,30 @@
 }
 
 .barcodeText {
-  margin-top: 0.25mm;
-  font-size: 5.2pt;
+  margin-top: 0.45mm;
+  font-size: 5.5pt;
   font-weight: 900;
   line-height: 1;
   text-align: center;
 }
 
 .qrBox {
+  min-height: 28mm;
   border: 0.3mm solid #111827;
-  padding: 0.7mm;
+  padding: 1mm;
   text-align: center;
 }
 
 .qrBox svg {
   display: block;
-  width: 16mm;
-  height: 16mm;
+  width: 20mm;
+  height: 20mm;
   margin: 0 auto;
 }
 
 .qrLabel {
-  margin-top: 0.25mm;
-  font-size: 4.1pt;
+  margin-top: 0.55mm;
+  font-size: 4.7pt;
   font-weight: 900;
   line-height: 1;
   text-transform: uppercase;
@@ -229,28 +236,28 @@
 .routeGrid {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr 1fr;
-  gap: 1mm;
-  margin-top: 0.8mm;
+  gap: 1.2mm;
+  margin-top: 1mm;
 }
 
 .field {
   min-width: 0;
-  height: 6.2mm;
+  height: 8.4mm;
   overflow: hidden;
   border: 0.28mm solid #111827;
-  padding: 0.65mm 0.8mm;
+  padding: 0.85mm 1mm;
 }
 
 .fieldLabel {
-  font-size: 4.35pt;
+  font-size: 4.7pt;
   font-weight: 900;
   line-height: 1;
   text-transform: uppercase;
 }
 
 .fieldValue {
-  margin-top: 0.35mm;
-  font-size: 6.2pt;
+  margin-top: 0.55mm;
+  font-size: 7.2pt;
   font-weight: 900;
   line-height: 1.05;
   overflow-wrap: anywhere;
@@ -259,15 +266,15 @@
 .partyGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1.2mm;
-  margin-top: 0.8mm;
+  gap: 1.4mm;
+  margin-top: 1mm;
 }
 
 .partyBox {
-  height: 12.4mm;
+  height: 16mm;
   overflow: hidden;
   border: 0.32mm solid #111827;
-  padding: 0.8mm;
+  padding: 1mm;
 }
 
 .partyTitle {
@@ -275,24 +282,24 @@
   justify-content: space-between;
   gap: 1.2mm;
   border-bottom: 0.25mm solid #111827;
-  padding-bottom: 0.4mm;
-  font-size: 4.5pt;
+  padding-bottom: 0.55mm;
+  font-size: 5pt;
   font-weight: 900;
   line-height: 1;
   text-transform: uppercase;
 }
 
 .partyName {
-  margin-top: 0.5mm;
-  font-size: 6.8pt;
+  margin-top: 0.8mm;
+  font-size: 8.2pt;
   font-weight: 900;
   line-height: 1.05;
   overflow-wrap: anywhere;
 }
 
 .partyDetail {
-  margin-top: 0.35mm;
-  font-size: 4.8pt;
+  margin-top: 0.55mm;
+  font-size: 5.4pt;
   font-weight: 700;
   line-height: 1.05;
   overflow-wrap: anywhere;
@@ -301,19 +308,19 @@
 .goodsGrid {
   display: grid;
   grid-template-columns: 1.4fr 0.9fr 0.8fr;
-  gap: 1mm;
-  margin-top: 0.75mm;
+  gap: 1.2mm;
+  margin-top: 1mm;
 }
 
 .terms {
-  max-height: 4.6mm;
+  height: 5.3mm;
   overflow: hidden;
-  margin: 0.6mm 0 0;
+  margin: 0.8mm 0 0;
   border-top: 0.25mm solid #111827;
-  padding-top: 0.4mm;
-  font-size: 3.8pt;
+  padding-top: 0.45mm;
+  font-size: 4pt;
   font-weight: 700;
-  line-height: 1.03;
+  line-height: 1.05;
 }
 
 .emptyState {
