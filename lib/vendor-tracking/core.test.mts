@@ -45,11 +45,11 @@ const batchParcels: MatchableBatchParcel[] = [
 ];
 
 test("validates bulk shipment rows with errors and warnings", () => {
-  const rows = parseDelimitedText(`customer_name,customer_reference,receiver_name,receiver_phone,receiver_address,destination_city,postal_code,commodity,weight,pieces,service_type
-ACME,REF-1,Budi,+628123,Jl Sudirman 10,Jakarta,,General Cargo,12,1,DTD
-ACME,REF-1,,+628124,Jl Thamrin 20,Jakarta,10310,,0,0,UNKNOWN`);
+  const rows = parseDelimitedText(`customer_name,customer_reference,origin_city,receiver_name,receiver_phone,receiver_address,destination_city,postal_code,commodity,weight,pieces,service_type
+ACME,REF-1,Bandung,Budi,+62812345678,Jl Sudirman 10,Jakarta,,General Cargo,12,1,DTD
+ACME,REF-1,Bandung,,+62812456789,Jl Thamrin 20,Jakarta,10310,,0,0,UNKNOWN`);
 
-  const preview = prepareBulkShipmentImport(rows, "parcel_per_row");
+  const preview = prepareBulkShipmentImport(rows);
 
   assert.equal(preview.summary.totalRows, 2);
   assert.equal(preview.summary.validRows, 1);
@@ -61,6 +61,17 @@ ACME,REF-1,,+628124,Jl Thamrin 20,Jakarta,10310,,0,0,UNKNOWN`);
   assert.ok(preview.rows[1]?.errors.includes("missing receiver_name"));
   assert.ok(preview.rows[1]?.errors.includes("invalid pieces"));
   assert.ok(preview.rows[1]?.errors.includes("invalid service_type"));
+});
+
+test("requires delivery address only for DTD and PTD rows", () => {
+  const rows = parseDelimitedText(`origin_city,receiver_name,receiver_phone,receiver_address,destination_city,commodity,weight,pieces,service_type
+Jakarta,Port Consignee,081230000001,,Singapore,General Cargo,5,2,DTP
+Singapore,Door Receiver,081230000002,,Jakarta,General Cargo,5,2,PTD`);
+
+  const preview = prepareBulkShipmentImport(rows);
+
+  assert.equal(preview.rows[0]?.errors.length, 0);
+  assert.ok(preview.rows[1]?.errors.includes("missing receiver_address for door delivery"));
 });
 
 test("builds vendor upload rows with required Ambara references", () => {

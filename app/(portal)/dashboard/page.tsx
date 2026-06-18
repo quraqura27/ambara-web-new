@@ -1,129 +1,183 @@
+import Link from "next/link";
 import {
-  AlertCircle,
-  ArrowUpRight,
-  CheckCircle2,
-  Clock,
-  Package,
-  TrendingUp,
-  Users,
+  AlertTriangle,
+  ArrowRight,
+  Clock3,
+  FileUp,
+  PackagePlus,
+  Search,
 } from "lucide-react";
 
-import { getDashboardStats } from "@/actions/shipments";
+import { getOperationalDashboard } from "@/actions/dashboard";
 import { Card } from "@/components/ui/core";
 
-type StatCardProps = {
-  color: string;
-  icon: typeof Users;
-  title: string;
-  trend: string;
-  value: number;
-};
-
-function StatCard({ color, icon: Icon, title, trend, value }: StatCardProps) {
-  return (
-    <Card className="group relative p-6">
-      <div
-        className={`absolute right-0 top-0 h-32 w-32 -translate-y-12 translate-x-12 rounded-full bg-gradient-to-br ${color} opacity-[0.03] blur-3xl transition-opacity group-hover:opacity-[0.08]`}
-      />
-
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="mb-1 text-xs font-bold uppercase tracking-widest text-slate-500">
-            {title}
-          </p>
-          <h3 className="text-3xl font-bold tracking-tight">{value}</h3>
-        </div>
-        <div className="rounded-xl border border-white/5 bg-slate-900 p-3 text-slate-100 transition-transform group-hover:scale-110">
-          <Icon className="h-6 w-6" />
-        </div>
-      </div>
-
-      <div className="mt-6 flex items-center gap-2 text-[10px] font-bold uppercase tracking-tight text-slate-500">
-        <TrendingUp className="h-3 w-3 text-green-400" />
-        <span>{trend}</span>
-        <span className="ml-auto flex cursor-default items-center gap-1 text-blue-400">
-          Live Snapshot <ArrowUpRight className="h-3 w-3" />
-        </span>
-      </div>
-    </Card>
-  );
+function formatDate(value: Date | string | null) {
+  if (!value) return "No date";
+  return new Date(value).toLocaleString();
 }
 
+const quickActions = [
+  {
+    description: "Create one tracking number and one CN.",
+    href: "/shipments/new",
+    icon: PackagePlus,
+    label: "Input One Shipment",
+  },
+  {
+    description: "Every accepted row becomes one shipment.",
+    href: "/shipments/bulk-import",
+    icon: FileUp,
+    label: "Bulk Input",
+  },
+  {
+    description: "Search tracking, customer, AWB, or reference.",
+    href: "/search",
+    icon: Search,
+    label: "Find and Track Shipment",
+  },
+];
+
 export default async function DashboardPage() {
-  const stats = await getDashboardStats();
+  const dashboard = await getOperationalDashboard();
 
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">System Overview</h2>
+        <h1 className="text-3xl font-bold tracking-tight">Operations Home</h1>
         <p className="mt-1 text-slate-500">
-          Customer and shipment metrics from the Ambara operations portal.
+          Start a shipment, import a file, or find an existing shipment.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          color="from-blue-500 to-indigo-500"
-          icon={Users}
-          title="Total Customers"
-          trend="Directory records"
-          value={stats.totalCustomers}
-        />
-        <StatCard
-          color="from-amber-500 to-orange-500"
-          icon={Clock}
-          title="In Transit"
-          trend="Actively moving"
-          value={stats.activeShipments}
-        />
-        <StatCard
-          color="from-emerald-500 to-teal-500"
-          icon={CheckCircle2}
-          title="Delivered"
-          trend="Completed shipments"
-          value={stats.deliveredShipments}
-        />
-        <StatCard
-          color="from-red-500 to-rose-500"
-          icon={AlertCircle}
-          title="Exceptions"
-          trend="Needs follow-up"
-          value={stats.exceptionShipments}
-        />
+      <div className="grid gap-4 lg:grid-cols-3">
+        {quickActions.map((action) => {
+          const Icon = action.icon;
+          return (
+            <Link href={action.href} key={action.href}>
+              <Card className="h-full p-6 transition hover:border-blue-500/40 hover:bg-blue-500/[0.04]">
+                <Icon className="h-7 w-7 text-blue-400" />
+                <h2 className="mt-5 text-lg font-bold text-white">{action.label}</h2>
+                <p className="mt-2 text-sm text-slate-500">{action.description}</p>
+                <span className="mt-5 inline-flex items-center gap-2 text-xs font-semibold text-blue-300">
+                  Open <ArrowRight className="h-4 w-4" />
+                </span>
+              </Card>
+            </Link>
+          );
+        })}
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Card className="flex h-[400px] flex-col items-center justify-center border-dashed border-white/10 bg-transparent p-6 lg:col-span-2">
-          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white/5">
-            <TrendingUp className="h-8 w-8 text-slate-700" />
+      <div className="grid gap-6 xl:grid-cols-2">
+        <Card className="p-0">
+          <div className="flex items-center justify-between border-b border-white/5 p-5">
+            <div>
+              <h2 className="font-semibold">Shipment exceptions</h2>
+              <p className="mt-1 text-xs text-slate-500">Holds and genuine delivery problems.</p>
+            </div>
+            <Link className="text-xs font-semibold text-blue-300" href="/shipments?view=needs_attention">
+              View all
+            </Link>
           </div>
-          <p className="font-medium text-slate-500">Shipment Volume Chart</p>
-          <p className="mt-2 text-[10px] font-bold uppercase tracking-widest text-slate-700">
-            Reserved for a later analytics phase
-          </p>
-        </Card>
-
-        <Card className="p-6">
-          <h4 className="mb-6 text-sm font-bold uppercase tracking-widest text-slate-500">
-            MVP Coverage
-          </h4>
-          <div className="space-y-6">
-            {[
-              "Customer CRUD is available through directory and detail views.",
-              "Tracking numbers can be linked or unlinked from customer records.",
-              "Shipment lookup resolves to a dedicated tracking detail page.",
-              "Dashboard counts reflect the currently stored shipment statuses.",
-            ].map((item) => (
-              <div key={item} className="flex gap-4">
-                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border border-white/5 bg-white/5">
-                  <Package className="h-5 w-5 text-blue-400" />
+          <div className="divide-y divide-white/5">
+            {dashboard.attentionShipments.map((shipment) => (
+              <Link
+                className="flex items-center gap-4 p-5 transition hover:bg-white/[0.02]"
+                href={`/shipments/${encodeURIComponent(shipment.trackingNumber)}`}
+                key={shipment.trackingNumber}
+              >
+                <AlertTriangle className="h-5 w-5 shrink-0 text-rose-300" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-mono text-sm font-semibold text-white">
+                    {shipment.trackingNumber}
+                  </p>
+                  <p className="truncate text-xs text-slate-500">
+                    {shipment.customerName || "Unlinked"} / {shipment.serviceType || "-"} /{" "}
+                    {shipment.status.replace(/_/g, " ")}
+                  </p>
                 </div>
-                <p className="text-sm text-slate-400">{item}</p>
-              </div>
+                <ArrowRight className="h-4 w-4 text-slate-600" />
+              </Link>
             ))}
+            {dashboard.attentionShipments.length === 0 ? (
+              <div className="p-8 text-center text-sm text-slate-500">
+                No shipment exceptions need attention.
+              </div>
+            ) : null}
+          </div>
+        </Card>
+
+        <Card className="p-0">
+          <div className="flex items-center justify-between border-b border-white/5 p-5">
+            <div>
+              <h2 className="font-semibold">Overdue delivery batches</h2>
+              <p className="mt-1 text-xs text-slate-500">DTD and PTD last-mile work past SLA.</p>
+            </div>
+            <Link className="text-xs font-semibold text-blue-300" href="/delivery-batches?view=overdue">
+              View all
+            </Link>
+          </div>
+          <div className="divide-y divide-white/5">
+            {dashboard.overdueBatches.map((batch) => (
+              <Link
+                className="flex items-center gap-4 p-5 transition hover:bg-white/[0.02]"
+                href={`/delivery-batches/${batch.id}`}
+                key={batch.id}
+              >
+                <Clock3 className="h-5 w-5 shrink-0 text-orange-300" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-mono text-sm font-semibold text-white">{batch.batchCode}</p>
+                  <p className="truncate text-xs text-slate-500">
+                    {batch.vendorName} / SLA {formatDate(batch.slaDeadline)}
+                  </p>
+                </div>
+                <ArrowRight className="h-4 w-4 text-slate-600" />
+              </Link>
+            ))}
+            {dashboard.overdueBatches.length === 0 ? (
+              <div className="p-8 text-center text-sm text-slate-500">No overdue delivery batches.</div>
+            ) : null}
           </div>
         </Card>
       </div>
+
+      <Card className="p-0">
+        <div className="flex items-center justify-between border-b border-white/5 p-5">
+          <div>
+            <h2 className="font-semibold">Recent shipments</h2>
+            <p className="mt-1 text-xs text-slate-500">Latest operational activity.</p>
+          </div>
+          <Link className="text-xs font-semibold text-blue-300" href="/shipments?view=updated_today">
+            View all
+          </Link>
+        </div>
+        <div className="divide-y divide-white/5">
+          {dashboard.recentShipments.map((shipment) => (
+            <Link
+              className="grid gap-2 p-5 transition hover:bg-white/[0.02] sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_auto] sm:items-center"
+              href={`/shipments/${encodeURIComponent(shipment.trackingNumber)}`}
+              key={shipment.trackingNumber}
+            >
+              <div className="min-w-0">
+                <p className="truncate font-mono text-sm font-semibold text-blue-300">
+                  {shipment.trackingNumber}
+                </p>
+                <p className="truncate text-xs text-slate-500">
+                  {shipment.customerName || "Unlinked"} / {shipment.serviceType || "-"}
+                </p>
+              </div>
+              <p className="truncate text-xs text-slate-400">
+                {shipment.origin} → {shipment.destination}
+              </p>
+              <div className="flex items-center justify-between gap-4 sm:block sm:text-right">
+                <p className="text-xs font-semibold uppercase text-slate-300">
+                  {shipment.status.replace(/_/g, " ")}
+                </p>
+                <p className="mt-1 text-[11px] text-slate-600">{formatDate(shipment.updatedAt)}</p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </Card>
     </div>
   );
 }

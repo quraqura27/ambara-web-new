@@ -14,11 +14,14 @@ import {
   User,
 } from "lucide-react";
 
-import { getShipmentByTracking, updateShipmentTrackingFromForm } from "@/actions/shipments";
-import { Button, Card, Input } from "@/components/ui/core";
+import { getShipmentByTracking } from "@/actions/shipments";
+import { Button, Card } from "@/components/ui/core";
 import { getPortalUser } from "@/lib/portal-auth";
-import { canEditShipmentDetails } from "@/lib/portal-roles";
+import { canEditShipmentDetails, isSuperadmin } from "@/lib/portal-roles";
+import { getShipmentStatusDefinition } from "@/lib/shipments/status-model";
 import type { TrackingEvent } from "@/lib/tracking/interface";
+import { TrackingUpdateForm } from "@/components/portal/tracking-update-form";
+import { TrackingCorrectionForm } from "@/components/portal/tracking-correction-form";
 
 type TrackingDetailPageProps = {
   params: Promise<{ number: string }>;
@@ -30,21 +33,6 @@ type StatusStepProps = {
   isFirst?: boolean;
   isLast?: boolean;
 };
-
-const fieldClassName =
-  "w-full rounded-lg border border-slate-700 bg-slate-900/50 px-4 py-2 text-sm text-slate-100 outline-none transition-all placeholder:text-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/30";
-
-const statusOptions = [
-  { value: "pending", label: "Pending" },
-  { value: "received", label: "Received" },
-  { value: "departed_origin", label: "Departed Origin" },
-  { value: "in_transit", label: "In Transit" },
-  { value: "customs", label: "Customs" },
-  { value: "arrived_destination", label: "Arrived Destination" },
-  { value: "delivered", label: "Delivered" },
-  { value: "exception", label: "Exception" },
-  { value: "cancelled", label: "Cancelled" },
-];
 
 function normalizeStatusKey(status: string) {
   const normalized = status.trim().toLowerCase();
@@ -186,26 +174,30 @@ export default async function TrackingDetailPage({
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const user = await getPortalUser();
   const { shipment, liveData, customer, parcels } = await getShipmentByTracking(number);
-  const trackingUpdateAction = updateShipmentTrackingFromForm.bind(null, number);
   const consignmentNoteTrackingNo = shipment?.internalTrackingNo ?? "";
   const primaryParcel = parcels[0];
   const canEditShipment = shipment && canEditShipmentDetails(user);
+  const statusLabel = shipment
+    ? getShipmentStatusDefinition(liveData.status, shipment.serviceType).label
+    : formatStatus(liveData.status);
 
   return (
     <div className="space-y-8">
       <MessageBanner error={resolvedSearchParams?.error} notice={resolvedSearchParams?.notice} />
 
-      <div className="flex items-center gap-4">
-        <Link href="/shipments">
-          <Button className="h-auto rounded-full p-2" variant="ghost">
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-        </Link>
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">{number}</h2>
-          <p className="mt-1 text-sm text-slate-500">Carrier: {liveData.carrier}</p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <div className="flex min-w-0 items-center gap-4">
+          <Link href="/shipments">
+            <Button aria-label="Back to shipments" className="h-auto shrink-0 rounded-full p-2" variant="ghost">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </Link>
+          <div className="min-w-0">
+            <h1 className="break-all font-mono text-2xl font-bold tracking-tight sm:text-3xl">{number}</h1>
+            <p className="mt-1 text-sm text-slate-500">Carrier: {liveData.carrier}</p>
+          </div>
         </div>
-        <div className="ml-auto flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 sm:ml-auto sm:justify-end">
           {consignmentNoteTrackingNo ? (
             <Link href={`/shipments/${encodeURIComponent(consignmentNoteTrackingNo)}/consignment-note`}>
               <Button className="gap-2" variant="secondary">
@@ -220,7 +212,7 @@ export default async function TrackingDetailPage({
             )}`}
           >
             <div className={`mr-2 h-2 w-2 rounded-full ${statusDotClassName(liveData.status)}`} />
-            {formatStatus(liveData.status)}
+            {statusLabel}
           </span>
         </div>
       </div>
@@ -352,59 +344,39 @@ export default async function TrackingDetailPage({
 
         <div className="space-y-6 lg:col-span-1">
           {shipment ? (
+            <div id="tracking-update">
+              <Card className="p-6">
+                <h3 className="mb-6 text-xs font-bold uppercase tracking-widest text-slate-500">
+                  Update Tracking
+                </h3>
+                <TrackingUpdateForm
+                  canOverride={isSuperadmin(user)}
+                  currentStatus={shipment.status}
+                  expectedUpdatedAt={shipment.updatedAt?.toISOString() ?? ""}
+                  latestEventTime={liveData.events[0]?.timestamp.toISOString() ?? new Date().toISOString()}
+                  serviceType={shipment.serviceType}
+                  trackingNumber={shipment.trackingNumber}
+                />
+              </Card>
+            </div>
+          ) : null}
+
+          {shipment && isSuperadmin(user) ? (
             <Card className="p-6">
-              <h3 className="mb-6 text-xs font-bold uppercase tracking-widest text-slate-500">
-                Update Tracking
+              <h3 className="mb-4 text-xs font-bold uppercase tracking-widest text-slate-500">
+                Tracking Correction
               </h3>
-              <form action={trackingUpdateAction} className="space-y-4">
-                <label className="block space-y-2">
-                  <span className="text-xs font-bold uppercase tracking-widest text-slate-500">
-                    Status
-                  </span>
-                  <select
-                    className={fieldClassName}
-                    defaultValue={normalizeStatusKey(shipment.status)}
-                    name="status"
-                  >
-                    {statusOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="block space-y-2">
-                  <span className="text-xs font-bold uppercase tracking-widest text-slate-500">
-                    Location
-                  </span>
-                  <Input name="location" placeholder="e.g. CGK Cargo Terminal" />
-                </label>
-
-                <label className="block space-y-2">
-                  <span className="text-xs font-bold uppercase tracking-widest text-slate-500">
-                    Description
-                  </span>
-                  <textarea
-                    className={fieldClassName}
-                    name="description"
-                    placeholder="e.g. Cargo departed CGK"
-                    rows={3}
-                  />
-                </label>
-
-                <label className="block space-y-2">
-                  <span className="text-xs font-bold uppercase tracking-widest text-slate-500">
-                    Timestamp
-                  </span>
-                  <Input name="timestamp" type="datetime-local" />
-                </label>
-
-                <Button className="w-full gap-2" type="submit">
-                  <CheckCircle2 className="h-4 w-4" />
-                  Save Tracking Update
-                </Button>
-              </form>
+              <TrackingCorrectionForm
+                events={liveData.events
+                  .filter((event): event is TrackingEvent & { id: number } => typeof event.id === "number")
+                  .map((event) => ({
+                    id: event.id,
+                    label: event.label || event.description,
+                    timestamp: event.timestamp.toISOString(),
+                  }))}
+                serviceType={shipment.serviceType}
+                trackingNumber={shipment.trackingNumber}
+              />
             </Card>
           ) : null}
 

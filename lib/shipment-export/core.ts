@@ -1,4 +1,5 @@
 import { hasPortalRoleAtLeast, type PortalRoleUser } from "../portal-roles.ts";
+import { shipmentStatusValues } from "../shipments/status-model.ts";
 
 export const shipmentExportScopes = [
   "summary",
@@ -22,24 +23,7 @@ export const shipmentExportDateBases = [
 
 export type ShipmentExportDateBasis = (typeof shipmentExportDateBases)[number];
 
-export const shipmentExportStatuses = [
-  "all",
-  "pending",
-  "received",
-  "processed",
-  "departed_origin",
-  "in_progress",
-  "in_transit",
-  "customs",
-  "arrived_destination",
-  "out_for_delivery",
-  "delivered",
-  "delivery_issue",
-  "return_in_progress",
-  "on_hold",
-  "exception",
-  "cancelled",
-] as const;
+export const shipmentExportStatuses = ["all", ...shipmentStatusValues, "in_progress"] as const;
 
 export type ShipmentExportStatus = (typeof shipmentExportStatuses)[number];
 

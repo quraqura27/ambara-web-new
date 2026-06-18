@@ -1,6 +1,8 @@
 "use server";
 
-import { and, asc, desc, eq, ilike, inArray, isNull, ne, not, or } from "drizzle-orm";
+import { randomUUID } from "crypto";
+import { and, asc, desc, eq, ilike, inArray, isNull, ne, not, or, sql } from "drizzle-orm";
+import type { BatchItem } from "drizzle-orm/batch";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -13,17 +15,28 @@ import {
   deliveryBatches,
   parcels,
   parcelVendorTracking,
+  portalAuditLogs,
   shipments,
   trackingEvents,
   trackingUpdates,
 } from "@/lib/db/schema";
 import { requirePortalUser } from "@/lib/portal-auth";
 import { hasPortalRoleAtLeast } from "@/lib/portal-roles";
+import { recordPortalAudit } from "@/lib/portal-audit";
+import {
+  isDoorDeliveryService,
+  normalizeShipmentService,
+} from "@/lib/shipments/service-model";
+import {
+  canTransitionShipmentStatus,
+  getShipmentStatusDefinition,
+  normalizeShipmentStatus,
+} from "@/lib/shipments/status-model";
+import { buildCustomerVisibleTrackingEvent } from "@/lib/tracking/public-events";
 import {
   buildAmbaraParcelId,
   buildVendorUploadCsv,
   generateAmbaraTrackingNumber,
-  labelForStatus,
   mapVendorStatus,
   matchVendorStatusRows,
   matchVendorTrackingRows,
@@ -31,10 +44,8 @@ import {
   parseOptionalDate,
   parseVendorReturnRows,
   prepareBulkShipmentImport,
-  publicDescriptionForStatus,
   toCsv,
   type AmbaraStatusCode,
-  type BulkShipmentImportMode,
   type BulkShipmentImportPreview,
   type MatchableBatchParcel,
   type NormalizedBulkShipmentRow,
@@ -66,18 +77,21 @@ export type VendorStatusPreviewState = {
 
 type BulkShipmentCommitPayload = {
   filename: string;
+  idempotencyKey: string;
   preview: BulkShipmentImportPreview;
 };
 
 type VendorTrackingCommitPayload = {
   batchId: number;
   filename: string;
+  idempotencyKey: string;
   matches: ReturnType<typeof matchVendorTrackingRows>["matches"];
 };
 
 type VendorStatusCommitPayload = {
   batchId: number;
   filename: string;
+  idempotencyKey: string;
   matches: ReturnType<typeof matchVendorStatusRows>;
 };
 
@@ -145,11 +159,6 @@ async function readDelimitedUpload(formData: FormData) {
   throw new Error("Upload or paste a CSV / TSV table first.");
 }
 
-function parseMode(value: FormDataEntryValue | null): BulkShipmentImportMode {
-  const mode = formText(value);
-  return mode === "parcel_per_row" ? "parcel_per_row" : "shipment_per_row";
-}
-
 function parsePayload<T>(value: FormDataEntryValue | null, fallbackPath: string): T {
   const text = formText(value);
 
@@ -165,23 +174,7 @@ function parsePayload<T>(value: FormDataEntryValue | null, fallbackPath: string)
 }
 
 function lowerShipmentStatus(statusCode: AmbaraStatusCode) {
-  if (statusCode === "DELIVERED") return "delivered";
-  if (
-    statusCode === "DELIVERY_ISSUE" ||
-    statusCode === "RETURN_IN_PROGRESS" ||
-    statusCode === "ON_HOLD"
-  ) {
-    return "exception";
-  }
-  if (
-    statusCode === "HANDED_TO_DELIVERY_PARTNER" ||
-    statusCode === "VENDOR_TRACKING_ASSIGNED" ||
-    statusCode === "OUT_FOR_DELIVERY"
-  ) {
-    return "in_transit";
-  }
-
-  return "pending";
+  return normalizeShipmentStatus(statusCode);
 }
 
 function eventSourceForFilename(filename: string, fallback: string) {
@@ -193,16 +186,18 @@ async function createCustomerTrackingEvent(input: {
   internalNote?: string;
   location?: string;
   parcelId?: number | null;
+  serviceType?: string | null;
   shipmentId: number;
   source: string;
   statusCode: AmbaraStatusCode;
   visibleToCustomer?: boolean;
 }) {
-  const publicDescription = publicDescriptionForStatus(input.statusCode);
-  const label = labelForStatus(input.statusCode);
+  const definition = getShipmentStatusDefinition(input.statusCode, input.serviceType);
+  const publicDescription = definition.publicDescription;
+  const label = definition.publicLabel;
   const eventTime = new Date();
   const visibleToCustomer = input.visibleToCustomer !== false;
-  const status = lowerShipmentStatus(input.statusCode);
+  const status = definition.publicStatus;
 
   await db.insert(trackingEvents).values({
     shipmentId: input.shipmentId,
@@ -262,22 +257,70 @@ function shipmentTitle(row: NormalizedBulkShipmentRow) {
   return `${route} ${row.serviceType}`.trim();
 }
 
-function groupRowsForShipment(preview: BulkShipmentImportPreview) {
-  const validRows = preview.rows.filter((row) => row.errors.length === 0);
+function selectedBulkRows(preview: BulkShipmentImportPreview, approvedWarningRows: Set<number>) {
+  return preview.rows.filter(
+    (row) =>
+      row.errors.length === 0 &&
+      (row.warnings.length === 0 || approvedWarningRows.has(row.rowNumber)),
+  );
+}
 
-  if (preview.mode === "shipment_per_row") {
-    return validRows.map((row) => [row]);
+function revalidateBulkPreview(preview: BulkShipmentImportPreview) {
+  return prepareBulkShipmentImport(
+    preview.rows.map((row) => ({
+      rowNumber: row.rowNumber,
+      values: {
+        cod_amount: row.data.codAmount === null ? "" : String(row.data.codAmount),
+        commodity: row.data.commodity,
+        customer_name: row.data.customerName,
+        customer_reference: row.data.customerReference,
+        delivery_instruction: row.data.deliveryInstruction,
+        destination_city: row.data.destinationCity,
+        origin_city: row.data.originCity,
+        pieces: String(row.data.pieces),
+        postal_code: row.data.postalCode,
+        receiver_address: row.data.receiverAddress,
+        receiver_name: row.data.receiverName,
+        receiver_phone: row.data.receiverPhone,
+        service_type: row.data.serviceType,
+        shipper_name: row.data.shipperName,
+        shipper_phone: row.data.shipperPhone,
+        weight: String(row.data.weight),
+      },
+    })),
+  );
+}
+
+async function allocateBulkImportIds(rowCount: number) {
+  const result = await db.execute<{
+    job_id: number;
+    parcel_ids: number[];
+    shipment_ids: number[];
+  }>(sql`
+    select
+      nextval(pg_get_serial_sequence('bulk_shipment_import_jobs', 'id'))::int as job_id,
+      array(
+        select nextval(pg_get_serial_sequence('parcels', 'id'))::int
+        from generate_series(1, ${rowCount})
+      ) as parcel_ids,
+      array(
+        select nextval(pg_get_serial_sequence('shipments', 'id'))::int
+        from generate_series(1, ${rowCount})
+      ) as shipment_ids
+  `);
+  const ids = result.rows[0];
+  if (!ids || ids.parcel_ids.length !== rowCount || ids.shipment_ids.length !== rowCount) {
+    throw new Error("Unable to allocate import identifiers.");
   }
+  return ids;
+}
 
-  const groups = new Map<string, typeof validRows>();
-  validRows.forEach((row) => {
-    const key = row.data.customerReference;
-    const existing = groups.get(key) ?? [];
-    existing.push(row);
-    groups.set(key, existing);
-  });
-
-  return Array.from(groups.values());
+async function createUniqueTrackingNumbers(count: number) {
+  const trackingNumbers = new Set<string>();
+  while (trackingNumbers.size < count) {
+    trackingNumbers.add(await createUniqueTrackingNumber());
+  }
+  return Array.from(trackingNumbers);
 }
 
 export async function previewBulkShipmentImport(
@@ -288,13 +331,16 @@ export async function previewBulkShipmentImport(
 
   try {
     const { text, filename } = await readDelimitedUpload(formData);
-    const mode = parseMode(formData.get("mode"));
-    const preview = prepareBulkShipmentImport(parseDelimitedText(text), mode);
+    const preview = prepareBulkShipmentImport(parseDelimitedText(text));
 
     return {
       filename,
       preview,
-      payload: JSON.stringify({ filename, preview } satisfies BulkShipmentCommitPayload),
+      payload: JSON.stringify({
+        filename,
+        idempotencyKey: randomUUID(),
+        preview,
+      } satisfies BulkShipmentCommitPayload),
     };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Import preview failed." };
@@ -307,7 +353,13 @@ export async function commitBulkShipmentImport(formData: FormData) {
     formData.get("payload"),
     "/shipments/bulk-import",
   );
-  const { preview } = payload;
+  const preview = revalidateBulkPreview(payload.preview);
+  const approvedWarningRows = new Set(
+    formData
+      .getAll("warningRows")
+      .map((value) => Number.parseInt(String(value), 10))
+      .filter(Number.isInteger),
+  );
 
   if (preview.summary.totalRows === 0) {
     redirectWithError("/shipments/bulk-import", "No rows were available to import.");
@@ -317,138 +369,183 @@ export async function commitBulkShipmentImport(formData: FormData) {
     redirectWithError("/shipments/bulk-import", "Resolve validation errors before confirming import.");
   }
 
-  const groups = groupRowsForShipment(preview);
+  const selectedRows = selectedBulkRows(preview, approvedWarningRows);
+  if (selectedRows.length === 0) {
+    redirectWithError(
+      "/shipments/bulk-import",
+      "No valid rows were selected. Review warning rows or upload a corrected file.",
+    );
+  }
+
+  const [existingJob] = await db
+    .select({ id: bulkShipmentImportJobs.id })
+    .from(bulkShipmentImportJobs)
+    .where(eq(bulkShipmentImportJobs.idempotencyKey, payload.idempotencyKey))
+    .limit(1);
+  if (existingJob) {
+    redirectWithNotice("/shipments/bulk-import", "This import was already processed.");
+  }
   const now = new Date();
-  const [job] = await db
-    .insert(bulkShipmentImportJobs)
-    .values({
+  const ids = await allocateBulkImportIds(selectedRows.length);
+  const trackingNumbers = await createUniqueTrackingNumbers(selectedRows.length);
+  const queries: BatchItem<"pg">[] = [
+    db.insert(bulkShipmentImportJobs).values({
+      id: ids.job_id,
       uploadedFilename: payload.filename,
       totalRows: preview.summary.totalRows,
       validRows: preview.summary.validRows,
       errorRows: preview.summary.errorRows,
       warningRows: preview.summary.warningRows,
-      createdShipments: 0,
-      createdParcels: 0,
-      status: "processing",
+      createdShipments: selectedRows.length,
+      createdParcels: selectedRows.length,
+      status: "completed",
+      idempotencyKey: payload.idempotencyKey,
       createdBy: user.id,
       createdAt: now,
-    })
-    .returning();
+      completedAt: now,
+    }),
+  ];
 
-  let createdShipments = 0;
-  let createdParcels = 0;
+  selectedRows.forEach((item, index) => {
+    const row = item.data;
+    const trackingNumber = trackingNumbers[index]!;
+    const shipmentId = ids.shipment_ids[index]!;
+    const parcelId = ids.parcel_ids[index]!;
+    const serviceType = normalizeShipmentService(row.serviceType)!;
+    const doorDelivery = isDoorDeliveryService(serviceType);
+    const receiverAddress = doorDelivery
+      ? row.receiverAddress
+      : `Destination port: ${row.destinationCity}`;
+    const publicEvent = buildCustomerVisibleTrackingEvent("received", serviceType);
 
-  for (const group of groups) {
-    const first = group[0]?.data;
-    if (!first) continue;
-
-    const trackingNumber = await createUniqueTrackingNumber();
-    const groupDestinations = new Set(group.map((row) => row.data.destinationCity).filter(Boolean));
-    const destination =
-      groupDestinations.size > 1 ? "Multiple destinations" : first.destinationCity || "Unknown";
-
-    const [shipment] = await db
-      .insert(shipments)
-      .values({
+    queries.push(
+      db.insert(shipments).values({
+        id: shipmentId,
         trackingNumber,
         internalTrackingNo: trackingNumber,
-        customerReference: first.customerReference || null,
-        title: shipmentTitle(first),
-        origin: first.originCity || "Unknown",
-        destination,
-        serviceType: first.serviceType,
-        shipperName: first.shipperName || null,
-        shipperPhone: first.shipperPhone || null,
-        consigneeName: first.receiverName,
-        consigneeAddress: first.receiverAddress,
-        consigneePhone: first.receiverPhone,
-        customerName: first.customerName || null,
-        goodsDescription: first.commodity || null,
-        totalPcs: group.reduce((sum, row) => sum + row.data.pieces, 0),
-        weightKg: group.reduce((sum, row) => sum + row.data.weight, 0).toString(),
-        commodity: first.commodity || null,
-        status: "pending",
+        customerReference: row.customerReference || null,
+        title: shipmentTitle(row),
+        origin: row.originCity || "Unknown",
+        destination: row.destinationCity,
+        serviceType,
+        shipperName: row.shipperName || null,
+        shipperPhone: row.shipperPhone || null,
+        consigneeName: row.receiverName,
+        consigneeAddress: doorDelivery ? row.receiverAddress : null,
+        consigneePhone: row.receiverPhone,
+        customerName: row.customerName || null,
+        goodsDescription: row.commodity || null,
+        totalPcs: row.pieces,
+        weightKg: row.weight.toString(),
+        commodity: row.commodity || null,
+        status: "received",
         createdByStaff: user.id,
         updatedByStaff: user.id,
         createdBy: user.email,
         createdAt: now,
         updatedAt: now,
-      })
-      .returning();
-
-    createdShipments += 1;
-
-    await createCustomerTrackingEvent({
-      createdBy: user.id,
-      shipmentId: shipment.id,
-      source: eventSourceForFilename(payload.filename, "excel_import"),
-      statusCode: "DRAFT",
-      location: first.originCity,
-    });
-
-    for (let index = 0; index < group.length; index += 1) {
-      const item = group[index];
-      if (!item) continue;
-
-      const parcelNumber = index + 1;
-      const [parcel] = await db
-        .insert(parcels)
-        .values({
-          shipmentId: shipment.id,
-          ambaraParcelId: buildAmbaraParcelId(trackingNumber, parcelNumber),
-          parcelNumber,
-          receiverName: item.data.receiverName,
-          receiverPhone: item.data.receiverPhone,
-          receiverAddress: item.data.receiverAddress,
-          destinationCity: item.data.destinationCity,
-          postalCode: item.data.postalCode || null,
-          weight: item.data.weight.toString(),
-          pieces: item.data.pieces,
-          serviceType: item.data.serviceType,
-          commodity: item.data.commodity || null,
-          deliveryInstruction: item.data.deliveryInstruction || null,
-          codAmount: item.data.codAmount === null ? null : item.data.codAmount.toString(),
-          currentStatus: "DRAFT",
-          createdAt: now,
-          updatedAt: now,
-        })
-        .returning();
-
-      createdParcels += 1;
-
-      await db.insert(bulkShipmentImportItems).values({
-        importJobId: job.id,
+      }),
+      db.insert(parcels).values({
+        id: parcelId,
+        shipmentId,
+        ambaraParcelId: buildAmbaraParcelId(trackingNumber, 1),
+        parcelNumber: 1,
+        receiverName: row.receiverName,
+        receiverPhone: row.receiverPhone,
+        receiverAddress,
+        destinationCity: row.destinationCity,
+        postalCode: doorDelivery ? row.postalCode || null : null,
+        weight: row.weight.toString(),
+        pieces: row.pieces,
+        serviceType,
+        commodity: row.commodity || null,
+        deliveryInstruction: doorDelivery ? row.deliveryInstruction || null : null,
+        codAmount:
+          doorDelivery && row.codAmount !== null ? row.codAmount.toString() : null,
+        currentStatus: "DRAFT",
+        createdAt: now,
+        updatedAt: now,
+      }),
+      db.insert(trackingEvents).values({
+        shipmentId,
+        parcelId,
+        statusCode: publicEvent.statusCode,
+        status: publicEvent.status,
+        label: publicEvent.label,
+        publicDescription: publicEvent.publicDescription,
+        description: publicEvent.publicDescription,
+        location: row.originCity || null,
+        eventTime: now,
+        source: eventSourceForFilename(payload.filename, "excel_import"),
+        visibleToCustomer: true,
+        createdBy: user.id,
+        state: "done",
+        createdAt: now,
+      }),
+      db.insert(trackingUpdates).values({
+        shipmentId,
+        status: publicEvent.status,
+        description: publicEvent.publicDescription,
+        location: row.originCity || null,
+        timestamp: now,
+      }),
+      db.insert(bulkShipmentImportItems).values({
+        importJobId: ids.job_id,
         rowNumber: item.rowNumber,
-        shipmentId: shipment.id,
-        parcelId: parcel.id,
-        customerReference: item.data.customerReference || null,
-        receiverName: item.data.receiverName,
+        shipmentId,
+        parcelId,
+        customerReference: row.customerReference || null,
+        receiverName: row.receiverName,
         validationStatus: item.warnings.length > 0 ? "warning" : "valid",
         errorMessage: item.warnings.join("; ") || null,
         createdAt: now,
-      });
-    }
-  }
+      }),
+    );
+  });
 
-  await db
-    .update(bulkShipmentImportJobs)
-    .set({
-      createdShipments,
-      createdParcels,
-      status: "completed",
-      completedAt: new Date(),
-    })
-    .where(eq(bulkShipmentImportJobs.id, job.id));
+  queries.push(
+    db.insert(portalAuditLogs).values({
+      action: "shipment.bulk_imported",
+      entityId: String(ids.job_id),
+      entityType: "bulk_shipment_import",
+      metadataJson: JSON.stringify({
+        createdParcels: selectedRows.length,
+        createdShipments: selectedRows.length,
+      }),
+      performedBy: user.id,
+      createdAt: now,
+    }),
+  );
+
+  try {
+    await db.batch(queries as [BatchItem<"pg">, ...BatchItem<"pg">[]]);
+  } catch {
+    const [processedJob] = await db
+      .select({ id: bulkShipmentImportJobs.id })
+      .from(bulkShipmentImportJobs)
+      .where(eq(bulkShipmentImportJobs.idempotencyKey, payload.idempotencyKey))
+      .limit(1);
+    if (processedJob) {
+      redirectWithNotice("/shipments/bulk-import", "This import was already processed.");
+    }
+    redirectWithError(
+      "/shipments/bulk-import",
+      "Import failed. No shipment or delivery records were saved.",
+    );
+  }
 
   revalidateVendorTrackingPaths();
   redirectWithNotice(
     "/shipments/bulk-import",
-    `Import completed: ${createdShipments} shipments and ${createdParcels} parcels created.`,
+    `Import completed: ${selectedRows.length} independent shipments created.`,
   );
 }
 
-export async function rollbackBulkShipmentImportJob(jobId: number) {
-  await requireVendorTrackingAdmin();
+export async function rollbackBulkShipmentImportJob(jobId: number, formData: FormData) {
+  const user = await requireVendorTrackingAdmin();
+  if (formText(formData.get("confirmed")) !== "yes") {
+    redirectWithError("/shipments/bulk-import", "Rollback confirmation is required.");
+  }
 
   const [job] = await db
     .select()
@@ -525,6 +622,14 @@ export async function rollbackBulkShipmentImportJob(jobId: number) {
     .set({ status: "rolled_back", completedAt: new Date() })
     .where(eq(bulkShipmentImportJobs.id, jobId));
 
+  await recordPortalAudit({
+    action: "shipment.bulk_import_rolled_back",
+    entityId: jobId,
+    entityType: "bulk_shipment_import",
+    metadata: { parcelCount: parcelIds.length, shipmentCount: shipmentIds.length },
+    performedBy: user.id,
+  });
+
   revalidateVendorTrackingPaths();
   redirectWithNotice("/shipments/bulk-import", "Draft import rolled back.");
 }
@@ -579,7 +684,10 @@ export async function getAvailableParcelsForBatch(search?: string) {
     shipmentTrackingNumber: shipments.trackingNumber,
     customerReference: shipments.customerReference,
   };
-  const baseCondition = isNull(parcelVendorTracking.id);
+  const baseCondition = and(
+    isNull(parcelVendorTracking.id),
+    sql`upper(coalesce(${shipments.serviceType}, ${parcels.serviceType}, '')) in ('DTD', 'PTD')`,
+  );
   const searchCondition = trimmedSearch
     ? or(
         ilike(parcels.ambaraParcelId, `%${trimmedSearch}%`),
@@ -604,7 +712,7 @@ export async function getAvailableParcelsForBatch(search?: string) {
 }
 
 export async function createDeliveryBatchFromForm(formData: FormData) {
-  const user = await requireVendorTrackingAdmin();
+  await requireVendorTrackingAdmin();
   const parcelIds = formData
     .getAll("parcelIds")
     .map((value) => Number.parseInt(String(value), 10))
@@ -630,12 +738,19 @@ export async function createDeliveryBatchFromForm(formData: FormData) {
       ambaraParcelId: parcels.ambaraParcelId,
       currentStatus: parcels.currentStatus,
       destinationCity: parcels.destinationCity,
+      serviceType: sql<string>`upper(coalesce(${shipments.serviceType}, ${parcels.serviceType}, ''))`,
     })
     .from(parcels)
     .where(inArray(parcels.id, parcelIds));
 
   if (selectedParcels.length !== parcelIds.length) {
     redirectWithError("/delivery-batches/new", "One or more selected parcels no longer exist.");
+  }
+  if (selectedParcels.some((parcel) => !isDoorDeliveryService(parcel.serviceType))) {
+    redirectWithError(
+      "/delivery-batches/new",
+      "Only DTD and PTD shipments can be added to a delivery batch.",
+    );
   }
 
   const existingAssignments = await db
@@ -682,18 +797,6 @@ export async function createDeliveryBatchFromForm(formData: FormData) {
       .update(parcels)
       .set({ currentStatus: "HANDED_TO_DELIVERY_PARTNER", updatedAt: now })
       .where(eq(parcels.id, parcel.id));
-    await db
-      .update(shipments)
-      .set({ status: "in_transit", updatedAt: now, updatedByStaff: user.id })
-      .where(eq(shipments.id, parcel.shipmentId));
-    await createCustomerTrackingEvent({
-      createdBy: user.id,
-      shipmentId: parcel.shipmentId,
-      parcelId: parcel.id,
-      source: "system_generated",
-      statusCode: "HANDED_TO_DELIVERY_PARTNER",
-      location: parcel.destinationCity,
-    });
   }
 
   revalidateVendorTrackingPaths(batch.id);
@@ -710,15 +813,19 @@ export async function getDeliveryBatchDashboard() {
       lastVendorStatus: parcelVendorTracking.lastVendorStatus,
       podUrl: parcelVendorTracking.podUrl,
       parcelStatus: parcels.currentStatus,
+      serviceType: sql<string>`upper(coalesce(${shipments.serviceType}, ${parcels.serviceType}, ''))`,
     })
     .from(parcelVendorTracking)
-    .innerJoin(parcels, eq(parcelVendorTracking.parcelId, parcels.id));
+    .innerJoin(parcels, eq(parcelVendorTracking.parcelId, parcels.id))
+    .innerJoin(shipments, eq(parcels.shipmentId, shipments.id))
+    .where(sql`upper(coalesce(${shipments.serviceType}, ${parcels.serviceType}, '')) in ('DTD', 'PTD')`);
   const now = new Date();
   const today = now.toISOString().slice(0, 10);
 
   return batches
     .map((batch) => {
       const rows = trackingRows.filter((row) => row.batchId === batch.id);
+      if (rows.length === 0) return null;
       const deliveredCount = rows.filter((row) => row.parcelStatus === "DELIVERED").length;
       const deliveryIssueCount = rows.filter((row) => row.parcelStatus === "DELIVERY_ISSUE").length;
       const missingVendorTrackingCount = rows.filter((row) => !row.vendorTrackingNumber).length;
@@ -754,7 +861,75 @@ export async function getDeliveryBatchDashboard() {
         priority,
       };
     })
+    .filter((batch): batch is NonNullable<typeof batch> => batch !== null)
     .sort((left, right) => left.priority - right.priority || right.id - left.id);
+}
+
+export async function getDeliveryBatchPage(options: {
+  from?: string;
+  page?: number;
+  search?: string;
+  sort?: "created_asc" | "created_desc" | "sla_asc";
+  to?: string;
+  view?: "delivery_issues" | "missing_tracking" | "overdue" | "";
+} = {}) {
+  const batches = await getDeliveryBatchDashboard();
+  const search = options.search?.trim().toLowerCase();
+  const now = new Date();
+  const filtered = batches.filter((batch) => {
+    if (
+      search &&
+      !`${batch.batchCode} ${batch.vendorName} ${batch.vendorServiceType ?? ""}`
+        .toLowerCase()
+        .includes(search)
+    ) {
+      return false;
+    }
+    if (options.view === "delivery_issues" && batch.deliveryIssueCount === 0) return false;
+    if (options.view === "missing_tracking" && batch.missingVendorTrackingCount === 0) return false;
+    if (
+      options.view === "overdue" &&
+      (!batch.slaDeadline || new Date(batch.slaDeadline).getTime() >= now.getTime())
+    ) {
+      return false;
+    }
+    if (
+      options.from &&
+      /^\d{4}-\d{2}-\d{2}$/.test(options.from) &&
+      batch.createdAt &&
+      new Date(batch.createdAt).getTime() < new Date(`${options.from}T00:00:00+07:00`).getTime()
+    ) {
+      return false;
+    }
+    if (
+      options.to &&
+      /^\d{4}-\d{2}-\d{2}$/.test(options.to) &&
+      batch.createdAt &&
+      new Date(batch.createdAt).getTime() > new Date(`${options.to}T23:59:59+07:00`).getTime()
+    ) {
+      return false;
+    }
+    return true;
+  });
+  filtered.sort((left, right) => {
+    if (options.sort === "created_asc") {
+      return new Date(left.createdAt ?? 0).getTime() - new Date(right.createdAt ?? 0).getTime();
+    }
+    if (options.sort === "sla_asc") {
+      return new Date(left.slaDeadline ?? "9999-12-31").getTime() - new Date(right.slaDeadline ?? "9999-12-31").getTime();
+    }
+    return new Date(right.createdAt ?? 0).getTime() - new Date(left.createdAt ?? 0).getTime();
+  });
+  const pageSize = 20;
+  const page = Math.max(1, options.page ?? 1);
+  const total = filtered.length;
+  return {
+    page,
+    pageSize,
+    rows: filtered.slice((page - 1) * pageSize, page * pageSize),
+    total,
+    totalPages: Math.max(1, Math.ceil(total / pageSize)),
+  };
 }
 
 async function getBatchParcels(batchId: number) {
@@ -775,6 +950,8 @@ async function getBatchParcels(batchId: number) {
       deliveryInstruction: parcels.deliveryInstruction,
       codAmount: parcels.codAmount,
       currentStatus: parcels.currentStatus,
+      shipmentStatus: shipments.status,
+      shipmentServiceType: shipments.serviceType,
       shipmentTrackingNumber: shipments.trackingNumber,
       shipmentInternalTrackingNo: shipments.internalTrackingNo,
       exportRowId: parcelVendorTracking.exportRowId,
@@ -788,7 +965,12 @@ async function getBatchParcels(batchId: number) {
     .from(parcelVendorTracking)
     .innerJoin(parcels, eq(parcelVendorTracking.parcelId, parcels.id))
     .innerJoin(shipments, eq(parcels.shipmentId, shipments.id))
-    .where(eq(parcelVendorTracking.deliveryBatchId, batchId))
+    .where(
+      and(
+        eq(parcelVendorTracking.deliveryBatchId, batchId),
+        sql`upper(coalesce(${shipments.serviceType}, ${parcels.serviceType}, '')) in ('DTD', 'PTD')`,
+      ),
+    )
     .orderBy(asc(parcelVendorTracking.exportRowId));
 }
 
@@ -805,6 +987,9 @@ function toMatchableParcels(rows: Awaited<ReturnType<typeof getBatchParcels>>): 
     destinationCity: row.destinationCity,
     postalCode: row.postalCode,
     currentStatus: row.currentStatus,
+    serviceType: row.serviceType,
+    shipmentServiceType: row.shipmentServiceType,
+    shipmentStatus: row.shipmentStatus,
   }));
 }
 
@@ -896,6 +1081,7 @@ export async function previewVendorTrackingImport(
       payload: JSON.stringify({
         batchId,
         filename,
+        idempotencyKey: randomUUID(),
         matches: result.matches,
       } satisfies VendorTrackingCommitPayload),
     };
@@ -941,12 +1127,22 @@ export async function commitVendorTrackingImport(formData: FormData) {
     redirectWithError(`/delivery-batches/${payload.batchId}`, "No vendor tracking rows were confirmed.");
   }
 
+  const [existingJob] = await db
+    .select({ id: bulkUpdateJobs.id })
+    .from(bulkUpdateJobs)
+    .where(eq(bulkUpdateJobs.idempotencyKey, payload.idempotencyKey))
+    .limit(1);
+  if (existingJob) {
+    redirectWithNotice(`/delivery-batches/${payload.batchId}`, "This vendor tracking import was already processed.");
+  }
+
   const [job] = await db
     .insert(bulkUpdateJobs)
     .values({
       deliveryBatchId: payload.batchId,
       updateType: "vendor_tracking_import",
       source: "vendor_tracking_import",
+      idempotencyKey: payload.idempotencyKey,
       uploadedFilename: payload.filename,
       totalRows: recomputedResult.matches.length,
       matchedRows: confirmableMatches.length,
@@ -1011,22 +1207,11 @@ export async function commitVendorTrackingImport(formData: FormData) {
       .update(parcels)
       .set({ currentStatus: "VENDOR_TRACKING_ASSIGNED", updatedAt: now })
       .where(eq(parcels.id, match.parcel.id));
-    await db
-      .update(shipments)
-      .set({ status: "in_transit", updatedAt: now, updatedByStaff: user.id })
-      .where(eq(shipments.id, match.parcel.shipmentId));
     await createCustomerTrackingEvent({
       createdBy: user.id,
       shipmentId: match.parcel.shipmentId,
       parcelId: match.parcel.id,
-      source: "vendor_tracking_import",
-      statusCode: "VENDOR_TRACKING_ASSIGNED",
-      internalNote: `Vendor tracking ${match.row.vendorTrackingNumber} imported by job ${job.id}.`,
-    });
-    await createCustomerTrackingEvent({
-      createdBy: user.id,
-      shipmentId: match.parcel.shipmentId,
-      parcelId: match.parcel.id,
+      serviceType: match.parcel.serviceType,
       source: "vendor_tracking_import",
       statusCode: "VENDOR_TRACKING_ASSIGNED",
       visibleToCustomer: false,
@@ -1038,6 +1223,14 @@ export async function commitVendorTrackingImport(formData: FormData) {
     .update(deliveryBatches)
     .set({ batchStatus: "VENDOR_TRACKING_IMPORTED", updatedAt: now })
     .where(eq(deliveryBatches.id, payload.batchId));
+
+  await recordPortalAudit({
+    action: "delivery_batch.vendor_tracking_imported",
+    entityId: payload.batchId,
+    entityType: "delivery_batch",
+    metadata: { confirmedRows: confirmableMatches.length, jobId: job.id },
+    performedBy: user.id,
+  });
 
   revalidateVendorTrackingPaths(payload.batchId);
   redirectWithNotice(
@@ -1054,6 +1247,49 @@ export async function bulkUpdateBatchStatusFromForm(batchId: number, formData: F
     .getAll("parcelIds")
     .map((value) => Number.parseInt(String(value), 10))
     .filter((value) => Number.isInteger(value) && value > 0);
+  const idempotencyKey = formText(formData.get("idempotencyKey"));
+  const expectedUpdatedAt = formText(formData.get("expectedUpdatedAt"));
+  const confirmationCode = formText(formData.get("confirmationCode"));
+
+  const [batch] = await db
+    .select({
+      batchCode: deliveryBatches.batchCode,
+      updatedAt: deliveryBatches.updatedAt,
+    })
+    .from(deliveryBatches)
+    .where(eq(deliveryBatches.id, batchId))
+    .limit(1);
+  if (!batch) redirectWithError("/delivery-batches", "Delivery batch was not found.");
+  if (
+    expectedUpdatedAt &&
+    batch.updatedAt &&
+    batch.updatedAt.toISOString() !== expectedUpdatedAt
+  ) {
+    redirectWithError(
+      `/delivery-batches/${batchId}`,
+      "This batch changed after the page loaded. Review the latest rows before updating.",
+    );
+  }
+  if (scope === "all" && confirmationCode !== batch.batchCode) {
+    redirectWithError(
+      `/delivery-batches/${batchId}`,
+      `Type ${batch.batchCode} to confirm a batch-wide update.`,
+    );
+  }
+  if (scope !== "all" && formText(formData.get("confirmed")) !== "yes") {
+    redirectWithError(`/delivery-batches/${batchId}`, "Selected update confirmation is required.");
+  }
+  if (!idempotencyKey) {
+    redirectWithError(`/delivery-batches/${batchId}`, "Missing update identifier. Reload and try again.");
+  }
+  const [existingJob] = await db
+    .select({ id: bulkUpdateJobs.id })
+    .from(bulkUpdateJobs)
+    .where(eq(bulkUpdateJobs.idempotencyKey, idempotencyKey))
+    .limit(1);
+  if (existingJob) {
+    redirectWithNotice(`/delivery-batches/${batchId}`, "This update was already processed.");
+  }
 
   if (!["OUT_FOR_DELIVERY", "DELIVERED", "DELIVERY_ISSUE", "RETURN_IN_PROGRESS", "ON_HOLD"].includes(status)) {
     redirectWithError(`/delivery-batches/${batchId}`, "Select a valid status.");
@@ -1068,6 +1304,21 @@ export async function bulkUpdateBatchStatusFromForm(batchId: number, formData: F
   if (targets.length === 0) {
     redirectWithError(`/delivery-batches/${batchId}`, "Select at least one parcel to update.");
   }
+  const invalidTargets = targets.filter(
+    (target) =>
+      !isDoorDeliveryService(target.shipmentServiceType || target.serviceType) ||
+      !canTransitionShipmentStatus(
+        target.shipmentStatus,
+        lowerShipmentStatus(status),
+        target.shipmentServiceType || target.serviceType,
+      ),
+  );
+  if (invalidTargets.length > 0) {
+    redirectWithError(
+      `/delivery-batches/${batchId}`,
+      `${invalidTargets.length} selected shipments cannot move to ${getShipmentStatusDefinition(status).label} from their current status.`,
+    );
+  }
 
   const now = new Date();
   const [job] = await db
@@ -1076,6 +1327,7 @@ export async function bulkUpdateBatchStatusFromForm(batchId: number, formData: F
       deliveryBatchId: batchId,
       updateType: scope === "all" ? "batch_status_update" : "selected_status_update",
       source: "bulk_update",
+      idempotencyKey,
       totalRows: targets.length,
       matchedRows: targets.length,
       unmatchedRows: 0,
@@ -1113,6 +1365,7 @@ export async function bulkUpdateBatchStatusFromForm(batchId: number, formData: F
       createdBy: user.id,
       shipmentId: target.shipmentId,
       parcelId: target.id,
+      serviceType: target.shipmentServiceType || target.serviceType,
       source: "bulk_update",
       statusCode: status,
       location: target.destinationCity,
@@ -1124,6 +1377,14 @@ export async function bulkUpdateBatchStatusFromForm(batchId: number, formData: F
     .update(deliveryBatches)
     .set({ batchStatus: status, updatedAt: now })
     .where(eq(deliveryBatches.id, batchId));
+
+  await recordPortalAudit({
+    action: scope === "all" ? "delivery_batch.status_updated_all" : "delivery_batch.status_updated_selected",
+    entityId: batchId,
+    entityType: "delivery_batch",
+    metadata: { status, targetCount: targets.length },
+    performedBy: user.id,
+  });
 
   revalidateVendorTrackingPaths(batchId);
   redirectWithNotice(`/delivery-batches/${batchId}`, `Updated ${targets.length} parcels.`);
@@ -1153,6 +1414,7 @@ export async function previewVendorStatusUpdate(
       payload: JSON.stringify({
         batchId,
         filename,
+        idempotencyKey: randomUUID(),
         matches,
       } satisfies VendorStatusCommitPayload),
     };
@@ -1176,6 +1438,34 @@ export async function commitVendorStatusUpdate(formData: FormData) {
   if (matches.length === 0) {
     redirectWithError(`/delivery-batches/${payload.batchId}`, "No vendor status rows matched this batch.");
   }
+  const parcelById = new Map(batchParcels.map((parcel) => [parcel.id, parcel]));
+  const invalidMatches = matches.filter((match) => {
+    const parcel = match.parcel ? parcelById.get(match.parcel.id) : null;
+    return (
+      !parcel ||
+      !match.newStatus ||
+      !canTransitionShipmentStatus(
+        parcel.shipmentStatus,
+        lowerShipmentStatus(match.newStatus),
+        parcel.shipmentServiceType || parcel.serviceType,
+      )
+    );
+  });
+  if (invalidMatches.length > 0) {
+    redirectWithError(
+      `/delivery-batches/${payload.batchId}`,
+      `${invalidMatches.length} vendor updates are invalid for the current shipment status.`,
+    );
+  }
+
+  const [existingJob] = await db
+    .select({ id: bulkUpdateJobs.id })
+    .from(bulkUpdateJobs)
+    .where(eq(bulkUpdateJobs.idempotencyKey, payload.idempotencyKey))
+    .limit(1);
+  if (existingJob) {
+    redirectWithNotice(`/delivery-batches/${payload.batchId}`, "This vendor status import was already processed.");
+  }
 
   const [job] = await db
     .insert(bulkUpdateJobs)
@@ -1183,6 +1473,7 @@ export async function commitVendorStatusUpdate(formData: FormData) {
       deliveryBatchId: payload.batchId,
       updateType: "vendor_status_import",
       source: "vendor_status_import",
+      idempotencyKey: payload.idempotencyKey,
       uploadedFilename: payload.filename,
       totalRows: recomputedMatches.length,
       matchedRows: matches.length,
@@ -1250,6 +1541,7 @@ export async function commitVendorStatusUpdate(formData: FormData) {
       createdBy: user.id,
       shipmentId: match.parcel.shipmentId,
       parcelId: match.parcel.id,
+      serviceType: parcelById.get(match.parcel.id)?.shipmentServiceType || match.parcel.serviceType,
       source: "vendor_status_import",
       statusCode: mapped.statusCode,
       location: match.parcel.destinationCity,
@@ -1261,6 +1553,14 @@ export async function commitVendorStatusUpdate(formData: FormData) {
     .update(deliveryBatches)
     .set({ lastCheckedAt: now, lastCheckedBy: user.id, updatedAt: now })
     .where(eq(deliveryBatches.id, payload.batchId));
+
+  await recordPortalAudit({
+    action: "delivery_batch.vendor_status_imported",
+    entityId: payload.batchId,
+    entityType: "delivery_batch",
+    metadata: { jobId: job.id, matchedRows: matches.length },
+    performedBy: user.id,
+  });
 
   revalidateVendorTrackingPaths(payload.batchId);
   redirectWithNotice(`/delivery-batches/${payload.batchId}`, `Imported ${matches.length} status updates.`);

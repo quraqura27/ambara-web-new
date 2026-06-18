@@ -31,6 +31,8 @@ export const shipments = pgTable('shipments', {
   deliveredAt: timestamp('delivered_at'),
   cargoType: text('cargo_type').default('general'),
   commodity: text('commodity'),
+  idempotencyKey: text('idempotency_key'),
+  unlinkedReason: text('unlinked_reason'),
   createdByStaff: integer('created_by_staff'),
   updatedByStaff: integer('updated_by_staff'),
   createdBy: text('created_by'),
@@ -43,6 +45,9 @@ export const shipments = pgTable('shipments', {
   uniqueIndex('shipments_internal_tracking_no_unique_idx')
     .on(table.internalTrackingNo)
     .where(sql`${table.internalTrackingNo} is not null and btrim(${table.internalTrackingNo}) <> ''`),
+  uniqueIndex('shipments_idempotency_key_unique_idx')
+    .on(table.idempotencyKey)
+    .where(sql`${table.idempotencyKey} is not null and btrim(${table.idempotencyKey}) <> ''`),
 ]);
 
 export const parcels = pgTable('parcels', {
@@ -137,6 +142,8 @@ export const trackingEvents = pgTable('tracking_events', {
   visibleToCustomer: boolean('visible_to_customer').notNull().default(true),
   createdBy: integer('created_by'),
   state: text('state').default('done'),
+  correctedEventId: integer('corrected_event_id'),
+  correctionReason: text('correction_reason'),
   createdAt: timestamp('created_at').defaultNow(),
 }, (table) => [
   index('tracking_events_shipment_id_idx').on(table.shipmentId),
@@ -168,10 +175,15 @@ export const bulkShipmentImportJobs = pgTable('bulk_shipment_import_jobs', {
   createdShipments: integer('created_shipments').notNull().default(0),
   createdParcels: integer('created_parcels').notNull().default(0),
   status: text('status').notNull().default('pending'),
+  idempotencyKey: text('idempotency_key'),
   createdBy: integer('created_by'),
   createdAt: timestamp('created_at').defaultNow(),
   completedAt: timestamp('completed_at'),
-});
+}, (table) => [
+  uniqueIndex('bulk_shipment_import_jobs_idempotency_unique_idx')
+    .on(table.idempotencyKey)
+    .where(sql`${table.idempotencyKey} is not null and btrim(${table.idempotencyKey}) <> ''`),
+]);
 
 export const bulkShipmentImportItems = pgTable('bulk_shipment_import_items', {
   id: serial('id').primaryKey(),
@@ -199,11 +211,15 @@ export const bulkUpdateJobs = pgTable('bulk_update_jobs', {
   unmatchedRows: integer('unmatched_rows').notNull().default(0),
   duplicateRows: integer('duplicate_rows').notNull().default(0),
   status: text('status').notNull().default('pending'),
+  idempotencyKey: text('idempotency_key'),
   createdBy: integer('created_by'),
   createdAt: timestamp('created_at').defaultNow(),
   completedAt: timestamp('completed_at'),
 }, (table) => [
   index('bulk_update_jobs_batch_idx').on(table.deliveryBatchId),
+  uniqueIndex('bulk_update_jobs_idempotency_unique_idx')
+    .on(table.idempotencyKey)
+    .where(sql`${table.idempotencyKey} is not null and btrim(${table.idempotencyKey}) <> ''`),
 ]);
 
 export const bulkUpdateItems = pgTable('bulk_update_items', {
@@ -285,6 +301,32 @@ export const customers = pgTable('customers', {
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
+
+export const portalAuditLogs = pgTable('portal_audit_logs', {
+  id: serial('id').primaryKey(),
+  action: text('action').notNull(),
+  entityType: text('entity_type').notNull(),
+  entityId: text('entity_id').notNull(),
+  performedBy: integer('performed_by').notNull(),
+  reason: text('reason'),
+  metadataJson: text('metadata_json'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => [
+  index('portal_audit_logs_entity_idx').on(table.entityType, table.entityId),
+  index('portal_audit_logs_user_idx').on(table.performedBy, table.createdAt),
+]);
+
+export const portalUxEvents = pgTable('portal_ux_events', {
+  id: serial('id').primaryKey(),
+  eventName: text('event_name').notNull(),
+  category: text('category'),
+  route: text('route'),
+  userId: integer('user_id').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => [
+  index('portal_ux_events_name_idx').on(table.eventName, table.createdAt),
+  index('portal_ux_events_user_idx').on(table.userId, table.createdAt),
+]);
 
 export const invoices = pgTable('invoices', {
   id: uuid('id').defaultRandom().primaryKey(),

@@ -40,9 +40,13 @@ function fallbackStatusEvent(input: {
   destinationCity?: string | null;
   eventTime?: Date | null;
   origin?: string | null;
+  serviceType?: string | null;
   status?: string | null;
 }): PublicTrackingEvent {
-  const publicEvent = buildCustomerVisibleTrackingEvent(input.status || "pending");
+  const publicEvent = buildCustomerVisibleTrackingEvent(
+    input.status || "pending",
+    input.serviceType,
+  );
 
   return {
     status: publicEvent.status,
@@ -107,6 +111,7 @@ export async function findPublicTrackingResult(
           destinationCity: parcel?.destinationCity,
           eventTime: shipment.updatedAt ?? shipment.createdAt,
           origin: shipment.origin,
+          serviceType: shipment.serviceType,
           status: shipment.status || parcel?.currentStatus,
         }),
       ];

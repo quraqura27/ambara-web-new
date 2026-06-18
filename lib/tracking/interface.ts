@@ -19,6 +19,8 @@ export type ShipmentStatus =
   | "DELIVERED";
 
 export interface TrackingEvent {
+  id?: number;
+  label?: string;
   status: ShipmentStatus;
   description: string;
   location?: string;

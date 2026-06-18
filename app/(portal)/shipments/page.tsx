@@ -1,242 +1,155 @@
 import Link from "next/link";
-import { ArrowRight, Download, FileUp, MapPin, Package, Plus, Printer, Search, Truck } from "lucide-react";
+import { MapPin, Package, Plus, Printer, Search, Truck } from "lucide-react";
 
-import { getShipments, searchShipmentByTracking } from "@/actions/shipments";
+import { getShipmentsPage } from "@/actions/shipments";
 import { BulkPrintConsignmentNotesButton } from "@/components/consignment-notes/bulk-print-button";
 import { Button, Card, Input } from "@/components/ui/core";
-import { requirePortalUser } from "@/lib/portal-auth";
-import { canExportShipments } from "@/lib/shipment-export/core";
+import { shipmentStatusDefinitions, shipmentStatusValues } from "@/lib/shipments/status-model";
 
 type ShipmentsPageProps = {
-  searchParams?: Promise<{ search?: string }>;
+  searchParams: Promise<{
+    page?: string;
+    from?: string;
+    search?: string;
+    sort?: "created_desc" | "tracking_asc" | "updated_asc" | "updated_desc";
+    status?: string;
+    to?: string;
+    view?: "in_transit" | "needs_attention" | "updated_today";
+  }>;
 };
 
-function formatStatus(status: string) {
-  return normalizeStatusKey(status).replace(/_/g, " ");
-}
-
-function normalizeStatusKey(status: string) {
-  const normalized = status.trim().toLowerCase();
-
-  if (normalized === "departed") {
-    return "departed_origin";
-  }
-
-  return normalized;
-}
-
 function statusClassName(status: string) {
-  const normalized = normalizeStatusKey(status);
-
-  if (normalized === "delivered") {
-    return "border-emerald-500/20 bg-emerald-500/10 text-emerald-500";
+  if (status === "delivered") return "border-emerald-500/20 bg-emerald-500/10 text-emerald-300";
+  if (["exception", "delivery_issue", "cancelled"].includes(status)) return "border-rose-500/20 bg-rose-500/10 text-rose-300";
+  if (["in_transit", "departed_origin", "customs", "arrived_destination", "out_for_delivery"].includes(status)) {
+    return "border-amber-500/20 bg-amber-500/10 text-amber-300";
   }
-
-  if (normalized === "exception" || normalized === "cancelled") {
-    return "border-rose-500/20 bg-rose-500/10 text-rose-400";
-  }
-
-  if (
-    normalized === "in_transit" ||
-    normalized === "departed_origin" ||
-    normalized === "customs" ||
-    normalized === "arrived_destination"
-  ) {
-    return "border-amber-500/20 bg-amber-500/10 text-amber-500";
-  }
-
-  return "border-blue-500/20 bg-blue-500/10 text-blue-500";
+  return "border-blue-500/20 bg-blue-500/10 text-blue-300";
 }
 
 export default async function ShipmentsPage({ searchParams }: ShipmentsPageProps) {
-  const resolvedSearchParams = searchParams ? await searchParams : undefined;
-  const search = resolvedSearchParams?.search?.trim() ?? "";
-  const user = await requirePortalUser();
-  const canExportShipmentData = canExportShipments(user);
-  const shipments = await getShipments(search);
+  const params = await searchParams;
+  const result = await getShipmentsPage({
+    page: Number.parseInt(params.page ?? "1", 10) || 1,
+    from: params.from,
+    search: params.search,
+    sort: params.sort,
+    status: params.status,
+    to: params.to,
+    view: params.view ?? "",
+  });
+  const makeHref = (page: number) => {
+    const query = new URLSearchParams();
+    if (params.search) query.set("search", params.search);
+    if (params.from) query.set("from", params.from);
+    if (params.sort) query.set("sort", params.sort);
+    if (params.status) query.set("status", params.status);
+    if (params.to) query.set("to", params.to);
+    if (params.view) query.set("view", params.view);
+    query.set("page", String(page));
+    return `/shipments?${query}`;
+  };
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Shipment List</h2>
-          <p className="mt-1 text-slate-500">
-            Review stored shipments, search tracking numbers, and open shipment details.
-          </p>
+          <h1 className="text-3xl font-bold tracking-tight">Shipments</h1>
+          <p className="mt-1 text-slate-500">Find shipments, review status, print consignment notes, or create a new record.</p>
         </div>
         <div className="flex flex-wrap gap-3">
           <BulkPrintConsignmentNotesButton />
-          {canExportShipmentData ? (
-            <Link href="/shipments/export">
-              <Button className="gap-2" variant="secondary">
-                <Download className="h-4 w-4" /> Export
-              </Button>
-            </Link>
-          ) : null}
-          <Link href="/shipments/bulk-import">
-            <Button className="gap-2" variant="secondary">
-              <FileUp className="h-4 w-4" /> Bulk Import
-            </Button>
-          </Link>
-          <Link href="/shipments/new">
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" /> Create New Shipment
-            </Button>
-          </Link>
+          <Link href="/shipments/new"><Button className="gap-2"><Plus className="h-4 w-4" /> Create Shipment</Button></Link>
         </div>
       </div>
 
-      <Card className="overflow-visible p-0">
-        <div className="grid gap-4 border-b border-white/5 p-6 lg:grid-cols-[1fr_1fr_auto] lg:items-center">
-          <form className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-            <Input
-              className="pl-10"
-              defaultValue={search}
-              name="search"
-              placeholder="Search shipment, route, customer..."
-            />
-          </form>
+      <div className="flex flex-wrap gap-2" aria-label="Saved shipment views">
+        {[
+          ["", "All shipments"],
+          ["needs_attention", "Needs attention"],
+          ["in_transit", "In transit"],
+          ["updated_today", "Updated today"],
+        ].map(([view, label]) => (
+          <Link
+            className={`rounded-full border px-4 py-2 text-xs font-semibold ${params.view === view || (!params.view && !view) ? "border-blue-500/30 bg-blue-500/10 text-blue-200" : "border-white/10 text-slate-400 hover:text-white"}`}
+            href={view ? `/shipments?view=${view}` : "/shipments"}
+            key={view}
+          >
+            {label}
+          </Link>
+        ))}
+      </div>
 
-          <form action={searchShipmentByTracking} className="flex flex-col gap-3 sm:flex-row">
-            <Input
-              className="min-w-0 flex-1"
-              name="trackingNumber"
-              placeholder="Jump to tracking number..."
-            />
-            <Button className="gap-2" type="submit" variant="secondary">
-              Track <ArrowRight className="h-4 w-4" />
-            </Button>
-          </form>
+      <Card className="p-0">
+        <form className="grid gap-4 border-b border-white/5 p-5 md:grid-cols-2 xl:grid-cols-[minmax(240px,1fr)_180px_160px_160px_190px_auto]" method="get">
+          <label className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+            <Input className="pl-10" defaultValue={params.search} name="search" placeholder="Tracking, AWB, reference, customer, route..." />
+          </label>
+          <select className="rounded-lg border border-slate-700 bg-slate-900/60 px-4 py-2 text-sm" defaultValue={params.status ?? ""} name="status">
+            <option value="">All statuses</option>
+            {shipmentStatusValues.map((status) => <option key={status} value={status}>{shipmentStatusDefinitions[status].label}</option>)}
+          </select>
+          <Input aria-label="Updated from date" defaultValue={params.from} name="from" title="Updated from" type="date" />
+          <Input aria-label="Updated to date" defaultValue={params.to} name="to" title="Updated to" type="date" />
+          <select className="rounded-lg border border-slate-700 bg-slate-900/60 px-4 py-2 text-sm" defaultValue={params.sort ?? "updated_desc"} name="sort">
+            <option value="updated_desc">Recently updated</option>
+            <option value="updated_asc">Oldest update</option>
+            <option value="created_desc">Recently created</option>
+            <option value="tracking_asc">Tracking number</option>
+          </select>
+          <Button type="submit" variant="secondary">Apply Filters</Button>
+        </form>
 
-          <p className="text-xs font-bold uppercase tracking-widest text-slate-600">
-            Results: {shipments.length}
-          </p>
+        <div className="flex items-center justify-between border-b border-white/5 px-5 py-3 text-xs text-slate-500">
+          <span>{result.total.toLocaleString()} matching shipments</span>
+          <span>Page {result.page} of {result.totalPages}</span>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-white/5 text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                <th className="w-12 px-6 py-4">CN</th>
-                <th className="px-6 py-4">Shipment</th>
-                <th className="px-6 py-4">Route</th>
-                <th className="px-6 py-4">Customer</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4">Updated</th>
-                <th className="px-6 py-4 text-right">Actions</th>
+          <table className="w-full min-w-[980px] text-left">
+            <thead className="sticky top-0 z-10 bg-[#12121a] text-[10px] font-bold uppercase tracking-widest text-slate-500">
+              <tr>
+                <th className="w-12 px-5 py-4">CN</th><th className="px-5 py-4">Shipment</th><th className="px-5 py-4">Route</th><th className="px-5 py-4">Customer</th><th className="px-5 py-4">Status</th><th className="px-5 py-4">Updated</th><th className="px-5 py-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {shipments.map((shipment) => {
-                const customerLabel =
-                  shipment.customerFullName ||
-                  shipment.customerCompanyName ||
-                  shipment.customerName ||
-                  "Unlinked";
-                const cnTrackingNo = shipment.internalTrackingNo ?? "";
-                const canPrintCn = Boolean(cnTrackingNo);
-
+              {result.rows.map((shipment) => {
+                const customerLabel = shipment.customerFullName || shipment.customerCompanyName || shipment.customerName || "Unlinked";
+                const cn = shipment.internalTrackingNo ?? "";
                 return (
-                  <tr key={shipment.id} className="group transition-colors hover:bg-white/[0.02]">
-                    <td className="px-6 py-4">
-                      <input
-                        aria-label={`Select ${shipment.trackingNumber} for consignment note printing`}
-                        className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-blue-600"
-                        disabled={!canPrintCn}
-                        name="cnTrackingNo"
-                        type="checkbox"
-                        value={cnTrackingNo}
-                      />
+                  <tr className="transition hover:bg-white/[0.02]" key={shipment.id}>
+                    <td className="px-5 py-4"><input aria-label={`Select ${shipment.trackingNumber} for consignment note printing`} disabled={!cn} name="cnTrackingNo" type="checkbox" value={cn} /></td>
+                    <td className="px-5 py-4">
+                      <Link className="font-mono text-sm font-semibold text-blue-300 hover:text-blue-200" href={`/shipments/${encodeURIComponent(shipment.trackingNumber)}`}>{shipment.trackingNumber}</Link>
+                      <p className="mt-1 max-w-60 truncate text-xs text-slate-500">{shipment.title}</p>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full border border-blue-600/20 bg-blue-600/10 text-blue-400">
-                          <Package className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-white transition-colors group-hover:text-blue-400">
-                            {shipment.trackingNumber}
-                          </p>
-                          <p className="text-xs text-slate-500">{shipment.title}</p>
-                        </div>
-                      </div>
+                    <td className="px-5 py-4 text-xs text-slate-400">
+                      <p className="flex items-center gap-2"><Truck className="h-3.5 w-3.5" /> {shipment.origin}</p>
+                      <p className="mt-1 flex items-center gap-2"><MapPin className="h-3.5 w-3.5" /> {shipment.destination}</p>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="space-y-1 text-xs text-slate-400">
-                        <p className="flex items-center gap-2">
-                          <Truck className="h-3.5 w-3.5 text-slate-500" />
-                          {shipment.origin}
-                        </p>
-                        <p className="flex items-center gap-2">
-                          <MapPin className="h-3.5 w-3.5 text-slate-500" />
-                          {shipment.destination}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm font-medium text-slate-300">{customerLabel}</p>
-                      <p className="text-xs text-slate-600">
-                        {shipment.customerEmail || (shipment.customerId ? `Customer #${shipment.customerId}` : "No customer linked")}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`inline-flex rounded-full border px-2 py-1 text-[10px] font-bold uppercase tracking-tight ${statusClassName(
-                          shipment.status,
-                        )}`}
-                      >
-                        {formatStatus(shipment.status)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-xs text-slate-500">
-                      {shipment.updatedAt
-                        ? new Date(shipment.updatedAt).toLocaleDateString()
-                        : "N/A"}
-                    </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-5 py-4"><p className="text-sm text-slate-300">{customerLabel}</p><p className="text-xs text-slate-600">{shipment.customerEmail || "No email"}</p></td>
+                    <td className="px-5 py-4"><span className={`inline-flex rounded-full border px-2 py-1 text-[10px] font-bold uppercase ${statusClassName(shipment.status)}`}>{shipment.status.replace(/_/g, " ")}</span></td>
+                    <td className="px-5 py-4 text-xs text-slate-500">{shipment.updatedAt ? new Date(shipment.updatedAt).toLocaleDateString() : "N/A"}</td>
+                    <td className="px-5 py-4">
                       <div className="flex justify-end gap-2">
-                        {canPrintCn ? (
-                          <Link href={`/shipments/${encodeURIComponent(cnTrackingNo)}/consignment-note`}>
-                            <Button
-                              aria-label={`Print consignment note for ${cnTrackingNo}`}
-                              className="h-auto p-2"
-                              variant="ghost"
-                            >
-                              <Printer className="h-4 w-4" />
-                            </Button>
-                          </Link>
-                        ) : null}
-                        <Link href={`/shipments/${shipment.trackingNumber}`}>
-                          <Button
-                            aria-label={`Open shipment ${shipment.trackingNumber}`}
-                            className="h-auto p-2"
-                            variant="ghost"
-                          >
-                            <ArrowRight className="h-4 w-4" />
-                          </Button>
-                        </Link>
+                        {cn ? <Link href={`/shipments/${encodeURIComponent(cn)}/consignment-note`}><Button className="gap-2" variant="ghost"><Printer className="h-4 w-4" /> Print</Button></Link> : null}
+                        <Link href={`/shipments/${encodeURIComponent(shipment.trackingNumber)}`}><Button variant="secondary">Open</Button></Link>
                       </div>
                     </td>
                   </tr>
                 );
               })}
-
-              {shipments.length === 0 && (
-                <tr>
-                  <td className="px-6 py-12 text-center text-slate-500" colSpan={7}>
-                    <div className="flex flex-col items-center">
-                      <Package className="mb-4 h-12 w-12 text-slate-800" />
-                      <p className="text-lg font-medium">No shipments found</p>
-                      <p className="text-sm">
-                        Try another search or create a new shipment record.
-                      </p>
-                    </div>
-                  </td>
-                </tr>
-              )}
+              {result.rows.length === 0 ? (
+                <tr><td className="px-6 py-14 text-center text-slate-500" colSpan={7}><Package className="mx-auto mb-3 h-10 w-10 text-slate-700" />No shipments match these filters.</td></tr>
+              ) : null}
             </tbody>
           </table>
+        </div>
+
+        <div className="flex items-center justify-between border-t border-white/5 p-5">
+          {result.page > 1 ? <Link href={makeHref(result.page - 1)}><Button variant="secondary">Previous</Button></Link> : <span />}
+          {result.page < result.totalPages ? <Link href={makeHref(result.page + 1)}><Button variant="secondary">Next</Button></Link> : <span />}
         </div>
       </Card>
     </div>

@@ -1,6 +1,7 @@
-export const bulkShipmentImportModes = ["shipment_per_row", "parcel_per_row"] as const;
-
-export type BulkShipmentImportMode = (typeof bulkShipmentImportModes)[number];
+import {
+  isDoorDeliveryService,
+  normalizeShipmentService,
+} from "../shipments/service-model.ts";
 
 export const ambaraStatusCodes = [
   "DRAFT",
@@ -50,7 +51,6 @@ export type ValidatedBulkShipmentRow = {
 };
 
 export type BulkShipmentImportPreview = {
-  mode: BulkShipmentImportMode;
   rows: ValidatedBulkShipmentRow[];
   summary: {
     totalRows: number;
@@ -90,6 +90,9 @@ export type MatchableBatchParcel = {
   destinationCity: string;
   postalCode?: string | null;
   currentStatus?: string | null;
+  serviceType?: string | null;
+  shipmentServiceType?: string | null;
+  shipmentStatus?: string | null;
 };
 
 export type VendorTrackingMatch = {
@@ -209,21 +212,6 @@ export const defaultVendorStatusMappings = [
   },
 ];
 
-const serviceTypeValues = new Set([
-  "PP",
-  "PD",
-  "DP",
-  "DD",
-  "PTP",
-  "PTD",
-  "DTP",
-  "DTD",
-  "REGULAR",
-  "EXPRESS",
-  "SAME_DAY",
-  "NEXT_DAY",
-]);
-
 const bulkShipmentColumns = {
   customerName: ["customer_name", "customer", "customer_full_name"],
   customerReference: ["customer_reference", "customer_ref", "reference", "order_id"],
@@ -278,7 +266,11 @@ export function normalizeIdentifier(value: unknown) {
 }
 
 export function normalizePhone(value: unknown) {
-  return normalizeText(value).replace(/[^\d+]/g, "");
+  const compact = normalizeText(value).replace(/[^\d+]/g, "");
+  if (compact.startsWith("+62")) return compact;
+  if (compact.startsWith("62")) return `+${compact}`;
+  if (compact.startsWith("0")) return `+62${compact.slice(1)}`;
+  return compact;
 }
 
 function normalizeComparable(value: unknown) {
@@ -391,15 +383,13 @@ function validationStatus(errors: string[], warnings: string[]) {
   return "valid" as const;
 }
 
-export function prepareBulkShipmentImport(
-  rows: RawTableRow[],
-  mode: BulkShipmentImportMode,
-): BulkShipmentImportPreview {
+export function prepareBulkShipmentImport(rows: RawTableRow[]): BulkShipmentImportPreview {
   const normalizedRows = rows.map((row) => {
     const weight = parseNumber(getValue(row, bulkShipmentColumns.weight));
     const piecesValue = getValue(row, bulkShipmentColumns.pieces) || "1";
     const pieces = parsePieces(piecesValue);
-    const serviceType = normalizeIdentifier(getValue(row, bulkShipmentColumns.serviceType));
+    const serviceType =
+      normalizeShipmentService(getValue(row, bulkShipmentColumns.serviceType)) ?? "";
     const codAmountText = getValue(row, bulkShipmentColumns.codAmount);
     const codAmount = codAmountText ? parseNumber(codAmountText) : null;
 
@@ -408,10 +398,10 @@ export function prepareBulkShipmentImport(
       customerName: getValue(row, bulkShipmentColumns.customerName),
       customerReference: getValue(row, bulkShipmentColumns.customerReference),
       shipperName: getValue(row, bulkShipmentColumns.shipperName),
-      shipperPhone: getValue(row, bulkShipmentColumns.shipperPhone),
+      shipperPhone: normalizePhone(getValue(row, bulkShipmentColumns.shipperPhone)),
       originCity: getValue(row, bulkShipmentColumns.originCity),
       receiverName: getValue(row, bulkShipmentColumns.receiverName),
-      receiverPhone: getValue(row, bulkShipmentColumns.receiverPhone),
+      receiverPhone: normalizePhone(getValue(row, bulkShipmentColumns.receiverPhone)),
       receiverAddress: getValue(row, bulkShipmentColumns.receiverAddress),
       destinationCity: getValue(row, bulkShipmentColumns.destinationCity),
       postalCode: getValue(row, bulkShipmentColumns.postalCode),
@@ -420,7 +410,7 @@ export function prepareBulkShipmentImport(
       pieces,
       serviceType,
       deliveryInstruction: getValue(row, bulkShipmentColumns.deliveryInstruction),
-      codAmount: codAmount === null || Number.isFinite(codAmount) ? codAmount : null,
+      codAmount,
     } satisfies NormalizedBulkShipmentRow;
   });
 
@@ -454,13 +444,31 @@ export function prepareBulkShipmentImport(
 
     if (!row.receiverName) errors.push("missing receiver_name");
     if (!row.receiverPhone) errors.push("missing receiver_phone");
-    if (!row.receiverAddress) errors.push("missing receiver_address");
+    if (row.receiverPhone && !/^\+?\d{8,15}$/.test(row.receiverPhone)) {
+      errors.push("invalid receiver_phone");
+    }
+    if (!row.originCity) errors.push("missing origin_city");
     if (!row.destinationCity) errors.push("missing destination_city");
+    if (isDoorDeliveryService(row.serviceType) && !row.receiverAddress) {
+      errors.push("missing receiver_address for door delivery");
+    }
     if (!Number.isFinite(row.weight) || row.weight <= 0) errors.push("missing or invalid weight");
     if (!Number.isInteger(row.pieces) || row.pieces <= 0) errors.push("invalid pieces");
-    if (!serviceTypeValues.has(row.serviceType)) errors.push("invalid service_type");
-    if (mode === "parcel_per_row" && !row.customerReference) {
-      errors.push("customer_reference is required when one row equals one parcel");
+    if (!normalizeShipmentService(row.serviceType)) errors.push("invalid service_type");
+    if (!row.commodity) errors.push("missing commodity");
+    if (
+      isDoorDeliveryService(row.serviceType) &&
+      row.codAmount !== null &&
+      (!Number.isFinite(row.codAmount) || row.codAmount < 0)
+    ) {
+      errors.push("invalid cod_amount");
+    }
+    if (
+      isDoorDeliveryService(row.serviceType) &&
+      row.postalCode &&
+      !/^\d{5}$/.test(row.postalCode)
+    ) {
+      errors.push("invalid postal_code");
     }
 
     const reference = normalizeComparable(row.customerReference);
@@ -473,8 +481,15 @@ export function prepareBulkShipmentImport(
       warnings.push("same receiver phone used multiple times");
     }
 
-    if (!row.postalCode) warnings.push("missing postal_code");
-    if (!row.commodity) warnings.push("missing commodity");
+    if (isDoorDeliveryService(row.serviceType) && !row.postalCode) {
+      warnings.push("missing postal_code");
+    }
+    if (
+      !isDoorDeliveryService(row.serviceType) &&
+      (row.receiverAddress || row.postalCode || row.deliveryInstruction || row.codAmount !== null)
+    ) {
+      warnings.push("door-delivery fields will be ignored for this service");
+    }
     if (Number.isFinite(row.weight) && (row.weight < 0.1 || row.weight > 500)) {
       warnings.push("unusually high or low weight");
     }
@@ -494,7 +509,6 @@ export function prepareBulkShipmentImport(
   });
 
   return {
-    mode,
     rows: validatedRows,
     summary: {
       totalRows: validatedRows.length,

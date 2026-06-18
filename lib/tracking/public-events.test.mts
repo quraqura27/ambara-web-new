@@ -29,6 +29,15 @@ test("maps manual shipment creation to received-information public text", () => 
   });
 });
 
+test("uses destination-port arrival wording for port services", () => {
+  assert.deepEqual(buildCustomerVisibleTrackingEvent("arrived_destination", "DTP"), {
+    label: "Arrived at Destination Port",
+    publicDescription: "Shipment has arrived at the destination port.",
+    status: "arrived_destination",
+    statusCode: "ARRIVED_DESTINATION",
+  });
+});
+
 test("marks repeated visible status event as duplicate", () => {
   const nextEvent = buildCustomerVisibleTrackingEvent("DELIVERED");
 

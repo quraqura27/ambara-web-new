@@ -1,3 +1,8 @@
+import {
+  getShipmentStatusDefinition,
+  normalizeShipmentStatus,
+} from "../shipments/status-model.ts";
+
 export type CustomerVisibleTrackingEvent = {
   label: string;
   publicDescription: string;
@@ -9,65 +14,6 @@ type ExistingTrackingEvent = {
   publicDescription?: string | null;
   status?: string | null;
   statusCode?: string | null;
-};
-
-const shipmentCreatedEvent = {
-  label: "Shipment Information Received",
-  publicDescription: "Shipment information has been received.",
-  status: "pending",
-  statusCode: "DRAFT",
-} satisfies CustomerVisibleTrackingEvent;
-
-const statusEvents: Record<string, CustomerVisibleTrackingEvent> = {
-  CREATED: shipmentCreatedEvent,
-  DRAFT: shipmentCreatedEvent,
-  PENDING: shipmentCreatedEvent,
-  RECEIVED: shipmentCreatedEvent,
-  SHIPMENT_CREATED: shipmentCreatedEvent,
-  OUT_FOR_DELIVERY: {
-    label: "Out For Delivery",
-    publicDescription: "Shipment is out for delivery.",
-    status: "out_for_delivery",
-    statusCode: "OUT_FOR_DELIVERY",
-  },
-  DELIVERED: {
-    label: "Delivered",
-    publicDescription: "Shipment has been delivered successfully.",
-    status: "delivered",
-    statusCode: "DELIVERED",
-  },
-  DELIVERY_ISSUE: {
-    label: "Delivery Issue",
-    publicDescription:
-      "Delivery attempt could not be completed. Our team is monitoring the next update.",
-    status: "delivery_issue",
-    statusCode: "DELIVERY_ISSUE",
-  },
-  EXCEPTION: {
-    label: "Delivery Issue",
-    publicDescription:
-      "Delivery attempt could not be completed. Our team is monitoring the next update.",
-    status: "exception",
-    statusCode: "DELIVERY_ISSUE",
-  },
-  ON_HOLD: {
-    label: "On Hold",
-    publicDescription: "Shipment is pending further update.",
-    status: "on_hold",
-    statusCode: "ON_HOLD",
-  },
-  RETURN_IN_PROGRESS: {
-    label: "Return In Progress",
-    publicDescription: "Shipment is being returned by the delivery partner.",
-    status: "return_in_progress",
-    statusCode: "RETURN_IN_PROGRESS",
-  },
-  IN_TRANSIT: {
-    label: "In Transit",
-    publicDescription: "Shipment is in transit.",
-    status: "in_transit",
-    statusCode: "HANDED_TO_DELIVERY_PARTNER",
-  },
 };
 
 export function normalizePublicTrackingInput(value: string | null | undefined) {
@@ -96,12 +42,30 @@ function labelFromStatusKey(statusKey: string) {
 
 export function buildCustomerVisibleTrackingEvent(
   statusInput: string | null | undefined,
+  serviceType?: string | null,
 ): CustomerVisibleTrackingEvent {
   const statusKey = normalizeStatusKey(statusInput);
-  const mappedEvent = statusEvents[statusKey];
+  const normalizedStatus = normalizeShipmentStatus(statusKey);
+  const definition = getShipmentStatusDefinition(normalizedStatus, serviceType);
+  const isKnown =
+    statusKey === normalizedStatus.toUpperCase() ||
+    [
+      "CREATED",
+      "DRAFT",
+      "SHIPMENT_CREATED",
+      "READY_FOR_VENDOR_HANDOVER",
+      "DEPARTED",
+      "HANDED_TO_DELIVERY_PARTNER",
+      "VENDOR_TRACKING_ASSIGNED",
+    ].includes(statusKey);
 
-  if (mappedEvent) {
-    return { ...mappedEvent };
+  if (isKnown) {
+    return {
+      label: definition.publicLabel,
+      publicDescription: definition.publicDescription,
+      status: definition.publicStatus,
+      statusCode: definition.publicStatusCode,
+    };
   }
 
   return {

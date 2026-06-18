@@ -9,6 +9,7 @@ import {
   type VendorStatusPreviewState,
 } from "@/actions/vendor-tracking";
 import { Button, Card, Input, cn } from "@/components/ui/core";
+import { ConfirmSubmitButton } from "@/components/portal/confirm-submit-button";
 
 const initialState: VendorStatusPreviewState = {};
 
@@ -114,10 +115,14 @@ export function VendorStatusUpdateForm({ batchId }: { batchId: number }) {
             </div>
             <div className="flex items-center justify-between border-t border-white/5 p-6">
               <p className="text-xs text-slate-500">Matched rows: {matchedCount}</p>
-              <Button className="gap-2" disabled={matchedCount === 0} type="submit">
-                <CheckCircle2 className="h-4 w-4" />
-                Confirm Statuses
-              </Button>
+              <ConfirmSubmitButton
+                description={`Apply ${matchedCount} matched status updates and append customer-visible tracking events.`}
+                disabled={matchedCount === 0}
+                title="Confirm vendor status updates?"
+                variant="primary"
+              >
+                <CheckCircle2 className="mr-2 h-4 w-4" /> Confirm Statuses
+              </ConfirmSubmitButton>
             </div>
           </form>
         </Card>

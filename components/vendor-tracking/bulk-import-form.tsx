@@ -1,7 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
-import { AlertTriangle, CheckCircle2, FileSpreadsheet, Upload } from "lucide-react";
+import { useActionState, useMemo, useState } from "react";
+import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, Upload } from "lucide-react";
 
 import {
   commitBulkShipmentImport,
@@ -9,6 +9,7 @@ import {
   type BulkShipmentPreviewState,
 } from "@/actions/vendor-tracking";
 import { Button, Card, Input, cn } from "@/components/ui/core";
+import { ConfirmSubmitButton } from "@/components/portal/confirm-submit-button";
 
 const initialState: BulkShipmentPreviewState = {};
 
@@ -21,26 +22,22 @@ function statusClassName(status: string) {
 export function BulkImportForm() {
   const [state, action, pending] = useActionState(previewBulkShipmentImport, initialState);
   const preview = state.preview;
+  const [approvedWarnings, setApprovedWarnings] = useState<number[]>([]);
   const canCommit = Boolean(state.payload && preview && preview.summary.errorRows === 0);
+  const errorCsv = useMemo(() => {
+    if (!preview) return "";
+    const rows = preview.rows.filter((row) => row.errors.length > 0);
+    return [
+      "row,errors",
+      ...rows.map((row) => `${row.rowNumber},"${row.errors.join("; ").replace(/"/g, '""')}"`),
+    ].join("\n");
+  }, [preview]);
 
   return (
     <div className="space-y-6">
       <Card className="p-6">
         <form action={action} className="grid gap-5 lg:grid-cols-[240px_1fr]">
           <div className="space-y-4">
-            <label className="block space-y-2">
-              <span className="text-xs font-bold uppercase tracking-widest text-slate-500">
-                Import Mode
-              </span>
-              <select
-                className="w-full rounded-lg border border-slate-700 bg-slate-900/50 px-4 py-2 text-sm text-slate-100 outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/30"
-                name="mode"
-              >
-                <option value="shipment_per_row">One row = one shipment</option>
-                <option value="parcel_per_row">One row = one parcel</option>
-              </select>
-            </label>
-
             <label className="block space-y-2">
               <span className="text-xs font-bold uppercase tracking-widest text-slate-500">
                 CSV / TSV File
@@ -52,6 +49,9 @@ export function BulkImportForm() {
               <Upload className="h-4 w-4" />
               {pending ? "Previewing..." : "Preview Import"}
             </Button>
+            <p className="text-xs leading-relaxed text-slate-500">
+              Every accepted row creates one independent shipment, tracking number, CN, and internal delivery record.
+            </p>
           </div>
 
           <label className="block space-y-2">
@@ -61,7 +61,7 @@ export function BulkImportForm() {
             <textarea
               className="min-h-[220px] w-full rounded-lg border border-slate-700 bg-slate-900/50 px-4 py-3 font-mono text-xs text-slate-100 outline-none transition-all placeholder:text-slate-600 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/30"
               name="pastedTable"
-              placeholder="customer_name,customer_reference,receiver_name,receiver_phone,receiver_address,destination_city,postal_code,commodity,weight,pieces,service_type"
+              placeholder="customer_name,customer_reference,origin_city,receiver_name,receiver_phone,receiver_address,destination_city,postal_code,commodity,weight,pieces,service_type"
             />
           </label>
         </form>
@@ -100,6 +100,7 @@ export function BulkImportForm() {
                   <th className="px-6 py-4">Reference</th>
                   <th className="px-6 py-4">Receiver</th>
                   <th className="px-6 py-4">Destination</th>
+                  <th className="px-6 py-4">Service</th>
                   <th className="px-6 py-4">Load</th>
                   <th className="px-6 py-4">Status</th>
                   <th className="px-6 py-4">Messages</th>
@@ -119,6 +120,9 @@ export function BulkImportForm() {
                     <td className="px-6 py-4 text-sm text-slate-300">
                       {row.data.destinationCity || "-"}
                     </td>
+                    <td className="px-6 py-4 text-xs font-semibold text-slate-300">
+                      {row.data.serviceType || "-"}
+                    </td>
                     <td className="px-6 py-4 text-xs text-slate-400">
                       {Number.isFinite(row.data.weight) ? `${row.data.weight} kg` : "-"} /{" "}
                       {Number.isFinite(row.data.pieces) ? `${row.data.pieces} pcs` : "-"}
@@ -132,6 +136,24 @@ export function BulkImportForm() {
                       >
                         {row.validationStatus}
                       </span>
+                      {row.warnings.length > 0 && row.errors.length === 0 ? (
+                        <label className="mt-3 flex items-start gap-2 text-xs text-amber-200">
+                          <input
+                            checked={approvedWarnings.includes(row.rowNumber)}
+                            name="warningRows"
+                            onChange={(event) =>
+                              setApprovedWarnings((current) =>
+                                event.target.checked
+                                  ? [...current, row.rowNumber]
+                                  : current.filter((value) => value !== row.rowNumber),
+                              )
+                            }
+                            type="checkbox"
+                            value={row.rowNumber}
+                          />
+                          Include this warning row
+                        </label>
+                      ) : null}
                     </td>
                     <td className="max-w-sm px-6 py-4 text-xs text-slate-400">
                       {[...row.errors, ...row.warnings].join("; ") || "-"}
@@ -142,17 +164,41 @@ export function BulkImportForm() {
             </table>
           </div>
 
-          <div className="flex items-center justify-between border-t border-white/5 p-6">
+          <div className="flex flex-col gap-4 border-t border-white/5 p-6 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2 text-xs text-slate-500">
               <FileSpreadsheet className="h-4 w-4" />
               {state.filename} / Excel-compatible CSV
             </div>
             <form action={commitBulkShipmentImport}>
               <input name="payload" type="hidden" value={state.payload ?? ""} />
-              <Button className="gap-2" disabled={!canCommit} type="submit">
-                <CheckCircle2 className="h-4 w-4" />
-                Confirm Import
-              </Button>
+              {approvedWarnings.map((row) => <input key={row} name="warningRows" type="hidden" value={row} />)}
+              <div className="flex flex-wrap gap-3">
+                {errorCsv ? (
+                  <Button
+                    className="gap-2"
+                    onClick={() => {
+                      const url = URL.createObjectURL(new Blob([errorCsv], { type: "text/csv" }));
+                      const link = document.createElement("a");
+                      link.href = url;
+                      link.download = "ambara-import-errors.csv";
+                      link.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                    type="button"
+                    variant="secondary"
+                  >
+                    <Download className="h-4 w-4" /> Download Errors
+                  </Button>
+                ) : null}
+                <ConfirmSubmitButton
+                  description={`Create one independent shipment for every clean row plus ${approvedWarnings.length} explicitly approved warning rows. The import is all-or-nothing.`}
+                  disabled={!canCommit}
+                  title="Confirm shipment import?"
+                  variant="primary"
+                >
+                  <CheckCircle2 className="mr-2 h-4 w-4" /> Confirm Import
+                </ConfirmSubmitButton>
+              </div>
             </form>
           </div>
         </Card>

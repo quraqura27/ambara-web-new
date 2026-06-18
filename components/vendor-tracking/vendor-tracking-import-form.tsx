@@ -9,6 +9,7 @@ import {
   type VendorImportPreviewState,
 } from "@/actions/vendor-tracking";
 import { Button, Card, Input, cn } from "@/components/ui/core";
+import { ConfirmSubmitButton } from "@/components/portal/confirm-submit-button";
 
 const initialState: VendorImportPreviewState = {};
 
@@ -144,10 +145,13 @@ export function VendorTrackingImportForm({ batchId }: { batchId: number }) {
               <p className="text-xs text-slate-500">
                 Auto: {autoRows} / Review: {reviewRows}
               </p>
-              <Button className="gap-2" type="submit">
-                <CheckCircle2 className="h-4 w-4" />
-                Confirm Tracking
-              </Button>
+              <ConfirmSubmitButton
+                description={`Import ${autoRows} high-confidence matches plus any review rows you explicitly selected.`}
+                title="Confirm vendor tracking import?"
+                variant="primary"
+              >
+                <CheckCircle2 className="mr-2 h-4 w-4" /> Confirm Tracking
+              </ConfirmSubmitButton>
             </div>
           </form>
         </Card>

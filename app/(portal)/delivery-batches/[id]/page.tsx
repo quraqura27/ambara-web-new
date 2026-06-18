@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { randomUUID } from "crypto";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -16,6 +17,10 @@ import {
 import { Button, Card, cn } from "@/components/ui/core";
 import { VendorStatusUpdateForm } from "@/components/vendor-tracking/vendor-status-update-form";
 import { VendorTrackingImportForm } from "@/components/vendor-tracking/vendor-tracking-import-form";
+import {
+  SelectionConfirmSubmitButton,
+  TypedConfirmSubmitButton,
+} from "@/components/portal/confirm-submit-button";
 
 type DeliveryBatchDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -90,6 +95,9 @@ export default async function DeliveryBatchDetailPage({
   const { batch, parcels, summary } = await getDeliveryBatchDetail(batchId);
   const markCheckedAction = markBatchCheckedNoChange.bind(null, batch.id);
   const bulkUpdateAction = bulkUpdateBatchStatusFromForm.bind(null, batch.id);
+  const allUpdateKey = randomUUID();
+  const selectedUpdateKey = randomUUID();
+  const expectedUpdatedAt = batch.updatedAt?.toISOString() ?? "";
 
   return (
     <div className="space-y-8">
@@ -153,22 +161,31 @@ export default async function DeliveryBatchDetailPage({
           </div>
           <form action={bulkUpdateAction} className="flex flex-wrap items-center gap-3">
             <input name="scope" type="hidden" value="all" />
+            <input name="idempotencyKey" type="hidden" value={allUpdateKey} />
+            <input name="expectedUpdatedAt" type="hidden" value={expectedUpdatedAt} />
             <StatusSelect />
-            <Button className="gap-2" type="submit" variant="secondary">
-              <PackageCheck className="h-4 w-4" />
-              Bulk Update All
-            </Button>
+            <TypedConfirmSubmitButton
+              confirmText={batch.batchCode}
+              description={`This will update all ${parcels.length} parcels and append customer-visible tracking events. Review the selected status before confirming.`}
+              title="Update every parcel in this batch?"
+            >
+              <PackageCheck className="mr-2 h-4 w-4" /> Bulk Update All
+            </TypedConfirmSubmitButton>
           </form>
         </div>
 
         <form action={bulkUpdateAction}>
           <input name="scope" type="hidden" value="selected" />
+          <input name="idempotencyKey" type="hidden" value={selectedUpdateKey} />
+          <input name="expectedUpdatedAt" type="hidden" value={expectedUpdatedAt} />
           <div className="flex flex-wrap items-center gap-3 border-b border-white/5 p-6">
             <StatusSelect />
-            <Button className="gap-2" type="submit">
-              <CheckCircle2 className="h-4 w-4" />
-              Bulk Update Selected
-            </Button>
+            <SelectionConfirmSubmitButton
+              description="Only checked parcels will be updated. Each update appends a customer-visible tracking event."
+              title="Update selected parcels?"
+            >
+              <CheckCircle2 className="mr-2 h-4 w-4" /> Bulk Update Selected
+            </SelectionConfirmSubmitButton>
           </div>
 
           <div className="overflow-x-auto">

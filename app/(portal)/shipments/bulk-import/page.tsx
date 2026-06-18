@@ -7,6 +7,7 @@ import {
 } from "@/actions/vendor-tracking";
 import { BulkImportForm } from "@/components/vendor-tracking/bulk-import-form";
 import { Button, Card, cn } from "@/components/ui/core";
+import { ConfirmSubmitButton } from "@/components/portal/confirm-submit-button";
 
 type BulkImportPageProps = {
   searchParams?: Promise<{ error?: string; notice?: string }>;
@@ -48,9 +49,9 @@ export default async function BulkShipmentImportPage({ searchParams }: BulkImpor
           </Button>
         </Link>
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Bulk Shipment Import</h2>
+          <h1 className="text-3xl font-bold tracking-tight">Bulk Input</h1>
           <p className="mt-1 text-slate-500">
-            Preview rows, create shipments and parcels, and keep import audit records.
+            One accepted row always creates one independent shipment, tracking number, and CN.
           </p>
         </div>
       </div>
@@ -94,7 +95,7 @@ export default async function BulkShipmentImportPage({ searchParams }: BulkImpor
                       {job.validRows} valid / {job.errorRows} errors / {job.warningRows} warnings
                     </td>
                     <td className="px-6 py-4 text-xs text-slate-400">
-                      {job.createdShipments} shipments / {job.createdParcels} parcels
+                      {job.createdShipments} shipments / {job.createdParcels} internal records
                     </td>
                     <td className="px-6 py-4">
                       <span className="inline-flex rounded-full border border-blue-500/20 bg-blue-500/10 px-2 py-1 text-[10px] font-bold uppercase tracking-tight text-blue-300">
@@ -103,15 +104,13 @@ export default async function BulkShipmentImportPage({ searchParams }: BulkImpor
                     </td>
                     <td className="px-6 py-4 text-right">
                       <form action={rollbackAction}>
-                        <Button
-                          className="gap-2"
+                        <ConfirmSubmitButton
+                          description={`Delete the draft shipments and parcels created by import job #${job.id}. This is allowed only while they remain unassigned drafts.`}
                           disabled={!canRollback}
-                          type="submit"
-                          variant="danger"
+                          title="Roll back import?"
                         >
-                          <RotateCcw className="h-4 w-4" />
-                          Roll Back
-                        </Button>
+                          <RotateCcw className="mr-2 h-4 w-4" /> Roll Back
+                        </ConfirmSubmitButton>
                       </form>
                     </td>
                   </tr>

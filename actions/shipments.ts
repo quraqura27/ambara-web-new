@@ -1,6 +1,6 @@
 "use server";
 
-import { and, asc, desc, eq, ilike, or } from "drizzle-orm";
+import { and, asc, desc, eq, gte, ilike, inArray, lte, or, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
@@ -25,6 +25,7 @@ import {
   parseShipmentEditForm,
 } from "@/lib/shipments/edit";
 import { TrackingEvent } from "@/lib/tracking/interface";
+import { normalizeShipmentStatus } from "@/lib/shipments/status-model";
 import { resolveAmbaraTrackingNumber } from "@/lib/vendor-tracking/core";
 
 const trackingStatusValues = [
@@ -63,33 +64,7 @@ function normalizeOptionalText(value: FormDataEntryValue | string | null) {
 }
 
 function normalizeStoredStatus(value: string | null | undefined): TrackingEvent["status"] {
-  const status = value?.trim().toLowerCase() ?? "";
-
-  if (status === "departed") {
-    return "departed_origin";
-  }
-
-  if (status === "out_for_delivery") {
-    return "out_for_delivery";
-  }
-
-  if (status === "delivery_issue") {
-    return "delivery_issue";
-  }
-
-  if (status === "return_in_progress") {
-    return "return_in_progress";
-  }
-
-  if (status === "on_hold") {
-    return "on_hold";
-  }
-
-  if (trackingStatusValues.includes(status as TrackingStatusValue)) {
-    return status as TrackingEvent["status"];
-  }
-
-  return "pending";
+  return normalizeShipmentStatus(value);
 }
 
 function normalizeManualStatus(value: FormDataEntryValue | string | null): TrackingStatusValue {
@@ -229,6 +204,8 @@ async function getPersistedTrackingEvents(shipmentId: number) {
     .orderBy(desc(trackingEvents.eventTime));
 
   return visibleEvents.map((event) => ({
+    id: event.id,
+    label: event.label,
     status: normalizeStoredStatus(event.status ?? event.statusCode),
     description: event.publicDescription || event.description || event.label,
     location: event.location ?? undefined,
@@ -358,7 +335,6 @@ export async function linkTrackingToCustomer(customerId: number, formData: FormD
 
 export async function unlinkTrackingFromCustomer(customerId: number, shipmentId: number) {
   await requireUser();
-
   const [shipment] = await db
     .update(shipments)
     .set({
@@ -375,6 +351,7 @@ export async function unlinkTrackingFromCustomer(customerId: number, shipmentId:
   if (shipment?.trackingNumber) {
     revalidatePath(`/shipments/${shipment.trackingNumber}`);
   }
+
 }
 
 export async function searchShipmentByTracking(formData: FormData) {
@@ -575,6 +552,118 @@ export async function getShipments(search?: string) {
     .orderBy(desc(shipments.updatedAt));
 }
 
+export type ShipmentListOptions = {
+  page?: number;
+  from?: string;
+  search?: string;
+  sort?: "created_desc" | "tracking_asc" | "updated_asc" | "updated_desc";
+  status?: string;
+  to?: string;
+  view?: "in_transit" | "needs_attention" | "updated_today" | "";
+};
+
+export async function getShipmentsPage(options: ShipmentListOptions = {}) {
+  await requireUser();
+  const pageSize = 25;
+  const page = Math.max(1, options.page ?? 1);
+  const conditions = [];
+  const search = options.search?.trim();
+
+  if (search) {
+    const pattern = `%${search}%`;
+    conditions.push(
+      or(
+        ilike(shipments.trackingNumber, pattern),
+        ilike(shipments.internalTrackingNo, pattern),
+        ilike(shipments.mawb, pattern),
+        ilike(shipments.customerReference, pattern),
+        ilike(shipments.title, pattern),
+        ilike(shipments.origin, pattern),
+        ilike(shipments.destination, pattern),
+        ilike(shipments.customerName, pattern),
+        ilike(customers.fullName, pattern),
+        ilike(customers.companyName, pattern),
+      ),
+    );
+  }
+
+  if (options.status) {
+    conditions.push(eq(shipments.status, normalizeShipmentStatus(options.status)));
+  } else if (options.view === "needs_attention") {
+    conditions.push(inArray(shipments.status, ["delivery_issue", "exception", "on_hold"]));
+  } else if (options.view === "in_transit") {
+    conditions.push(
+      inArray(shipments.status, [
+        "departed_origin",
+        "in_transit",
+        "customs",
+        "arrived_destination",
+        "out_for_delivery",
+      ]),
+    );
+  } else if (options.view === "updated_today") {
+    const jakartaNow = new Date(Date.now() + 7 * 60 * 60 * 1000);
+    const day = jakartaNow.toISOString().slice(0, 10);
+    conditions.push(gte(shipments.updatedAt, new Date(`${day}T00:00:00+07:00`)));
+  }
+  if (options.from && /^\d{4}-\d{2}-\d{2}$/.test(options.from)) {
+    conditions.push(gte(shipments.updatedAt, new Date(`${options.from}T00:00:00+07:00`)));
+  }
+  if (options.to && /^\d{4}-\d{2}-\d{2}$/.test(options.to)) {
+    conditions.push(lte(shipments.updatedAt, new Date(`${options.to}T23:59:59+07:00`)));
+  }
+
+  const where = conditions.length > 0 ? and(...conditions) : undefined;
+  const selectedFields = {
+    id: shipments.id,
+    trackingNumber: shipments.trackingNumber,
+    internalTrackingNo: shipments.internalTrackingNo,
+    title: shipments.title,
+    origin: shipments.origin,
+    destination: shipments.destination,
+    status: shipments.status,
+    customerId: shipments.customerId,
+    customerName: shipments.customerName,
+    customerEmail: shipments.customerEmail,
+    customerFullName: customers.fullName,
+    customerCompanyName: customers.companyName,
+    updatedAt: shipments.updatedAt,
+    createdAt: shipments.createdAt,
+  };
+  const orderBy =
+    options.sort === "created_desc"
+      ? desc(shipments.createdAt)
+      : options.sort === "tracking_asc"
+        ? asc(shipments.trackingNumber)
+        : options.sort === "updated_asc"
+          ? asc(shipments.updatedAt)
+          : desc(shipments.updatedAt);
+
+  const [rows, countRows] = await Promise.all([
+    db
+      .select(selectedFields)
+      .from(shipments)
+      .leftJoin(customers, eq(shipments.customerId, customers.id))
+      .where(where)
+      .orderBy(orderBy)
+      .limit(pageSize)
+      .offset((page - 1) * pageSize),
+    db
+      .select({ count: sql<number>`count(distinct ${shipments.id})::int` })
+      .from(shipments)
+      .leftJoin(customers, eq(shipments.customerId, customers.id))
+      .where(where),
+  ]);
+  const total = countRows[0]?.count ?? 0;
+  return {
+    page,
+    pageSize,
+    rows,
+    total,
+    totalPages: Math.max(1, Math.ceil(total / pageSize)),
+  };
+}
+
 export async function getDashboardStats() {
   await requireUser();
 
@@ -722,4 +811,26 @@ export async function getCustomersForSelect() {
     })
     .from(customers)
     .orderBy(customers.fullName);
+}
+
+export async function getCommonShipmentLocations() {
+  await requireUser();
+  const [origins, destinations] = await Promise.all([
+    db
+      .select({ count: sql<number>`count(*)::int`, value: shipments.origin })
+      .from(shipments)
+      .groupBy(shipments.origin)
+      .orderBy(desc(sql`count(*)`))
+      .limit(8),
+    db
+      .select({ count: sql<number>`count(*)::int`, value: shipments.destination })
+      .from(shipments)
+      .groupBy(shipments.destination)
+      .orderBy(desc(sql`count(*)`))
+      .limit(8),
+  ]);
+  return {
+    destinations: destinations.map((row) => row.value).filter(Boolean),
+    origins: origins.map((row) => row.value).filter(Boolean),
+  };
 }
