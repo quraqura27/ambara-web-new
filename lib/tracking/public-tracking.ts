@@ -26,7 +26,17 @@ function dateValue(value: Date | null | undefined) {
   return value?.toISOString() ?? null;
 }
 
-function toPublicEvent(event: typeof trackingEvents.$inferSelect): PublicTrackingEvent {
+type PublicTrackingEventRow = {
+  description: string | null;
+  eventTime: Date;
+  label: string;
+  location: string | null;
+  publicDescription: string | null;
+  status: string | null;
+  statusCode: string | null;
+};
+
+function toPublicEvent(event: PublicTrackingEventRow): PublicTrackingEvent {
   return {
     status: event.status ?? event.statusCode,
     label: event.label,
@@ -67,7 +77,26 @@ export async function findPublicTrackingResult(
   }
 
   const [shipment] = await db
-    .select()
+    .select({
+      cargoType: shipments.cargoType,
+      chargeableWeight: shipments.chargeableWeight,
+      commodity: shipments.commodity,
+      createdAt: shipments.createdAt,
+      destination: shipments.destination,
+      destinationIata: shipments.destinationIata,
+      goodsDescription: shipments.goodsDescription,
+      id: shipments.id,
+      internalTrackingNo: shipments.internalTrackingNo,
+      origin: shipments.origin,
+      originIata: shipments.originIata,
+      serviceType: shipments.serviceType,
+      status: shipments.status,
+      title: shipments.title,
+      totalPcs: shipments.totalPcs,
+      trackingNumber: shipments.trackingNumber,
+      updatedAt: shipments.updatedAt,
+      weightKg: shipments.weightKg,
+    })
     .from(shipments)
     .where(
       or(
@@ -83,7 +112,15 @@ export async function findPublicTrackingResult(
 
   const [eventRows, parcelRows] = await Promise.all([
     db
-      .select()
+      .select({
+        description: trackingEvents.description,
+        eventTime: trackingEvents.eventTime,
+        label: trackingEvents.label,
+        location: trackingEvents.location,
+        publicDescription: trackingEvents.publicDescription,
+        status: trackingEvents.status,
+        statusCode: trackingEvents.statusCode,
+      })
       .from(trackingEvents)
       .where(
         and(

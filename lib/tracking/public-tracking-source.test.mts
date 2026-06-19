@@ -16,6 +16,13 @@ test("public tracking runtime does not use Google Sheets fallback", () => {
   assert.equal(publicTracking.includes("fetch("), false);
 });
 
+test("public tracking only selects migration-independent database columns", () => {
+  const publicTracking = read("lib/tracking/public-tracking.ts");
+
+  assert.doesNotMatch(publicTracking, /\.select\(\)\s*\.from\(shipments\)/);
+  assert.doesNotMatch(publicTracking, /\.select\(\)\s*\.from\(trackingEvents\)/);
+});
+
 test("internal sheet sync endpoint is disabled", () => {
   const route = read("app/api/internal/sync-shipment/route.ts");
 
