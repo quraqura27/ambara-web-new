@@ -37,6 +37,7 @@ import {
   buildAmbaraParcelId,
   buildVendorUploadCsv,
   generateAmbaraTrackingNumber,
+  isEligibleForDeliveryBatch,
   isInitialBulkImportShipmentStatus,
   isInitialBulkImportTrackingEvent,
   mapVendorStatus,
@@ -715,6 +716,7 @@ export async function getAvailableParcelsForBatch(search?: string) {
   const baseCondition = and(
     isNull(parcelVendorTracking.id),
     sql`upper(coalesce(${shipments.serviceType}, ${parcels.serviceType}, '')) in ('DTD', 'PTD')`,
+    sql`upper(coalesce(${parcels.currentStatus}, '')) not in ('CANCELLED', 'DELIVERED', 'RETURN_IN_PROGRESS')`,
   );
   const searchCondition = trimmedSearch
     ? or(
@@ -774,10 +776,14 @@ export async function createDeliveryBatchFromForm(formData: FormData) {
   if (selectedParcels.length !== parcelIds.length) {
     redirectWithError("/delivery-batches/new", "One or more selected parcels no longer exist.");
   }
-  if (selectedParcels.some((parcel) => !isDoorDeliveryService(parcel.serviceType))) {
+  if (
+    selectedParcels.some(
+      (parcel) => !isEligibleForDeliveryBatch(parcel.serviceType, parcel.currentStatus),
+    )
+  ) {
     redirectWithError(
       "/delivery-batches/new",
-      "Only DTD and PTD shipments can be added to a delivery batch.",
+      "Only active DTD and PTD shipments can be added to a delivery batch.",
     );
   }
 

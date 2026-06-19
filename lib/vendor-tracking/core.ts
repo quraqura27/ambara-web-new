@@ -849,6 +849,17 @@ export function isInitialBulkImportTrackingEvent(event: {
   );
 }
 
+export function isEligibleForDeliveryBatch(
+  serviceType: string | null | undefined,
+  currentStatus: string | null | undefined,
+) {
+  const status = normalizeIdentifier(currentStatus);
+  return (
+    isDoorDeliveryService(serviceType) &&
+    !["CANCELLED", "DELIVERED", "RETURN_IN_PROGRESS"].includes(status)
+  );
+}
+
 export function labelForStatus(statusCode: AmbaraStatusCode) {
   return statusCode
     .toLowerCase()

@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   buildVendorUploadRows,
   generateAmbaraTrackingNumber,
+  isEligibleForDeliveryBatch,
   isInitialBulkImportShipmentStatus,
   isInitialBulkImportTrackingEvent,
   mapVendorStatus,
@@ -139,6 +140,15 @@ test("bulk rollback rejects later or non-import tracking activity", () => {
     }),
     false,
   );
+});
+
+test("delivery batches include only active door-delivery shipments", () => {
+  assert.equal(isEligibleForDeliveryBatch("DTD", "DRAFT"), true);
+  assert.equal(isEligibleForDeliveryBatch("PTD", "PROCESSED"), true);
+  assert.equal(isEligibleForDeliveryBatch("DTP", "DRAFT"), false);
+  assert.equal(isEligibleForDeliveryBatch("PTP", "ARRIVED_DESTINATION"), false);
+  assert.equal(isEligibleForDeliveryBatch("DTD", "DELIVERED"), false);
+  assert.equal(isEligibleForDeliveryBatch("PTD", "RETURN_IN_PROGRESS"), false);
 });
 
 test("normalizes manual tracking number overrides", () => {
