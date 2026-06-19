@@ -43,7 +43,16 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(result, { headers: noStoreHeaders });
   } catch (error) {
-    console.error("Public tracking lookup failed");
+    const databaseError =
+      error && typeof error === "object"
+        ? {
+            code: "code" in error ? String(error.code) : undefined,
+            message: error instanceof Error ? error.message : "Unknown database error",
+            name: error instanceof Error ? error.name : "UnknownError",
+          }
+        : { message: "Unknown database error", name: "UnknownError" };
+
+    console.error("Public tracking lookup failed", databaseError);
 
     return NextResponse.json(
       {
