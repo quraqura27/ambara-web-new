@@ -10,6 +10,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "migrate": "node scripts/migrate.cjs",
+    "migrate:check": "node scripts/migrate.cjs --check",
     "indexnow": "node scripts/submit-indexnow.mjs"
   },
   "dependencies": {

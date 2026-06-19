@@ -4,6 +4,8 @@ import test from "node:test";
 import {
   buildVendorUploadRows,
   generateAmbaraTrackingNumber,
+  isInitialBulkImportShipmentStatus,
+  isInitialBulkImportTrackingEvent,
   mapVendorStatus,
   matchVendorStatusRows,
   matchVendorTrackingRows,
@@ -97,6 +99,46 @@ test("builds vendor upload rows with required Ambara references", () => {
 
 test("bulk import tracking generator still creates Ambara tracking numbers", () => {
   assert.equal(generateAmbaraTrackingNumber(() => 0), "AA26-AAAA-AAAA");
+});
+
+test("bulk rollback accepts the received import state and initial import event", () => {
+  assert.equal(isInitialBulkImportShipmentStatus("received"), true);
+  assert.equal(
+    isInitialBulkImportTrackingEvent({
+      source: "csv_import",
+      status: "pending",
+      statusCode: "DRAFT",
+    }),
+    true,
+  );
+  assert.equal(
+    isInitialBulkImportTrackingEvent({
+      source: "excel_import",
+      status: "received",
+      statusCode: "RECEIVED",
+    }),
+    true,
+  );
+});
+
+test("bulk rollback rejects later or non-import tracking activity", () => {
+  assert.equal(isInitialBulkImportShipmentStatus("processed"), false);
+  assert.equal(
+    isInitialBulkImportTrackingEvent({
+      source: "manual",
+      status: "pending",
+      statusCode: "DRAFT",
+    }),
+    false,
+  );
+  assert.equal(
+    isInitialBulkImportTrackingEvent({
+      source: "csv_import",
+      status: "processed",
+      statusCode: "PROCESSED",
+    }),
+    false,
+  );
 });
 
 test("normalizes manual tracking number overrides", () => {

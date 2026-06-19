@@ -105,7 +105,7 @@ export default async function BulkShipmentImportPage({ searchParams }: BulkImpor
                     <td className="px-6 py-4 text-right">
                       <form action={rollbackAction}>
                         <ConfirmSubmitButton
-                          description={`Delete the draft shipments and parcels created by import job #${job.id}. This is allowed only while they remain unassigned drafts.`}
+                          description={`Delete the initial shipments and internal records created by import job #${job.id}. This is allowed only before tracking progresses or a delivery batch is assigned.`}
                           disabled={!canRollback}
                           title="Roll back import?"
                         >

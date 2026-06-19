@@ -37,6 +37,8 @@ import {
   buildAmbaraParcelId,
   buildVendorUploadCsv,
   generateAmbaraTrackingNumber,
+  isInitialBulkImportShipmentStatus,
+  isInitialBulkImportTrackingEvent,
   mapVendorStatus,
   matchVendorStatusRows,
   matchVendorTrackingRows,
@@ -585,53 +587,79 @@ export async function rollbackBulkShipmentImportJob(jobId: number, formData: For
     );
   }
 
-  const createdParcels = await db.select().from(parcels).where(inArray(parcels.id, parcelIds));
+  const [createdParcels, createdShipments, createdTrackingEvents] = await Promise.all([
+    db.select().from(parcels).where(inArray(parcels.id, parcelIds)),
+    db
+      .select({ id: shipments.id, status: shipments.status })
+      .from(shipments)
+      .where(inArray(shipments.id, shipmentIds)),
+    db
+      .select({
+        id: trackingEvents.id,
+        shipmentId: trackingEvents.shipmentId,
+        source: trackingEvents.source,
+        status: trackingEvents.status,
+        statusCode: trackingEvents.statusCode,
+      })
+      .from(trackingEvents)
+      .where(inArray(trackingEvents.shipmentId, shipmentIds)),
+  ]);
   const nonDraftParcel = createdParcels.find((parcel) => parcel.currentStatus !== "DRAFT");
 
   if (nonDraftParcel) {
-    redirectWithError("/shipments/bulk-import", "Only draft, unassigned imports can be rolled back.");
+    redirectWithError(
+      "/shipments/bulk-import",
+      "Only initial, unassigned imports can be rolled back.",
+    );
   }
 
-  const laterTrackingEvents = await db
-    .select({ id: trackingEvents.id })
-    .from(trackingEvents)
-    .where(
-      and(
-        inArray(trackingEvents.shipmentId, shipmentIds),
-        or(
-          ne(trackingEvents.statusCode, "DRAFT"),
-          not(inArray(trackingEvents.source, ["csv_import", "excel_import"])),
-        ),
-      ),
-    )
-    .limit(1);
+  const changedShipment = createdShipments.find(
+    (shipment) => !isInitialBulkImportShipmentStatus(shipment.status),
+  );
+  const shipmentsWithInitialEvents = new Set(
+    createdTrackingEvents.map((event) => event.shipmentId),
+  );
 
-  if (laterTrackingEvents.length > 0) {
+  if (
+    createdParcels.length !== parcelIds.length ||
+    createdShipments.length !== shipmentIds.length ||
+    shipmentsWithInitialEvents.size !== shipmentIds.length ||
+    changedShipment ||
+    createdTrackingEvents.some((event) => !isInitialBulkImportTrackingEvent(event))
+  ) {
     redirectWithError(
       "/shipments/bulk-import",
       "Cannot roll back imports that already have later tracking events.",
     );
   }
 
-  await db.delete(trackingEvents).where(inArray(trackingEvents.shipmentId, shipmentIds));
-  await db.delete(trackingUpdates).where(inArray(trackingUpdates.shipmentId, shipmentIds));
-  await db.delete(parcels).where(inArray(parcels.id, parcelIds));
-  await db.delete(shipments).where(inArray(shipments.id, shipmentIds));
-  await db
-    .update(bulkShipmentImportJobs)
-    .set({ status: "rolled_back", completedAt: new Date() })
-    .where(eq(bulkShipmentImportJobs.id, jobId));
+  const completedAt = new Date();
+  const rollbackQueries: BatchItem<"pg">[] = [
+    db.delete(trackingEvents).where(inArray(trackingEvents.shipmentId, shipmentIds)),
+    db.delete(trackingUpdates).where(inArray(trackingUpdates.shipmentId, shipmentIds)),
+    db.delete(parcels).where(inArray(parcels.id, parcelIds)),
+    db.delete(shipments).where(inArray(shipments.id, shipmentIds)),
+    db
+      .update(bulkShipmentImportJobs)
+      .set({ status: "rolled_back", completedAt })
+      .where(eq(bulkShipmentImportJobs.id, jobId)),
+    db.insert(portalAuditLogs).values({
+      action: "shipment.bulk_import_rolled_back",
+      entityId: String(jobId),
+      entityType: "bulk_shipment_import",
+      metadataJson: JSON.stringify({
+        parcelCount: parcelIds.length,
+        shipmentCount: shipmentIds.length,
+      }),
+      performedBy: user.id,
+      createdAt: completedAt,
+    }),
+  ];
 
-  await recordPortalAudit({
-    action: "shipment.bulk_import_rolled_back",
-    entityId: jobId,
-    entityType: "bulk_shipment_import",
-    metadata: { parcelCount: parcelIds.length, shipmentCount: shipmentIds.length },
-    performedBy: user.id,
-  });
+  await db.batch(rollbackQueries as [BatchItem<"pg">, ...BatchItem<"pg">[]]);
 
   revalidateVendorTrackingPaths();
-  redirectWithNotice("/shipments/bulk-import", "Draft import rolled back.");
+  redirectWithNotice("/shipments/bulk-import", "Initial import rolled back.");
 }
 
 export async function getRecentBulkShipmentImportJobs() {

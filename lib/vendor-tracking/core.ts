@@ -827,6 +827,28 @@ export function publicDescriptionForStatus(statusCode: AmbaraStatusCode) {
   return descriptions[statusCode];
 }
 
+export function isInitialBulkImportShipmentStatus(status: string | null | undefined) {
+  const normalized = normalizeIdentifier(status).replaceAll("_", "");
+  return ["PENDING", "RECEIVED", "CREATED", "DRAFT", "SHIPMENTCREATED"].includes(normalized);
+}
+
+export function isInitialBulkImportTrackingEvent(event: {
+  source?: string | null;
+  status?: string | null;
+  statusCode?: string | null;
+}) {
+  const source = normalizeIdentifier(event.source).toLowerCase();
+  const statusCode = normalizeIdentifier(event.statusCode).replaceAll("_", "");
+  const status = normalizeIdentifier(event.status).replaceAll("_", "");
+
+  return (
+    ["csv_import", "excel_import"].includes(source) &&
+    ["DRAFT", "RECEIVED", "CREATED", "SHIPMENTCREATED"].some(
+      (initialStatus) => statusCode === initialStatus || status === initialStatus,
+    )
+  );
+}
+
 export function labelForStatus(statusCode: AmbaraStatusCode) {
   return statusCode
     .toLowerCase()
