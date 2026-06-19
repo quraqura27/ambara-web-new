@@ -107,6 +107,7 @@ async function run() {
     connect_timeout: 20,
     idle_timeout: 2,
     max: 1,
+    onnotice: () => {},
   });
 
   try {

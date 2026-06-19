@@ -128,6 +128,17 @@ export function GuidedShipmentForm({
       document.querySelector<HTMLElement>(`[name="${firstError}"]`)?.focus();
     });
   }, [fieldErrors]);
+  useEffect(() => {
+    if (!state.values) return;
+    const frame = window.requestAnimationFrame(() => {
+      setValues({
+        ...initialValues,
+        ...state.values,
+        idempotencyKey: state.values?.idempotencyKey || idempotencyKey,
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [idempotencyKey, state.values]);
   const advancedHasError = [
     "codAmount",
     "customerReference",
