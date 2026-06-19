@@ -54,8 +54,8 @@ export async function GET(request: NextRequest) {
 
     console.error(
       JSON.stringify({
-        event: "public_tracking_lookup_failed",
         ...databaseError,
+        event: "public_tracking_lookup_failed",
       }),
     );
 
