@@ -52,7 +52,12 @@ export async function GET(request: NextRequest) {
           }
         : { message: "Unknown database error", name: "UnknownError" };
 
-    console.error("Public tracking lookup failed", databaseError);
+    console.error(
+      JSON.stringify({
+        event: "public_tracking_lookup_failed",
+        ...databaseError,
+      }),
+    );
 
     return NextResponse.json(
       {
