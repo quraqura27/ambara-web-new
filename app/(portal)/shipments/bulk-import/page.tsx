@@ -95,7 +95,7 @@ export default async function BulkShipmentImportPage({ searchParams }: BulkImpor
                       {job.validRows} valid / {job.errorRows} errors / {job.warningRows} warnings
                     </td>
                     <td className="px-6 py-4 text-xs text-slate-400">
-                      {job.createdShipments} shipments / {job.createdParcels} internal records
+                      {job.createdShipments} shipments / {job.createdParcels} Delivery Records
                     </td>
                     <td className="px-6 py-4">
                       <span className="inline-flex rounded-full border border-blue-500/20 bg-blue-500/10 px-2 py-1 text-[10px] font-bold uppercase tracking-tight text-blue-300">
@@ -105,7 +105,7 @@ export default async function BulkShipmentImportPage({ searchParams }: BulkImpor
                     <td className="px-6 py-4 text-right">
                       <form action={rollbackAction}>
                         <ConfirmSubmitButton
-                          description={`Delete the initial shipments and internal records created by import job #${job.id}. This is allowed only before tracking progresses or a delivery batch is assigned.`}
+                          description={`Delete the initial shipments and Delivery Records created by import job #${job.id}. This is allowed only before tracking progresses or a delivery batch is assigned.`}
                           disabled={!canRollback}
                           title="Roll back import?"
                         >

@@ -122,7 +122,7 @@ export function SelectionConfirmSubmitButton({
             <h2 className="text-lg font-bold">{title}</h2>
             <p className="mt-2 text-sm text-slate-400">{description}</p>
             <p className="mt-4 rounded-lg bg-blue-500/10 p-3 text-sm font-semibold text-blue-200">
-              Selected parcels: {selectedCount}
+              Selected shipments: {selectedCount}
             </p>
             <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <Button onClick={() => setForm(null)} type="button" variant="ghost">Cancel</Button>
@@ -131,7 +131,7 @@ export function SelectionConfirmSubmitButton({
                 if (confirmedRef.current) confirmedRef.current.value = "yes";
                 setForm(null);
                 window.requestAnimationFrame(() => target.requestSubmit());
-              }} type="button">Update {selectedCount} parcels</Button>
+              }} type="button">Update {selectedCount} shipments</Button>
             </div>
           </div>
         </div>

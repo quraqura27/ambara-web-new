@@ -8,6 +8,7 @@ import {
   deliveryBatches,
   parcels,
   parcelVendorTracking,
+  shipmentFlightLegs,
   shipments,
   trackingEvents,
 } from "@/lib/db/schema";
@@ -59,6 +60,65 @@ function customerName(row: {
   shipmentCustomerName?: string | null;
 }) {
   return row.customerCompanyName || row.customerFullName || row.shipmentCustomerName || "";
+}
+
+type ShipmentOperationalExportSource = {
+  awbAirlineName: string | null;
+  awbAirlinePrefix: string | null;
+  chargeableWeight: string | null;
+  mawb: string | null;
+  shipmentId: number;
+  totalPcs: number | null;
+  weightKg: string | null;
+};
+
+type FlightSummary = {
+  airlines: string;
+  numbers: string;
+};
+
+async function getFlightSummaries(shipmentIds: number[]) {
+  const summaries = new Map<number, FlightSummary>();
+  if (shipmentIds.length === 0) return summaries;
+
+  const rows = await db
+    .select({
+      airlineDesignator: shipmentFlightLegs.airlineDesignator,
+      airlineName: shipmentFlightLegs.airlineName,
+      flightNumber: shipmentFlightLegs.flightNumber,
+      operationalSuffix: shipmentFlightLegs.operationalSuffix,
+      shipmentId: shipmentFlightLegs.shipmentId,
+    })
+    .from(shipmentFlightLegs)
+    .where(inArray(shipmentFlightLegs.shipmentId, shipmentIds))
+    .orderBy(asc(shipmentFlightLegs.shipmentId), asc(shipmentFlightLegs.sequence));
+
+  for (const row of rows) {
+    const current = summaries.get(row.shipmentId) ?? { airlines: "", numbers: "" };
+    const number = `${row.airlineDesignator}${row.flightNumber}${row.operationalSuffix ?? ""}`;
+    current.numbers = current.numbers ? `${current.numbers}|${number}` : number;
+    current.airlines = current.airlines ? `${current.airlines}|${row.airlineName}` : row.airlineName;
+    summaries.set(row.shipmentId, current);
+  }
+
+  return summaries;
+}
+
+function operationalExportFields(
+  row: ShipmentOperationalExportSource,
+  flightSummaries: Map<number, FlightSummary>,
+) {
+  const flights = flightSummaries.get(row.shipmentId);
+  return {
+    awb_number: row.mawb ?? "",
+    awb_airline_prefix: row.awbAirlinePrefix ?? "",
+    awb_airline_name: row.awbAirlineName ?? "",
+    flight_numbers: flights?.numbers ?? "",
+    flight_airlines: flights?.airlines ?? "",
+    gross_weight_kg: row.weightKg ?? "",
+    chargeable_weight_kg: row.chargeableWeight ?? "",
+    total_pieces: row.totalPcs ?? "",
+  };
 }
 
 function appendShipmentDateCondition(conditions: SQL[], filters: ShipmentExportFilters) {
@@ -159,6 +219,13 @@ async function getSummaryRows(filters: ShipmentExportFilters, limit: number) {
   const shipmentRows = await db
     .selectDistinct({
       id: shipments.id,
+      shipmentId: shipments.id,
+      mawb: shipments.mawb,
+      awbAirlinePrefix: shipments.awbAirlinePrefix,
+      awbAirlineName: shipments.awbAirlineName,
+      weightKg: shipments.weightKg,
+      chargeableWeight: shipments.chargeableWeight,
+      totalPcs: shipments.totalPcs,
       trackingNumber: shipments.trackingNumber,
       customerReference: shipments.customerReference,
       shipperName: shipments.shipperName,
@@ -190,24 +257,31 @@ async function getSummaryRows(filters: ShipmentExportFilters, limit: number) {
     return [];
   }
 
-  const parcelRows = await db
-    .select({
-      shipmentId: parcels.shipmentId,
-      weight: parcels.weight,
-    })
-    .from(parcels)
-    .where(inArray(parcels.shipmentId, shipmentIds));
-
-  const eventRows = await db
-    .select({
-      eventTime: trackingEvents.eventTime,
-      shipmentId: trackingEvents.shipmentId,
-      status: trackingEvents.status,
-      statusCode: trackingEvents.statusCode,
-    })
-    .from(trackingEvents)
-    .where(and(inArray(trackingEvents.shipmentId, shipmentIds), eq(trackingEvents.visibleToCustomer, true)))
-    .orderBy(desc(trackingEvents.eventTime));
+  const [parcelRows, eventRows, flightSummaries] = await Promise.all([
+    db
+      .select({
+        shipmentId: parcels.shipmentId,
+        weight: parcels.weight,
+      })
+      .from(parcels)
+      .where(inArray(parcels.shipmentId, shipmentIds)),
+    db
+      .select({
+        eventTime: trackingEvents.eventTime,
+        shipmentId: trackingEvents.shipmentId,
+        status: trackingEvents.status,
+        statusCode: trackingEvents.statusCode,
+      })
+      .from(trackingEvents)
+      .where(
+        and(
+          inArray(trackingEvents.shipmentId, shipmentIds),
+          eq(trackingEvents.visibleToCustomer, true),
+        ),
+      )
+      .orderBy(desc(trackingEvents.eventTime)),
+    getFlightSummaries(shipmentIds),
+  ]);
 
   const parcelStats = new Map<number, { count: number; weight: number }>();
   for (const parcel of parcelRows) {
@@ -230,6 +304,7 @@ async function getSummaryRows(filters: ShipmentExportFilters, limit: number) {
 
     return {
       ambara_tracking_number: shipment.trackingNumber,
+      ...operationalExportFields(shipment, flightSummaries),
       customer_name: customerName(shipment),
       customer_reference: shipment.customerReference ?? "",
       shipper_name: shipment.shipperName ?? "",
@@ -258,6 +333,13 @@ async function getParcelRows(filters: ShipmentExportFilters, limit: number) {
   const rows = await db
     .select({
       trackingNumber: shipments.trackingNumber,
+      shipmentId: shipments.id,
+      mawb: shipments.mawb,
+      awbAirlinePrefix: shipments.awbAirlinePrefix,
+      awbAirlineName: shipments.awbAirlineName,
+      weightKg: shipments.weightKg,
+      chargeableWeight: shipments.chargeableWeight,
+      totalPcs: shipments.totalPcs,
       customerReference: shipments.customerReference,
       shipmentStatus: shipments.status,
       shipmentCustomerName: shipments.customerName,
@@ -287,8 +369,13 @@ async function getParcelRows(filters: ShipmentExportFilters, limit: number) {
     .orderBy(desc(shipments.createdAt), asc(parcels.parcelNumber))
     .limit(limit);
 
+  const flightSummaries = await getFlightSummaries([
+    ...new Set(rows.map((row) => row.shipmentId)),
+  ]);
+
   return rows.map((row) => ({
     ambara_tracking_number: row.trackingNumber,
+    ...operationalExportFields(row, flightSummaries),
     ambara_parcel_id: row.ambaraParcelId,
     parcel_number: row.parcelNumber,
     customer_name: customerName(row),
@@ -318,6 +405,13 @@ async function getVendorTrackingRows(filters: ShipmentExportFilters, limit: numb
   const rows = await db
     .select({
       trackingNumber: shipments.trackingNumber,
+      shipmentId: shipments.id,
+      mawb: shipments.mawb,
+      awbAirlinePrefix: shipments.awbAirlinePrefix,
+      awbAirlineName: shipments.awbAirlineName,
+      weightKg: shipments.weightKg,
+      chargeableWeight: shipments.chargeableWeight,
+      totalPcs: shipments.totalPcs,
       shipmentStatus: shipments.status,
       ambaraParcelId: parcels.ambaraParcelId,
       parcelStatus: parcels.currentStatus,
@@ -344,8 +438,13 @@ async function getVendorTrackingRows(filters: ShipmentExportFilters, limit: numb
     .orderBy(desc(parcelVendorTracking.createdAt))
     .limit(limit);
 
+  const flightSummaries = await getFlightSummaries([
+    ...new Set(rows.map((row) => row.shipmentId)),
+  ]);
+
   return rows.map((row) => ({
     ambara_tracking_number: row.trackingNumber,
+    ...operationalExportFields(row, flightSummaries),
     ambara_parcel_id: row.ambaraParcelId,
     delivery_batch_code: row.batchCode,
     vendor_name: row.vendorName || row.batchVendorName,
@@ -382,6 +481,13 @@ async function getTrackingEventRows(filters: ShipmentExportFilters, limit: numbe
   const rows = await db
     .select({
       trackingNumber: shipments.trackingNumber,
+      shipmentId: shipments.id,
+      mawb: shipments.mawb,
+      awbAirlinePrefix: shipments.awbAirlinePrefix,
+      awbAirlineName: shipments.awbAirlineName,
+      weightKg: shipments.weightKg,
+      chargeableWeight: shipments.chargeableWeight,
+      totalPcs: shipments.totalPcs,
       ambaraParcelId: parcels.ambaraParcelId,
       statusCode: trackingEvents.statusCode,
       label: trackingEvents.label,
@@ -404,8 +510,13 @@ async function getTrackingEventRows(filters: ShipmentExportFilters, limit: numbe
     .orderBy(desc(trackingEvents.eventTime))
     .limit(limit);
 
+  const flightSummaries = await getFlightSummaries([
+    ...new Set(rows.map((row) => row.shipmentId)),
+  ]);
+
   return rows.map((row) => ({
     ambara_tracking_number: row.trackingNumber,
+    ...operationalExportFields(row, flightSummaries),
     ambara_parcel_id: row.ambaraParcelId ?? "",
     status_code: row.statusCode,
     label: row.label,

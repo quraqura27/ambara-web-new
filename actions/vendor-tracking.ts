@@ -16,6 +16,7 @@ import {
   parcels,
   parcelVendorTracking,
   portalAuditLogs,
+  shipmentFlightLegs,
   shipments,
   trackingEvents,
   trackingUpdates,
@@ -273,6 +274,10 @@ function revalidateBulkPreview(preview: BulkShipmentImportPreview) {
     preview.rows.map((row) => ({
       rowNumber: row.rowNumber,
       values: {
+        awb_airline_name: row.data.awbAirlineName,
+        awb_number: row.data.awbNumber,
+        chargeable_weight:
+          row.data.chargeableWeight === null ? "" : String(row.data.chargeableWeight),
         cod_amount: row.data.codAmount === null ? "" : String(row.data.codAmount),
         commodity: row.data.commodity,
         customer_name: row.data.customerName,
@@ -289,6 +294,14 @@ function revalidateBulkPreview(preview: BulkShipmentImportPreview) {
         shipper_name: row.data.shipperName,
         shipper_phone: row.data.shipperPhone,
         weight: String(row.data.weight),
+        flight_1: row.data.flightLegs[0]?.formattedNumber ?? "",
+        flight_1_airline_name: row.data.flightLegs[0]?.airlineName ?? "",
+        flight_2: row.data.flightLegs[1]?.formattedNumber ?? "",
+        flight_2_airline_name: row.data.flightLegs[1]?.airlineName ?? "",
+        flight_3: row.data.flightLegs[2]?.formattedNumber ?? "",
+        flight_3_airline_name: row.data.flightLegs[2]?.airlineName ?? "",
+        flight_4: row.data.flightLegs[3]?.formattedNumber ?? "",
+        flight_4_airline_name: row.data.flightLegs[3]?.airlineName ?? "",
       },
     })),
   );
@@ -424,6 +437,10 @@ export async function commitBulkShipmentImport(formData: FormData) {
     queries.push(
       db.insert(shipments).values({
         id: shipmentId,
+        awbAirlineName: row.awbAirlineName,
+        awbAirlinePrefix: row.awbAirlinePrefix,
+        awbAirlineUnresolved: row.awbAirlineUnresolved,
+        mawb: row.awbNumber,
         trackingNumber,
         internalTrackingNo: trackingNumber,
         customerReference: row.customerReference || null,
@@ -440,6 +457,8 @@ export async function commitBulkShipmentImport(formData: FormData) {
         goodsDescription: row.commodity || null,
         totalPcs: row.pieces,
         weightKg: row.weight.toString(),
+        chargeableWeight:
+          row.chargeableWeight === null ? null : row.chargeableWeight.toString(),
         commodity: row.commodity || null,
         status: "received",
         createdByStaff: user.id,
@@ -504,6 +523,22 @@ export async function commitBulkShipmentImport(formData: FormData) {
         createdAt: now,
       }),
     );
+
+    row.flightLegs.forEach((leg, flightIndex) => {
+      queries.push(
+        db.insert(shipmentFlightLegs).values({
+          airlineDesignator: leg.airlineDesignator,
+          airlineName: leg.airlineName,
+          airlineUnresolved: leg.airlineUnresolved,
+          createdAt: now,
+          flightNumber: leg.flightNumber,
+          operationalSuffix: leg.operationalSuffix || null,
+          sequence: flightIndex + 1,
+          shipmentId,
+          updatedAt: now,
+        }),
+      );
+    });
   });
 
   queries.push(
@@ -584,7 +619,7 @@ export async function rollbackBulkShipmentImportJob(jobId: number, formData: For
   if (linkedTracking.length > 0) {
     redirectWithError(
       "/shipments/bulk-import",
-      "Cannot roll back parcels that have been assigned to a vendor batch.",
+      "Cannot roll back Delivery Records that have been assigned to a vendor batch.",
     );
   }
 
@@ -758,7 +793,7 @@ export async function createDeliveryBatchFromForm(formData: FormData) {
   }
 
   if (parcelIds.length === 0) {
-    redirectWithError("/delivery-batches/new", "Select at least one parcel.");
+    redirectWithError("/delivery-batches/new", "Select at least one shipment.");
   }
 
   const selectedParcels = await db
@@ -774,7 +809,7 @@ export async function createDeliveryBatchFromForm(formData: FormData) {
     .where(inArray(parcels.id, parcelIds));
 
   if (selectedParcels.length !== parcelIds.length) {
-    redirectWithError("/delivery-batches/new", "One or more selected parcels no longer exist.");
+    redirectWithError("/delivery-batches/new", "One or more selected shipments no longer exist.");
   }
   if (
     selectedParcels.some(
@@ -793,7 +828,7 @@ export async function createDeliveryBatchFromForm(formData: FormData) {
     .where(inArray(parcelVendorTracking.parcelId, parcelIds));
 
   if (existingAssignments.length > 0) {
-    redirectWithError("/delivery-batches/new", "One or more selected parcels already belong to a batch.");
+    redirectWithError("/delivery-batches/new", "One or more selected shipments already belong to a batch.");
   }
 
   const batchCode = await createUniqueBatchCode();
@@ -1269,7 +1304,7 @@ export async function commitVendorTrackingImport(formData: FormData) {
   revalidateVendorTrackingPaths(payload.batchId);
   redirectWithNotice(
     `/delivery-batches/${payload.batchId}`,
-    `Vendor tracking imported for ${confirmableMatches.length} parcels.`,
+    `Vendor tracking imported for ${confirmableMatches.length} Delivery Records.`,
   );
 }
 
@@ -1336,7 +1371,7 @@ export async function bulkUpdateBatchStatusFromForm(batchId: number, formData: F
       : batchParcels.filter((parcel) => selectedParcelIds.includes(parcel.id));
 
   if (targets.length === 0) {
-    redirectWithError(`/delivery-batches/${batchId}`, "Select at least one parcel to update.");
+    redirectWithError(`/delivery-batches/${batchId}`, "Select at least one shipment to update.");
   }
   const invalidTargets = targets.filter(
     (target) =>
@@ -1421,7 +1456,7 @@ export async function bulkUpdateBatchStatusFromForm(batchId: number, formData: F
   });
 
   revalidateVendorTrackingPaths(batchId);
-  redirectWithNotice(`/delivery-batches/${batchId}`, `Updated ${targets.length} parcels.`);
+  redirectWithNotice(`/delivery-batches/${batchId}`, `Updated ${targets.length} shipments.`);
 }
 
 export async function previewVendorStatusUpdate(

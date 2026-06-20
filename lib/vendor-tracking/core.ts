@@ -2,6 +2,11 @@ import {
   isDoorDeliveryService,
   normalizeShipmentService,
 } from "../shipments/service-model.ts";
+import {
+  resolveAirWaybill,
+  resolveFlightLeg,
+  type ResolvedFlightLeg,
+} from "../airlines/core.ts";
 
 export const ambaraStatusCodes = [
   "DRAFT",
@@ -24,6 +29,11 @@ export type RawTableRow = {
 
 export type NormalizedBulkShipmentRow = {
   rowNumber: number;
+  awbAirlineName: string;
+  awbAirlinePrefix: string;
+  awbAirlineUnresolved: boolean;
+  awbNumber: string;
+  chargeableWeight: number | null;
   customerName: string;
   customerReference: string;
   shipperName: string;
@@ -40,6 +50,8 @@ export type NormalizedBulkShipmentRow = {
   serviceType: string;
   deliveryInstruction: string;
   codAmount: number | null;
+  flightLegs: ResolvedFlightLeg[];
+  parseErrors: string[];
 };
 
 export type ValidatedBulkShipmentRow = {
@@ -213,6 +225,8 @@ export const defaultVendorStatusMappings = [
 ];
 
 const bulkShipmentColumns = {
+  awbNumber: ["awb_number", "awb", "mawb"],
+  awbAirlineName: ["awb_airline_name", "airline_name"],
   customerName: ["customer_name", "customer", "customer_full_name"],
   customerReference: ["customer_reference", "customer_ref", "reference", "order_id"],
   shipperName: ["shipper_name", "shipper"],
@@ -225,10 +239,19 @@ const bulkShipmentColumns = {
   postalCode: ["postal_code", "postcode", "zip"],
   commodity: ["commodity", "goods_description"],
   weight: ["weight", "weight_kg"],
+  chargeableWeight: ["chargeable_weight", "chargeable_weight_kg"],
   pieces: ["pieces", "pcs", "total_pcs"],
   serviceType: ["service_type", "service"],
   deliveryInstruction: ["delivery_instruction", "instruction", "remarks"],
   codAmount: ["cod_amount", "cod"],
+  flight1: ["flight_1"],
+  flight1AirlineName: ["flight_1_airline_name"],
+  flight2: ["flight_2"],
+  flight2AirlineName: ["flight_2_airline_name"],
+  flight3: ["flight_3"],
+  flight3AirlineName: ["flight_3_airline_name"],
+  flight4: ["flight_4"],
+  flight4AirlineName: ["flight_4_airline_name"],
 };
 
 const vendorReturnColumns = {
@@ -385,16 +408,67 @@ function validationStatus(errors: string[], warnings: string[]) {
 
 export function prepareBulkShipmentImport(rows: RawTableRow[]): BulkShipmentImportPreview {
   const normalizedRows = rows.map((row) => {
+    const parseErrors: string[] = [];
     const weight = parseNumber(getValue(row, bulkShipmentColumns.weight));
+    const chargeableWeightText = getValue(row, bulkShipmentColumns.chargeableWeight);
+    const chargeableWeight = chargeableWeightText ? parseNumber(chargeableWeightText) : null;
     const piecesValue = getValue(row, bulkShipmentColumns.pieces) || "1";
     const pieces = parsePieces(piecesValue);
     const serviceType =
       normalizeShipmentService(getValue(row, bulkShipmentColumns.serviceType)) ?? "";
     const codAmountText = getValue(row, bulkShipmentColumns.codAmount);
     const codAmount = codAmountText ? parseNumber(codAmountText) : null;
+    const awbInput = getValue(row, bulkShipmentColumns.awbNumber);
+    const awbAirlineNameInput = getValue(row, bulkShipmentColumns.awbAirlineName);
+    let awbNumber = "";
+    let awbAirlinePrefix = "";
+    let awbAirlineName = awbAirlineNameInput;
+    let awbAirlineUnresolved = false;
+
+    if (!awbInput) {
+      parseErrors.push("missing awb_number");
+    } else {
+      try {
+        const awb = resolveAirWaybill(awbInput, awbAirlineNameInput);
+        awbNumber = awb.canonicalNumber;
+        awbAirlinePrefix = awb.prefix;
+        awbAirlineName = awb.airlineName;
+        awbAirlineUnresolved = awb.airlineUnresolved;
+      } catch (error) {
+        parseErrors.push(
+          `invalid awb_number: ${error instanceof Error ? error.message : "invalid value"}`,
+        );
+      }
+    }
+
+    const flightFields = [
+      [bulkShipmentColumns.flight1, bulkShipmentColumns.flight1AirlineName],
+      [bulkShipmentColumns.flight2, bulkShipmentColumns.flight2AirlineName],
+      [bulkShipmentColumns.flight3, bulkShipmentColumns.flight3AirlineName],
+      [bulkShipmentColumns.flight4, bulkShipmentColumns.flight4AirlineName],
+    ] as const;
+    const flightLegs: ResolvedFlightLeg[] = [];
+    flightFields.forEach(([numberAliases, airlineAliases], index) => {
+      const flightNumber = getValue(row, numberAliases);
+      if (!flightNumber) return;
+      try {
+        flightLegs.push(resolveFlightLeg(flightNumber, getValue(row, airlineAliases)));
+      } catch (error) {
+        parseErrors.push(
+          `invalid flight_${index + 1}: ${
+            error instanceof Error ? error.message : "invalid value"
+          }`,
+        );
+      }
+    });
 
     return {
       rowNumber: row.rowNumber,
+      awbAirlineName,
+      awbAirlinePrefix,
+      awbAirlineUnresolved,
+      awbNumber,
+      chargeableWeight,
       customerName: getValue(row, bulkShipmentColumns.customerName),
       customerReference: getValue(row, bulkShipmentColumns.customerReference),
       shipperName: getValue(row, bulkShipmentColumns.shipperName),
@@ -411,6 +485,8 @@ export function prepareBulkShipmentImport(rows: RawTableRow[]): BulkShipmentImpo
       serviceType,
       deliveryInstruction: getValue(row, bulkShipmentColumns.deliveryInstruction),
       codAmount,
+      flightLegs,
+      parseErrors,
     } satisfies NormalizedBulkShipmentRow;
   });
 
@@ -442,6 +518,7 @@ export function prepareBulkShipmentImport(rows: RawTableRow[]): BulkShipmentImpo
     const errors: string[] = [];
     const warnings: string[] = [];
 
+    errors.push(...row.parseErrors);
     if (!row.receiverName) errors.push("missing receiver_name");
     if (!row.receiverPhone) errors.push("missing receiver_phone");
     if (row.receiverPhone && !/^\+?\d{8,15}$/.test(row.receiverPhone)) {
@@ -453,6 +530,12 @@ export function prepareBulkShipmentImport(rows: RawTableRow[]): BulkShipmentImpo
       errors.push("missing receiver_address for door delivery");
     }
     if (!Number.isFinite(row.weight) || row.weight <= 0) errors.push("missing or invalid weight");
+    if (
+      row.chargeableWeight !== null &&
+      (!Number.isFinite(row.chargeableWeight) || row.chargeableWeight <= 0)
+    ) {
+      errors.push("invalid chargeable_weight");
+    }
     if (!Number.isInteger(row.pieces) || row.pieces <= 0) errors.push("invalid pieces");
     if (!normalizeShipmentService(row.serviceType)) errors.push("invalid service_type");
     if (!row.commodity) errors.push("missing commodity");
@@ -706,7 +789,7 @@ export function matchVendorTrackingRows(
     }
 
     if (vendorTrackingNumber && activeVendorTrackingNumbers.has(vendorTrackingNumber)) {
-      errors.push("vendor tracking already used by another active parcel");
+      errors.push("vendor tracking already used by another active Delivery Record");
     }
 
     const rules = buildCandidateMatches(row, parcels);
@@ -721,7 +804,7 @@ export function matchVendorTrackingRows(
       : null;
 
     if (hardReferenceRule && hardReferenceRule.matches.length === 0) {
-      errors.push("Ambara parcel ID or export_row_id not found in selected batch");
+      errors.push("Delivery Record ID or export_row_id not found in selected batch");
     }
 
     if (
@@ -729,7 +812,7 @@ export function matchVendorTrackingRows(
       referencedParcel &&
       existingSameBatchTrackingParcel.id !== referencedParcel.id
     ) {
-      errors.push("vendor tracking already assigned to another parcel in this batch");
+      errors.push("vendor tracking already assigned to another Delivery Record in this batch");
     }
 
     if (
@@ -737,7 +820,7 @@ export function matchVendorTrackingRows(
       vendorTrackingNumber &&
       normalizeIdentifier(referencedParcel.vendorTrackingNumber) !== vendorTrackingNumber
     ) {
-      errors.push("parcel already has a different vendor tracking number");
+      errors.push("Delivery Record already has a different vendor tracking number");
     }
 
     if (errors.length > 0) {
@@ -805,7 +888,7 @@ export function matchVendorTrackingRows(
         match.errors.includes("missing vendor_tracking_number"),
       ).length,
       rowsOutsideBatch: matches.filter((match) =>
-        match.errors.includes("Ambara parcel ID or export_row_id not found in selected batch"),
+        match.errors.includes("Delivery Record ID or export_row_id not found in selected batch"),
       ).length,
     },
   };

@@ -82,7 +82,7 @@ test("builds shipment summary CSV with safe escaping", () => {
     ],
   );
 
-  assert.match(csv, /^ambara_tracking_number,customer_name,/);
+  assert.match(csv, /^ambara_tracking_number,awb_number,awb_airline_prefix,/);
   assert.match(csv, /"ACME, Indonesia"/);
   assert.match(csv, /AA26-TEST-0001/);
 });
@@ -142,8 +142,26 @@ test("builds vendor tracking export CSV", () => {
     ],
   );
 
-  assert.match(csv, /^ambara_tracking_number,ambara_parcel_id,delivery_batch_code,/);
+  assert.match(csv, /^ambara_tracking_number,awb_number,awb_airline_prefix,/);
   assert.match(csv, /JNT0001/);
+});
+
+test("every export scope contains AWB, flights, weights, and pieces", () => {
+  for (const scope of ["summary", "parcels", "vendor_tracking", "tracking_events"] as const) {
+    const keys = getShipmentExportColumns({
+      includeInternalEvents: false,
+      scope,
+    }).map((column) => column.key);
+
+    assert.ok(keys.includes("awb_number"));
+    assert.ok(keys.includes("awb_airline_prefix"));
+    assert.ok(keys.includes("awb_airline_name"));
+    assert.ok(keys.includes("flight_numbers"));
+    assert.ok(keys.includes("flight_airlines"));
+    assert.ok(keys.includes("gross_weight_kg"));
+    assert.ok(keys.includes("chargeable_weight_kg"));
+    assert.ok(keys.includes("total_pieces"));
+  }
 });
 
 test("customer-visible tracking event export excludes internal notes by default", () => {

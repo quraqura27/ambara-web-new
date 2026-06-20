@@ -19,7 +19,11 @@ function validForm(overrides: Record<string, string> = {}) {
     destination: "Jakarta Selatan",
     destinationCity: "Jakarta Selatan",
     goodsDescription: "Boxed goods",
-    mawb: "awb-001",
+    awbAirlineName: "Garuda Indonesia",
+    flightLegsJson: JSON.stringify([
+      { airlineName: "Garuda Indonesia", flightNumber: "GA820" },
+    ]),
+    mawb: "126-9360193",
     origin: "Jakarta",
     pieces: "1",
     postalCode: "12190",
@@ -44,7 +48,9 @@ test("parses editable shipment fields", () => {
   const parsed = parseShipmentEditForm(validForm({ customerId: "42" }));
 
   assert.equal(parsed.customerId, 42);
-  assert.equal(parsed.mawb, "AWB-001");
+  assert.equal(parsed.mawb, "126-93601933");
+  assert.equal(parsed.awbAirlineName, "Garuda Indonesia");
+  assert.equal(parsed.flightLegs[0]?.formattedNumber, "GA820");
   assert.equal(parsed.serviceType, "DTD");
   assert.equal(parsed.pieces, 1);
   assert.equal(parsed.weightKg, "1.5");

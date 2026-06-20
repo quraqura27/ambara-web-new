@@ -173,7 +173,8 @@ export default async function TrackingDetailPage({
   const { number } = await params;
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const user = await getPortalUser();
-  const { shipment, liveData, customer, parcels } = await getShipmentByTracking(number);
+  const { shipment, liveData, customer, parcels, flightLegs } =
+    await getShipmentByTracking(number);
   const consignmentNoteTrackingNo = shipment?.internalTrackingNo ?? "";
   const primaryParcel = parcels[0];
   const canEditShipment = shipment && canEditShipmentDetails(user);
@@ -266,8 +267,34 @@ export default async function TrackingDetailPage({
                   <div className="grid gap-4 sm:grid-cols-2">
                     <DetailItem label="Customer reference" value={shipment.customerReference} />
                     <DetailItem label="AWB number" value={shipment.mawb} />
+                    <DetailItem label="AWB airline" value={shipment.awbAirlineName} />
                     <DetailItem label="Customer name" value={shipment.customerName} />
                     <DetailItem label="Service type" value={shipment.serviceType} />
+                  </div>
+                </div>
+
+                <div className="space-y-5">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-600">
+                    Flight routing
+                  </p>
+                  <div className="space-y-3">
+                    {flightLegs.length > 0 ? (
+                      flightLegs.map((leg) => (
+                        <div
+                          className="rounded-lg border border-white/5 bg-slate-950/30 p-3"
+                          key={leg.id}
+                        >
+                          <p className="font-mono text-sm font-semibold text-white">
+                            {leg.airlineDesignator}
+                            {leg.flightNumber}
+                            {leg.operationalSuffix ?? ""}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-500">{leg.airlineName}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-slate-500">No flight legs recorded.</p>
+                    )}
                   </div>
                 </div>
 
@@ -332,8 +359,8 @@ export default async function TrackingDetailPage({
               {primaryParcel ? (
                 <div className="mt-8 border-t border-white/5 pt-6">
                   <div className="grid gap-4 sm:grid-cols-3">
-                    <DetailItem label="Ambara parcel ID" value={primaryParcel.ambaraParcelId} />
-                    <DetailItem label="Parcel status" value={primaryParcel.currentStatus} />
+                    <DetailItem label="Delivery Record ID" value={primaryParcel.ambaraParcelId} />
+                    <DetailItem label="Delivery status" value={primaryParcel.currentStatus} />
                     <DetailItem label="COD amount" value={primaryParcel.codAmount} />
                   </div>
                 </div>

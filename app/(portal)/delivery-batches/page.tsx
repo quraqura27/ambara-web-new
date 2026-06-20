@@ -64,7 +64,7 @@ export default async function DeliveryBatchesPage({ searchParams }: DeliveryBatc
         <div className="flex justify-between border-b border-white/5 px-5 py-3 text-xs text-slate-500"><span>{result.total} batches</span><span>Page {result.page} of {result.totalPages}</span></div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[980px] text-left">
-            <thead className="sticky top-0 bg-[#12121a] text-[10px] font-bold uppercase tracking-widest text-slate-500"><tr><th className="px-5 py-4">Priority</th><th className="px-5 py-4">Batch</th><th className="px-5 py-4">Vendor</th><th className="px-5 py-4">Parcels</th><th className="px-5 py-4">Status</th><th className="px-5 py-4">Counts</th><th className="px-5 py-4">Check / SLA</th><th className="px-5 py-4 text-right">Action</th></tr></thead>
+            <thead className="sticky top-0 bg-[#12121a] text-[10px] font-bold uppercase tracking-widest text-slate-500"><tr><th className="px-5 py-4">Priority</th><th className="px-5 py-4">Batch</th><th className="px-5 py-4">Vendor</th><th className="px-5 py-4">Delivery records</th><th className="px-5 py-4">Status</th><th className="px-5 py-4">Counts</th><th className="px-5 py-4">Check / SLA</th><th className="px-5 py-4 text-right">Action</th></tr></thead>
             <tbody className="divide-y divide-white/5">
               {result.rows.map((batch) => (
                 <tr className="transition hover:bg-white/[0.02]" key={batch.id}>

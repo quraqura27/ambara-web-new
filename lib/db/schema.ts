@@ -5,6 +5,9 @@ export const shipments = pgTable('shipments', {
   id: serial('id').primaryKey(),
   trackingNumber: text('tracking_number').notNull(),
   mawb: text('mawb'),
+  awbAirlinePrefix: text('awb_airline_prefix'),
+  awbAirlineName: text('awb_airline_name'),
+  awbAirlineUnresolved: boolean('awb_airline_unresolved').notNull().default(false),
   title: text('title').notNull(),
   internalTrackingNo: text('internal_tracking_no'), // AA[YY][CC][8digits][SVC]
   customerReference: text('customer_reference'),
@@ -42,12 +45,33 @@ export const shipments = pgTable('shipments', {
   index('idx_shipments_mawb')
     .on(table.mawb)
     .where(sql`${table.mawb} is not null and btrim(${table.mawb}) <> ''`),
+  index('shipments_awb_airline_prefix_idx')
+    .on(table.awbAirlinePrefix)
+    .where(sql`${table.awbAirlinePrefix} is not null and btrim(${table.awbAirlinePrefix}) <> ''`),
   uniqueIndex('shipments_internal_tracking_no_unique_idx')
     .on(table.internalTrackingNo)
     .where(sql`${table.internalTrackingNo} is not null and btrim(${table.internalTrackingNo}) <> ''`),
   uniqueIndex('shipments_idempotency_key_unique_idx')
     .on(table.idempotencyKey)
     .where(sql`${table.idempotencyKey} is not null and btrim(${table.idempotencyKey}) <> ''`),
+]);
+
+export const shipmentFlightLegs = pgTable('shipment_flight_legs', {
+  id: serial('id').primaryKey(),
+  shipmentId: integer('shipment_id').notNull().references(() => shipments.id, { onDelete: 'cascade' }),
+  sequence: integer('sequence').notNull(),
+  airlineDesignator: text('airline_designator').notNull(),
+  flightNumber: text('flight_number').notNull(),
+  operationalSuffix: text('operational_suffix'),
+  airlineName: text('airline_name').notNull(),
+  airlineUnresolved: boolean('airline_unresolved').notNull().default(false),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex('shipment_flight_legs_shipment_sequence_unique_idx')
+    .on(table.shipmentId, table.sequence),
+  index('shipment_flight_legs_shipment_idx').on(table.shipmentId),
+  index('shipment_flight_legs_designator_idx').on(table.airlineDesignator),
 ]);
 
 export const parcels = pgTable('parcels', {

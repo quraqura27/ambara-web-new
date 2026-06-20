@@ -1,6 +1,7 @@
 "use server";
 
 import { and, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
+import type { BatchItem } from "drizzle-orm/batch";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -10,10 +11,12 @@ import {
   parcels,
   portalAuditLogs,
   portalUxEvents,
+  shipmentFlightLegs,
   shipments,
   trackingEvents,
   trackingUpdates,
 } from "@/lib/db/schema";
+import { parseFlightLegsJson, resolveAirWaybill } from "@/lib/airlines/core";
 import { formValues, type PortalActionState } from "@/lib/forms/action-state";
 import { requirePortalUser } from "@/lib/portal-auth";
 import {
@@ -244,6 +247,25 @@ export async function createGuidedShipment(
     "Submission identifier",
     fieldErrors,
   );
+  const awbInput = required(formData, "mawb", "Airline AWB number", fieldErrors);
+  let resolvedAwb: ReturnType<typeof resolveAirWaybill> | null = null;
+  let flightLegs: ReturnType<typeof parseFlightLegsJson> = [];
+
+  if (awbInput) {
+    try {
+      resolvedAwb = resolveAirWaybill(awbInput, text(formData, "awbAirlineName"));
+    } catch (error) {
+      fieldErrors.mawb =
+        error instanceof Error ? error.message : "Enter a valid airline AWB number.";
+    }
+  }
+
+  try {
+    flightLegs = parseFlightLegsJson(text(formData, "flightLegsJson"));
+  } catch (error) {
+    fieldErrors.flightLegsJson =
+      error instanceof Error ? error.message : "Enter valid flight legs.";
+  }
 
   if (!serviceType || !service) fieldErrors.serviceType = "Select DTD, DTP, PTD, or PTP.";
   if (receiverPhone && !/^\+?\d{8,15}$/.test(receiverPhone)) {
@@ -374,7 +396,7 @@ export async function createGuidedShipment(
   const manualTracking = text(formData, "trackingNumber").toUpperCase();
   const duplicateWarnings = await findDuplicateWarnings({
     customerReference: text(formData, "customerReference"),
-    mawb: text(formData, "mawb"),
+    mawb: resolvedAwb!.canonicalNumber,
     receiverName,
     receiverPhone,
     trackingNumber: manualTracking,
@@ -435,7 +457,10 @@ export async function createGuidedShipment(
     goodsDescription: text(formData, "goodsDescription") || null,
     idempotencyKey,
     internalTrackingNo: trackingNumber,
-    mawb: text(formData, "mawb").toUpperCase() || null,
+    mawb: resolvedAwb!.canonicalNumber,
+    awbAirlineName: resolvedAwb!.airlineName,
+    awbAirlinePrefix: resolvedAwb!.prefix,
+    awbAirlineUnresolved: resolvedAwb!.airlineUnresolved,
     origin,
     serviceType,
     shipperAddress: text(formData, "shipperAddress") || null,
@@ -503,6 +528,7 @@ export async function createGuidedShipment(
     metadataJson: JSON.stringify({
       customerMode,
       duplicateWarningsAcknowledged: duplicateWarnings.length,
+      flightLegCount: flightLegs.length,
       serviceType,
       trackingNumber,
     }),
@@ -518,7 +544,30 @@ export async function createGuidedShipment(
     createdAt: now,
   });
 
+  const flightInserts = flightLegs.map((leg, index) =>
+    db.insert(shipmentFlightLegs).values({
+      airlineDesignator: leg.airlineDesignator,
+      airlineName: leg.airlineName,
+      airlineUnresolved: leg.airlineUnresolved,
+      createdAt: now,
+      flightNumber: leg.flightNumber,
+      operationalSuffix: leg.operationalSuffix || null,
+      sequence: index + 1,
+      shipmentId: ids.shipment_id,
+      updatedAt: now,
+    }),
+  );
+
   try {
+    const queries: BatchItem<"pg">[] = [
+      shipmentInsert,
+      parcelInsert,
+      ...flightInserts,
+      eventInsert,
+      updateInsert,
+      auditInsert,
+      uxInsert,
+    ];
     if (quickCustomer) {
       const customerInsert = db.insert(customers).values({
         id: ids.customer_id!,
@@ -533,25 +582,9 @@ export async function createGuidedShipment(
         createdAt: now,
         updatedAt: now,
       });
-      await db.batch([
-        customerInsert,
-        shipmentInsert,
-        parcelInsert,
-        eventInsert,
-        updateInsert,
-        auditInsert,
-        uxInsert,
-      ] as const);
-    } else {
-      await db.batch([
-        shipmentInsert,
-        parcelInsert,
-        eventInsert,
-        updateInsert,
-        auditInsert,
-        uxInsert,
-      ] as const);
+      queries.unshift(customerInsert);
     }
+    await db.batch(queries as [BatchItem<"pg">, ...BatchItem<"pg">[]]);
   } catch (error) {
     if (isUniqueViolation(error)) {
       const [existing] = await db

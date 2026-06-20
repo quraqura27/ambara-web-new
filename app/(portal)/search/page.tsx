@@ -78,7 +78,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                 <Card className="h-full p-5 transition hover:border-blue-500/30">
                   <p className="font-mono text-sm font-bold text-white">{batch.batchCode}</p>
                   <p className="mt-1 text-sm text-slate-300">{batch.vendorName}</p>
-                  <p className="mt-1 text-xs text-slate-500">{batch.totalParcels} parcels / {batch.batchStatus.replace(/_/g, " ")}</p>
+                  <p className="mt-1 text-xs text-slate-500">{batch.totalParcels} delivery records / {batch.batchStatus.replace(/_/g, " ")}</p>
                 </Card>
               </Link>
             ))}

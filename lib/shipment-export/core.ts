@@ -259,6 +259,14 @@ export function buildCsv(columns: ShipmentExportColumn[], rows: Array<Record<str
 
 export const shipmentSummaryColumns: ShipmentExportColumn[] = [
   { key: "ambara_tracking_number", header: "ambara_tracking_number" },
+  { key: "awb_number", header: "awb_number" },
+  { key: "awb_airline_prefix", header: "awb_airline_prefix" },
+  { key: "awb_airline_name", header: "awb_airline_name" },
+  { key: "flight_numbers", header: "flight_numbers" },
+  { key: "flight_airlines", header: "flight_airlines" },
+  { key: "gross_weight_kg", header: "gross_weight_kg" },
+  { key: "chargeable_weight_kg", header: "chargeable_weight_kg" },
+  { key: "total_pieces", header: "total_pieces" },
   { key: "customer_name", header: "customer_name" },
   { key: "customer_reference", header: "customer_reference" },
   { key: "shipper_name", header: "shipper_name" },
@@ -278,6 +286,14 @@ export const shipmentSummaryColumns: ShipmentExportColumn[] = [
 
 export const parcelDetailColumns: ShipmentExportColumn[] = [
   { key: "ambara_tracking_number", header: "ambara_tracking_number" },
+  { key: "awb_number", header: "awb_number" },
+  { key: "awb_airline_prefix", header: "awb_airline_prefix" },
+  { key: "awb_airline_name", header: "awb_airline_name" },
+  { key: "flight_numbers", header: "flight_numbers" },
+  { key: "flight_airlines", header: "flight_airlines" },
+  { key: "gross_weight_kg", header: "gross_weight_kg" },
+  { key: "chargeable_weight_kg", header: "chargeable_weight_kg" },
+  { key: "total_pieces", header: "total_pieces" },
   { key: "ambara_parcel_id", header: "ambara_parcel_id" },
   { key: "parcel_number", header: "parcel_number" },
   { key: "customer_name", header: "customer_name" },
@@ -299,6 +315,14 @@ export const parcelDetailColumns: ShipmentExportColumn[] = [
 
 export const vendorTrackingColumns: ShipmentExportColumn[] = [
   { key: "ambara_tracking_number", header: "ambara_tracking_number" },
+  { key: "awb_number", header: "awb_number" },
+  { key: "awb_airline_prefix", header: "awb_airline_prefix" },
+  { key: "awb_airline_name", header: "awb_airline_name" },
+  { key: "flight_numbers", header: "flight_numbers" },
+  { key: "flight_airlines", header: "flight_airlines" },
+  { key: "gross_weight_kg", header: "gross_weight_kg" },
+  { key: "chargeable_weight_kg", header: "chargeable_weight_kg" },
+  { key: "total_pieces", header: "total_pieces" },
   { key: "ambara_parcel_id", header: "ambara_parcel_id" },
   { key: "delivery_batch_code", header: "delivery_batch_code" },
   { key: "vendor_name", header: "vendor_name" },
@@ -317,6 +341,14 @@ export const vendorTrackingColumns: ShipmentExportColumn[] = [
 
 const publicTrackingEventColumns: ShipmentExportColumn[] = [
   { key: "ambara_tracking_number", header: "ambara_tracking_number" },
+  { key: "awb_number", header: "awb_number" },
+  { key: "awb_airline_prefix", header: "awb_airline_prefix" },
+  { key: "awb_airline_name", header: "awb_airline_name" },
+  { key: "flight_numbers", header: "flight_numbers" },
+  { key: "flight_airlines", header: "flight_airlines" },
+  { key: "gross_weight_kg", header: "gross_weight_kg" },
+  { key: "chargeable_weight_kg", header: "chargeable_weight_kg" },
+  { key: "total_pieces", header: "total_pieces" },
   { key: "ambara_parcel_id", header: "ambara_parcel_id" },
   { key: "status_code", header: "status_code" },
   { key: "label", header: "label" },

@@ -74,7 +74,7 @@ export function VendorStatusUpdateForm({ batchId }: { batchId: number }) {
                     <th className="px-6 py-4">Vendor Tracking</th>
                     <th className="px-6 py-4">Raw Status</th>
                     <th className="px-6 py-4">Ambara Status</th>
-                    <th className="px-6 py-4">Parcel</th>
+                    <th className="px-6 py-4">Delivery Record ID</th>
                     <th className="px-6 py-4">Match</th>
                   </tr>
                 </thead>

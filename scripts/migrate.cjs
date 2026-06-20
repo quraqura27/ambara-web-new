@@ -28,6 +28,25 @@ const migration006Indexes = [
   "portal_ux_events_name_idx",
   "portal_ux_events_user_idx",
 ];
+const migration007Columns = [
+  ["shipments", "awb_airline_prefix"],
+  ["shipments", "awb_airline_name"],
+  ["shipments", "awb_airline_unresolved"],
+  ["shipment_flight_legs", "shipment_id"],
+  ["shipment_flight_legs", "sequence"],
+  ["shipment_flight_legs", "airline_designator"],
+  ["shipment_flight_legs", "flight_number"],
+  ["shipment_flight_legs", "operational_suffix"],
+  ["shipment_flight_legs", "airline_name"],
+  ["shipment_flight_legs", "airline_unresolved"],
+];
+const migration007Tables = ["shipment_flight_legs"];
+const migration007Indexes = [
+  "shipments_awb_airline_prefix_idx",
+  "shipment_flight_legs_shipment_sequence_unique_idx",
+  "shipment_flight_legs_shipment_idx",
+  "shipment_flight_legs_designator_idx",
+];
 
 function checksum(contents) {
   return createHash("sha256").update(contents).digest("hex");
@@ -67,6 +86,51 @@ async function migration006MissingObjects(sql) {
     ...migration006Tables.filter((name) => !tableNames.has(name)).map((name) => `table:${name}`),
     ...migration006Indexes.filter((name) => !indexNames.has(name)).map((name) => `index:${name}`),
   ];
+}
+
+async function missingSchemaObjects(sql, expected) {
+  const columns = await sql`
+    select table_name, column_name
+    from information_schema.columns
+    where table_schema = 'public'
+  `;
+  const tables = await sql`
+    select table_name
+    from information_schema.tables
+    where table_schema = 'public'
+  `;
+  const indexes = await sql`
+    select indexname
+    from pg_indexes
+    where schemaname = 'public'
+  `;
+  const columnNames = new Set(columns.map((row) => `${row.table_name}.${row.column_name}`));
+  const tableNames = new Set(tables.map((row) => row.table_name));
+  const indexNames = new Set(indexes.map((row) => row.indexname));
+
+  return [
+    ...expected.columns
+      .map(([table, column]) => `${table}.${column}`)
+      .filter((name) => !columnNames.has(name)),
+    ...expected.tables.filter((name) => !tableNames.has(name)).map((name) => `table:${name}`),
+    ...expected.indexes.filter((name) => !indexNames.has(name)).map((name) => `index:${name}`),
+  ];
+}
+
+async function migrationMissingObjects(sql, name) {
+  if (name.startsWith("006-")) {
+    return migration006MissingObjects(sql);
+  }
+
+  if (name.startsWith("007-")) {
+    return missingSchemaObjects(sql, {
+      columns: migration007Columns,
+      tables: migration007Tables,
+      indexes: migration007Indexes,
+    });
+  }
+
+  return [];
 }
 
 async function ensureHistoryTable(sql) {
@@ -126,8 +190,7 @@ async function run() {
         throw new Error(`Applied migration ${name} no longer matches its recorded checksum.`);
       }
 
-      const missingBefore =
-        name.startsWith("006-") ? await migration006MissingObjects(sql) : [];
+      const missingBefore = await migrationMissingObjects(sql, name);
 
       if (recorded) {
         if (missingBefore.length > 0) {
@@ -143,7 +206,7 @@ async function run() {
         throw new Error(`Migration ${name} has not been applied.`);
       }
 
-      if (name.startsWith("006-") && missingBefore.length === 0) {
+      if ((name.startsWith("006-") || name.startsWith("007-")) && missingBefore.length === 0) {
         await sql`
           insert into schema_migrations (name, checksum)
           values (${name}, ${fileChecksum})
@@ -160,8 +223,8 @@ async function run() {
         `;
       });
 
-      if (name.startsWith("006-")) {
-        const missingAfter = await migration006MissingObjects(sql);
+      if (name.startsWith("006-") || name.startsWith("007-")) {
+        const missingAfter = await migrationMissingObjects(sql, name);
         if (missingAfter.length > 0) {
           throw new Error(
             `Migration ${name} did not create required objects: ${missingAfter.join(", ")}`,

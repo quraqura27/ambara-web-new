@@ -7,6 +7,8 @@ import {
   createGuidedShipment,
   type GuidedShipmentActionState,
 } from "@/actions/guided-shipment";
+import { AwbInput } from "@/components/portal/awb-input";
+import { FlightLegsEditor } from "@/components/portal/flight-legs-editor";
 import { Button, Card, Input, cn } from "@/components/ui/core";
 import {
   getShipmentServiceDefinition,
@@ -50,6 +52,8 @@ const initialValues: Record<string, string> = {
   idempotencyKey: "",
   internalNote: "",
   mawb: "",
+  awbAirlineName: "",
+  flightLegsJson: "[]",
   origin: "",
   pieces: "1",
   postalCode: "",
@@ -145,7 +149,6 @@ export function GuidedShipmentForm({
     "deliveryInstruction",
     "goodsDescription",
     "internalNote",
-    "mawb",
     "shipperAddress",
     "shipperName",
     "shipperPhone",
@@ -369,6 +372,25 @@ export function GuidedShipmentForm({
             </Field>
           </div>
         ) : null}
+
+        <div className="grid gap-4 border-t border-white/5 pt-6 md:grid-cols-2">
+          <div className="space-y-2">
+            <span className="block text-xs font-bold uppercase tracking-widest text-slate-400">
+              Airline AWB number *
+            </span>
+            <AwbInput
+              airlineName={values.awbAirlineName}
+              error={fieldErrors.mawb || fieldErrors.awbAirlineName}
+              onAirlineNameChange={(value) => update("awbAirlineName", value)}
+              onValueChange={(value) => update("mawb", value)}
+              value={values.mawb}
+            />
+            <span className="block text-xs text-slate-500">
+              Required for every shipment. Unknown prefixes require a verified manual airline
+              name.
+            </span>
+          </div>
+        </div>
       </Card>
 
       <Card className="space-y-6 p-5 sm:p-6">
@@ -456,11 +478,27 @@ export function GuidedShipmentForm({
         </div>
       </Card>
 
+      <Card className="space-y-5 p-5 sm:p-6">
+        <div>
+          <h2 className="text-lg font-bold">Flight routing</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Add the known flight legs in operational order. Flights are optional and can be
+            updated later.
+          </p>
+        </div>
+        <FlightLegsEditor
+          error={fieldErrors.flightLegsJson}
+          onValueChange={(value) => update("flightLegsJson", value)}
+          value={values.flightLegsJson}
+        />
+      </Card>
+
       <Card className="space-y-6 p-5 sm:p-6">
         <div>
           <h2 className="text-lg font-bold">Cargo</h2>
           <p className="mt-1 text-sm text-slate-500">
-            Pieces is the cargo quantity within this one shipment. It does not create additional shipments.
+            Pieces are physical cargo units such as cartons, boxes, bags, or pallets. They do not
+            create additional shipments or Delivery Records; one CN can print one label per piece.
           </p>
         </div>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -471,7 +509,11 @@ export function GuidedShipmentForm({
               value={values.commodity}
             />
           </Field>
-          <Field error={fieldErrors.pieces} label="Pieces *">
+          <Field
+            error={fieldErrors.pieces}
+            helper="Physical cargo quantity, such as cartons, boxes, bags, or pallets. Pieces do not create additional shipments or Delivery Records."
+            label="Pieces *"
+          >
             <Input
               min="1"
               name="pieces"
@@ -559,9 +601,6 @@ export function GuidedShipmentForm({
             <Field label="Customer reference">
               <Input name="customerReference" onChange={(event) => update("customerReference", event.target.value)} value={values.customerReference} />
             </Field>
-            <Field label="AWB / MAWB">
-              <Input name="mawb" onChange={(event) => update("mawb", event.target.value)} value={values.mawb} />
-            </Field>
             <Field error={fieldErrors.trackingNumber} helper="Leave blank to generate automatically." label="Manual tracking number">
               <Input name="trackingNumber" onChange={(event) => update("trackingNumber", event.target.value)} value={values.trackingNumber} />
             </Field>
@@ -648,11 +687,12 @@ export function GuidedShipmentForm({
         <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {[
             ["Customer", customerDisplay || "Missing"],
+            ["AWB", values.mawb || "Missing"],
             ["Service", `${values.serviceType} — ${service?.label ?? ""}`],
             ["Route", `${values.origin || "Missing"} → ${values.destination || "Missing"}`],
             [doorDelivery ? "Receiver" : "Consignee", values.receiverName || "Missing"],
             ["Cargo", values.commodity || "Missing"],
-            ["Quantity", `${values.pieces || "0"} pieces`],
+            ["Pieces", `${values.pieces || "0"} physical cargo units`],
             ["Weight", `${values.weightKg || "0"} kg`],
             ["Completion", doorDelivery ? "Delivered" : "Arrived at Destination Port"],
           ].map(([label, value]) => (
@@ -671,7 +711,7 @@ export function GuidedShipmentForm({
             value="yes"
           />
           <span>
-            I reviewed the customer, route, consignee or receiver, cargo quantity, weight, and service.
+            I reviewed the customer, route, consignee or receiver, pieces, weight, and service.
             <FieldError error={fieldErrors.reviewConfirmed} />
           </span>
         </label>

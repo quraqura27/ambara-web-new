@@ -27,7 +27,7 @@ const fieldClassName =
 
 const scopeLabels: Record<ShipmentExportScope, string> = {
   summary: "Shipment summary only",
-  parcels: "Shipment + parcel detail",
+  parcels: "Shipment + delivery detail",
   vendor_tracking: "Shipment + vendor tracking detail",
   tracking_events: "Shipment + tracking event detail",
 };

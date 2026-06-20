@@ -48,9 +48,9 @@ const batchParcels: MatchableBatchParcel[] = [
 ];
 
 test("validates bulk shipment rows with errors and warnings", () => {
-  const rows = parseDelimitedText(`customer_name,customer_reference,origin_city,receiver_name,receiver_phone,receiver_address,destination_city,postal_code,commodity,weight,pieces,service_type
-ACME,REF-1,Bandung,Budi,+62812345678,Jl Sudirman 10,Jakarta,,General Cargo,12,1,DTD
-ACME,REF-1,Bandung,,+62812456789,Jl Thamrin 20,Jakarta,10310,,0,0,UNKNOWN`);
+  const rows = parseDelimitedText(`awb_number,customer_name,customer_reference,origin_city,receiver_name,receiver_phone,receiver_address,destination_city,postal_code,commodity,weight,pieces,service_type
+126-9360193,ACME,REF-1,Bandung,Budi,+62812345678,Jl Sudirman 10,Jakarta,,General Cargo,12,1,DTD
+053-1234567,ACME,REF-1,Bandung,,+62812456789,Jl Thamrin 20,Jakarta,10310,,0,0,UNKNOWN`);
 
   const preview = prepareBulkShipmentImport(rows);
 
@@ -67,14 +67,44 @@ ACME,REF-1,Bandung,,+62812456789,Jl Thamrin 20,Jakarta,10310,,0,0,UNKNOWN`);
 });
 
 test("requires delivery address only for DTD and PTD rows", () => {
-  const rows = parseDelimitedText(`origin_city,receiver_name,receiver_phone,receiver_address,destination_city,commodity,weight,pieces,service_type
-Jakarta,Port Consignee,081230000001,,Singapore,General Cargo,5,2,DTP
-Singapore,Door Receiver,081230000002,,Jakarta,General Cargo,5,2,PTD`);
+  const rows = parseDelimitedText(`awb_number,origin_city,receiver_name,receiver_phone,receiver_address,destination_city,commodity,weight,pieces,service_type
+126-9360193,Jakarta,Port Consignee,081230000001,,Singapore,General Cargo,5,2,DTP
+053-1234567,Singapore,Door Receiver,081230000002,,Jakarta,General Cargo,5,2,PTD`);
 
   const preview = prepareBulkShipmentImport(rows);
 
   assert.equal(preview.rows[0]?.errors.length, 0);
   assert.ok(preview.rows[1]?.errors.includes("missing receiver_address for door delivery"));
+});
+
+test("normalizes mandatory AWB and four fixed flight columns", () => {
+  const rows = parseDelimitedText(`awb_number,origin_city,receiver_name,receiver_phone,destination_city,commodity,weight,pieces,service_type,flight_1,flight_2,flight_3,flight_4
+126-9360193,Jakarta,Port Consignee,081230000001,Singapore,General Cargo,5,2,DTP,GA820,A390,M0123,GA821`);
+
+  const preview = prepareBulkShipmentImport(rows);
+
+  assert.equal(preview.rows[0]?.data.awbNumber, "126-93601933");
+  assert.equal(preview.rows[0]?.data.awbAirlineName, "Garuda Indonesia");
+  assert.deepEqual(
+    preview.rows[0]?.data.flightLegs.map((leg) => leg.formattedNumber),
+    ["GA820", "A390", "M0123", "GA821"],
+  );
+});
+
+test("requires AWB in bulk rows and permits the same AWB on independent shipments", () => {
+  const missingAwb = prepareBulkShipmentImport(
+    parseDelimitedText(`origin_city,receiver_name,receiver_phone,destination_city,commodity,weight,pieces,service_type
+Jakarta,Port Consignee,081230000001,Singapore,General Cargo,5,2,DTP`),
+  );
+  assert.ok(missingAwb.rows[0]?.errors.includes("missing awb_number"));
+
+  const sharedAwb = prepareBulkShipmentImport(
+    parseDelimitedText(`awb_number,origin_city,receiver_name,receiver_phone,destination_city,commodity,weight,pieces,service_type
+126-9360193,Jakarta,Consignee One,081230000001,Singapore,General Cargo,5,2,DTP
+126-9360193,Jakarta,Consignee Two,081230000002,Singapore,General Cargo,6,3,DTP`),
+  );
+  assert.equal(sharedAwb.summary.validRows, 2);
+  assert.equal(sharedAwb.summary.warningRows, 0);
 });
 
 test("builds vendor upload rows with required Ambara references", () => {
@@ -251,7 +281,7 @@ AA26-TEST-0001-002,JNT0099`);
   assert.equal(result.matches.every((match) => match.matchStatus === "rejected"), true);
 });
 
-test("rejects vendor tracking already assigned to another parcel in the same batch", () => {
+test("rejects vendor tracking already assigned to another Delivery Record in the same batch", () => {
   const rows = parseVendorReturnRows(`ambara_parcel_id,vendor_tracking_number
 AA26-TEST-0001-002,JNT0001`);
 
@@ -260,12 +290,12 @@ AA26-TEST-0001-002,JNT0001`);
   assert.equal(result.matches[0]?.matchStatus, "rejected");
   assert.ok(
     result.matches[0]?.errors.includes(
-      "vendor tracking already assigned to another parcel in this batch",
+      "vendor tracking already assigned to another Delivery Record in this batch",
     ),
   );
 });
 
-test("rejects changing an already linked parcel to a different vendor tracking number", () => {
+test("rejects changing an already linked Delivery Record to a different vendor tracking number", () => {
   const rows = parseVendorReturnRows(`ambara_parcel_id,vendor_tracking_number
 AA26-TEST-0001-001,JNT9999`);
 
@@ -273,7 +303,9 @@ AA26-TEST-0001-001,JNT9999`);
 
   assert.equal(result.matches[0]?.matchStatus, "rejected");
   assert.ok(
-    result.matches[0]?.errors.includes("parcel already has a different vendor tracking number"),
+    result.matches[0]?.errors.includes(
+      "Delivery Record already has a different vendor tracking number",
+    ),
   );
 });
 

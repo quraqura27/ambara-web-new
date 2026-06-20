@@ -50,7 +50,9 @@ export function BulkImportForm() {
               {pending ? "Previewing..." : "Preview Import"}
             </Button>
             <p className="text-xs leading-relaxed text-slate-500">
-              Every accepted row creates one independent shipment, tracking number, CN, and internal delivery record.
+              Every accepted row creates one independent shipment, tracking number, CN, and
+              Delivery Record. AWB is mandatory. Pieces are physical cargo units and do not create
+              extra shipments or Delivery Records.
             </p>
           </div>
 
@@ -61,7 +63,7 @@ export function BulkImportForm() {
             <textarea
               className="min-h-[220px] w-full rounded-lg border border-slate-700 bg-slate-900/50 px-4 py-3 font-mono text-xs text-slate-100 outline-none transition-all placeholder:text-slate-600 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/30"
               name="pastedTable"
-              placeholder="customer_name,customer_reference,origin_city,receiver_name,receiver_phone,receiver_address,destination_city,postal_code,commodity,weight,pieces,service_type"
+              placeholder="awb_number,awb_airline_name,customer_name,customer_reference,origin_city,receiver_name,receiver_phone,receiver_address,destination_city,postal_code,commodity,weight,chargeable_weight,pieces,service_type,flight_1,flight_1_airline_name,flight_2,flight_2_airline_name,flight_3,flight_3_airline_name,flight_4,flight_4_airline_name"
             />
           </label>
         </form>
@@ -97,11 +99,13 @@ export function BulkImportForm() {
               <thead>
                 <tr className="bg-white/5 text-[10px] font-bold uppercase tracking-widest text-slate-500">
                   <th className="px-6 py-4">Row</th>
+                  <th className="px-6 py-4">AWB / Airline</th>
                   <th className="px-6 py-4">Reference</th>
                   <th className="px-6 py-4">Receiver</th>
                   <th className="px-6 py-4">Destination</th>
                   <th className="px-6 py-4">Service</th>
                   <th className="px-6 py-4">Load</th>
+                  <th className="px-6 py-4">Flights</th>
                   <th className="px-6 py-4">Status</th>
                   <th className="px-6 py-4">Messages</th>
                 </tr>
@@ -110,6 +114,14 @@ export function BulkImportForm() {
                 {preview.rows.map((row) => (
                   <tr key={row.rowNumber} className="align-top">
                     <td className="px-6 py-4 text-xs text-slate-500">{row.rowNumber}</td>
+                    <td className="px-6 py-4">
+                      <p className="font-mono text-xs font-semibold text-white">
+                        {row.data.awbNumber || "-"}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {row.data.awbAirlineName || "-"}
+                      </p>
+                    </td>
                     <td className="px-6 py-4 text-sm text-slate-300">
                       {row.data.customerReference || "-"}
                     </td>
@@ -125,7 +137,10 @@ export function BulkImportForm() {
                     </td>
                     <td className="px-6 py-4 text-xs text-slate-400">
                       {Number.isFinite(row.data.weight) ? `${row.data.weight} kg` : "-"} /{" "}
-                      {Number.isFinite(row.data.pieces) ? `${row.data.pieces} pcs` : "-"}
+                      {Number.isFinite(row.data.pieces) ? `${row.data.pieces} pieces` : "-"}
+                    </td>
+                    <td className="px-6 py-4 text-xs text-slate-400">
+                      {row.data.flightLegs.map((leg) => leg.formattedNumber).join(" → ") || "-"}
                     </td>
                     <td className="px-6 py-4">
                       <span
@@ -191,7 +206,7 @@ export function BulkImportForm() {
                   </Button>
                 ) : null}
                 <ConfirmSubmitButton
-                  description={`Create one independent shipment for every clean row plus ${approvedWarnings.length} explicitly approved warning rows. The import is all-or-nothing.`}
+                  description={`Create one independent shipment and one Delivery Record for every clean row plus ${approvedWarnings.length} explicitly approved warning rows. The import is all-or-nothing.`}
                   disabled={!canCommit}
                   title="Confirm shipment import?"
                   variant="primary"

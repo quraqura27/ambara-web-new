@@ -6,6 +6,7 @@
     "node": ">=18"
   },
   "scripts": {
+    "airlines:refresh": "node scripts/refresh-iata-member-airlines.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

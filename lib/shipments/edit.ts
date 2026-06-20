@@ -1,4 +1,13 @@
+import {
+  parseFlightLegsJson,
+  resolveAirWaybill,
+  type ResolvedFlightLeg,
+} from "../airlines/core.ts";
+
 export type ShipmentEditFormValues = {
+  awbAirlineName: string | null;
+  awbAirlinePrefix: string | null;
+  awbAirlineUnresolved: boolean;
   cargoType: string;
   chargeableWeight: string | null;
   codAmount: string | null;
@@ -10,6 +19,7 @@ export type ShipmentEditFormValues = {
   destination: string;
   destinationCity: string;
   goodsDescription: string | null;
+  flightLegs: ResolvedFlightLeg[];
   mawb: string | null;
   origin: string;
   pieces: number;
@@ -117,8 +127,32 @@ export function parseShipmentEditForm(formData: FormData): ShipmentEditFormValue
   const destinationCity = requiredText(formData, "destinationCity", "Destination city");
   const commodity = requiredText(formData, "commodity", "Commodity");
   const serviceType = requiredText(formData, "serviceType", "Service type").toUpperCase();
+  const awbInput = optionalText(formData, "mawb");
+  let awb: ReturnType<typeof resolveAirWaybill> | null = null;
+  let flightLegs: ResolvedFlightLeg[] = [];
+
+  if (awbInput) {
+    try {
+      awb = resolveAirWaybill(awbInput, optionalText(formData, "awbAirlineName"));
+    } catch (error) {
+      throw new ShipmentEditFormError(
+        error instanceof Error ? error.message : "AWB number is invalid.",
+      );
+    }
+  }
+
+  try {
+    flightLegs = parseFlightLegsJson(optionalText(formData, "flightLegsJson"));
+  } catch (error) {
+    throw new ShipmentEditFormError(
+      error instanceof Error ? error.message : "Flight-leg data is invalid.",
+    );
+  }
 
   return {
+    awbAirlineName: awb?.airlineName ?? null,
+    awbAirlinePrefix: awb?.prefix ?? null,
+    awbAirlineUnresolved: awb?.airlineUnresolved ?? false,
     cargoType: optionalText(formData, "cargoType") ?? "general",
     chargeableWeight: optionalPositiveDecimalString(
       formData,
@@ -134,7 +168,8 @@ export function parseShipmentEditForm(formData: FormData): ShipmentEditFormValue
     destination,
     destinationCity,
     goodsDescription: optionalText(formData, "goodsDescription"),
-    mawb: optionalText(formData, "mawb")?.toUpperCase() ?? null,
+    flightLegs,
+    mawb: awb?.canonicalNumber ?? null,
     origin,
     pieces: positiveInteger(formData, "pieces", "Pieces"),
     postalCode: optionalText(formData, "postalCode"),
@@ -182,6 +217,9 @@ export function buildShipmentEditUpdates(
       customerReference: input.customerReference,
       destination: input.destination,
       goodsDescription: input.goodsDescription,
+      awbAirlineName: input.awbAirlineName,
+      awbAirlinePrefix: input.awbAirlinePrefix,
+      awbAirlineUnresolved: input.awbAirlineUnresolved,
       mawb: input.mawb,
       origin: input.origin,
       serviceType: input.serviceType,

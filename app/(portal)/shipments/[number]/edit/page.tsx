@@ -8,6 +8,8 @@ import {
   getShipmentByTracking,
   updateShipmentDetails,
 } from "@/actions/shipments";
+import { AwbInput } from "@/components/portal/awb-input";
+import { FlightLegsEditor } from "@/components/portal/flight-legs-editor";
 import { Button, Card, Input, cn } from "@/components/ui/core";
 import { requirePortalUser } from "@/lib/portal-auth";
 import { canEditShipmentDetails } from "@/lib/portal-roles";
@@ -119,7 +121,7 @@ export default async function EditShipmentPage({ params, searchParams }: EditShi
     notFound();
   }
 
-  const [{ shipment, parcels }, customers] = await Promise.all([
+  const [{ shipment, parcels, flightLegs }, customers] = await Promise.all([
     getShipmentByTracking(number),
     getCustomersForSelect(),
   ]);
@@ -153,8 +155,8 @@ export default async function EditShipmentPage({ params, searchParams }: EditShi
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <ImmutableItem label="Ambara tracking number" value={shipment.trackingNumber} />
           <ImmutableItem
-            label="Ambara parcel ID"
-            value={primaryParcel?.ambaraParcelId ?? "No parcel record"}
+            label="Delivery Record ID"
+            value={primaryParcel?.ambaraParcelId ?? "No Delivery Record"}
           />
           <ImmutableItem label="Created at" value={shipment.createdAt} />
           <ImmutableItem label="Current status" value={shipment.status} />
@@ -162,7 +164,7 @@ export default async function EditShipmentPage({ params, searchParams }: EditShi
         <div className="mt-5 flex gap-3 rounded-lg border border-blue-500/20 bg-blue-500/10 p-4 text-sm text-blue-100">
           <LockKeyhole className="mt-0.5 h-4 w-4 shrink-0" />
           <p>
-            Tracking number, parcel ID, creation metadata, vendor tracking, and tracking event
+            Tracking number, Delivery Record ID, creation metadata, vendor tracking, and tracking event
             history are not editable here. Use the shipment status update action to change tracking
             status.
           </p>
@@ -171,15 +173,15 @@ export default async function EditShipmentPage({ params, searchParams }: EditShi
 
       {parcels.length === 0 ? (
         <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-          This legacy shipment has no parcel record. Shipment-level details can be edited, but
-          parcel export/delivery batch features require a parcel record.
+          This legacy shipment has no Delivery Record. Shipment-level details can be edited, but
+          delivery export and batch features require a Delivery Record.
         </div>
       ) : null}
 
       {parcels.length > 1 ? (
         <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-          This shipment has multiple parcel records. This form updates shipment-level fields only;
-          parcel-specific rows are left unchanged to avoid overwriting multiple parcels.
+          This shipment has multiple Delivery Records. This form updates shipment-level fields
+          only; record-specific rows are left unchanged to avoid overwriting multiple records.
         </div>
       ) : null}
 
@@ -214,9 +216,14 @@ export default async function EditShipmentPage({ params, searchParams }: EditShi
               />
             </Field>
 
-            <Field label="AWB number">
-              <Input defaultValue={shipment.mawb ?? ""} name="mawb" placeholder="Air waybill or MAWB number" />
-            </Field>
+            <div className="space-y-2">
+              <span className={labelClassName}>AWB number</span>
+              <AwbInput
+                defaultAirlineName={shipment.awbAirlineName}
+                defaultValue={shipment.mawb}
+                required={false}
+              />
+            </div>
 
             <Field label="Service type *">
               <select className={fieldClassName} defaultValue={shipment.serviceType ?? ""} name="serviceType" required>
@@ -250,6 +257,18 @@ export default async function EditShipmentPage({ params, searchParams }: EditShi
               />
             </Field>
           </div>
+        </Section>
+
+        <Section title="Flight routing">
+          <FlightLegsEditor
+            defaultValue={JSON.stringify(
+              flightLegs.map((leg) => ({
+                airlineName: leg.airlineName,
+                flightNumber: `${leg.airlineDesignator}${leg.flightNumber}${leg.operationalSuffix ?? ""}`,
+                id: String(leg.id),
+              })),
+            )}
+          />
         </Section>
 
         <Section title="Shipper details">
@@ -337,7 +356,10 @@ export default async function EditShipmentPage({ params, searchParams }: EditShi
               </select>
             </Field>
 
-            <Field label="Pieces *">
+            <Field
+              helper="Physical cargo quantity, such as cartons, boxes, bags, or pallets. Pieces do not create additional shipments or Delivery Records; one CN can print one label per piece."
+              label="Pieces *"
+            >
               <Input
                 defaultValue={shipment.totalPcs ?? primaryParcel?.pieces ?? 1}
                 min="1"

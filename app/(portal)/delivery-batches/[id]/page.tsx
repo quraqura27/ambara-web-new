@@ -135,7 +135,7 @@ export default async function DeliveryBatchDetailPage({
 
       <div className="grid gap-4 md:grid-cols-4">
         {[
-          ["Total Parcels", batch.totalParcels],
+          ["Delivery record count", batch.totalParcels],
           ["Delivered", summary.deliveredCount],
           ["Issues", summary.issueCount],
           ["Missing Tracking", summary.missingVendorTrackingCount],
@@ -153,7 +153,7 @@ export default async function DeliveryBatchDetailPage({
         <div className="grid gap-4 border-b border-white/5 p-6 lg:grid-cols-[1fr_auto] lg:items-center">
           <div>
             <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">
-              Parcel Rows
+              Shipments in this batch
             </h3>
             <p className="mt-2 text-xs text-slate-500">
               Last checked: {formatDate(batch.lastCheckedAt)} / SLA: {formatDate(batch.slaDeadline)}
@@ -166,8 +166,8 @@ export default async function DeliveryBatchDetailPage({
             <StatusSelect />
             <TypedConfirmSubmitButton
               confirmText={batch.batchCode}
-              description={`This will update all ${parcels.length} parcels and append customer-visible tracking events. Review the selected status before confirming.`}
-              title="Update every parcel in this batch?"
+              description={`This will update all ${parcels.length} shipments and append customer-visible tracking events. Review the selected status before confirming.`}
+              title="Update every shipment in this batch?"
             >
               <PackageCheck className="mr-2 h-4 w-4" /> Bulk Update All
             </TypedConfirmSubmitButton>
@@ -181,8 +181,8 @@ export default async function DeliveryBatchDetailPage({
           <div className="flex flex-wrap items-center gap-3 border-b border-white/5 p-6">
             <StatusSelect />
             <SelectionConfirmSubmitButton
-              description="Only checked parcels will be updated. Each update appends a customer-visible tracking event."
-              title="Update selected parcels?"
+              description="Only checked shipments will be updated. Each update appends a customer-visible tracking event."
+              title="Update selected shipments?"
             >
               <CheckCircle2 className="mr-2 h-4 w-4" /> Bulk Update Selected
             </SelectionConfirmSubmitButton>
@@ -193,7 +193,7 @@ export default async function DeliveryBatchDetailPage({
               <thead>
                 <tr className="bg-white/5 text-[10px] font-bold uppercase tracking-widest text-slate-500">
                   <th className="px-6 py-4">Select</th>
-                  <th className="px-6 py-4">Ambara Parcel</th>
+                  <th className="px-6 py-4">Shipment / Delivery Record ID</th>
                   <th className="px-6 py-4">Vendor Tracking</th>
                   <th className="px-6 py-4">Receiver</th>
                   <th className="px-6 py-4">Destination</th>

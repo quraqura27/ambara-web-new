@@ -1,11 +1,19 @@
 "use server";
 
 import { and, asc, desc, eq, gte, ilike, inArray, lte, or, sql } from "drizzle-orm";
+import type { BatchItem } from "drizzle-orm/batch";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
-import { customers, parcels, shipments, trackingEvents, trackingUpdates } from "@/lib/db/schema";
+import {
+  customers,
+  parcels,
+  shipmentFlightLegs,
+  shipments,
+  trackingEvents,
+  trackingUpdates,
+} from "@/lib/db/schema";
 import { requirePortalUser } from "@/lib/portal-auth";
 import { canEditShipmentDetails } from "@/lib/portal-roles";
 import {
@@ -239,11 +247,12 @@ export async function getShipmentByTracking(trackingNumber: string) {
         lastSyncAt: new Date(),
       },
       customer: null,
+      flightLegs: [],
       parcels: [],
     };
   }
 
-  const [persistedEvents, shipmentParcels] = await Promise.all([
+  const [persistedEvents, shipmentParcels, flightLegs] = await Promise.all([
     getPersistedTrackingEvents(shipment.id),
     db
       .select({
@@ -266,6 +275,11 @@ export async function getShipmentByTracking(trackingNumber: string) {
       .from(parcels)
       .where(eq(parcels.shipmentId, shipment.id))
       .orderBy(asc(parcels.parcelNumber)),
+    db
+      .select()
+      .from(shipmentFlightLegs)
+      .where(eq(shipmentFlightLegs.shipmentId, shipment.id))
+      .orderBy(asc(shipmentFlightLegs.sequence)),
   ]);
   const events = persistedEvents.length
     ? persistedEvents
@@ -297,6 +311,7 @@ export async function getShipmentByTracking(trackingNumber: string) {
       lastSyncAt,
     },
     customer,
+    flightLegs,
     parcels: shipmentParcels,
   };
 }
@@ -476,17 +491,35 @@ export async function updateShipmentDetails(trackingNumber: string, formData: Fo
 
   const updates = buildShipmentEditUpdates(input, user.id);
 
-  await db
-    .update(shipments)
-    .set(updates.shipment)
-    .where(eq(shipments.id, shipment.id));
+  const now = new Date();
+  const queries: BatchItem<"pg">[] = [
+    db.update(shipments).set(updates.shipment).where(eq(shipments.id, shipment.id)),
+    db.delete(shipmentFlightLegs).where(eq(shipmentFlightLegs.shipmentId, shipment.id)),
+  ];
 
   if (shipmentParcels.length === 1) {
-    await db
-      .update(parcels)
-      .set(updates.parcel)
-      .where(eq(parcels.id, shipmentParcels[0].id));
+    queries.push(
+      db.update(parcels).set(updates.parcel).where(eq(parcels.id, shipmentParcels[0].id)),
+    );
   }
+
+  input.flightLegs.forEach((leg, index) => {
+    queries.push(
+      db.insert(shipmentFlightLegs).values({
+        airlineDesignator: leg.airlineDesignator,
+        airlineName: leg.airlineName,
+        airlineUnresolved: leg.airlineUnresolved,
+        createdAt: now,
+        flightNumber: leg.flightNumber,
+        operationalSuffix: leg.operationalSuffix || null,
+        sequence: index + 1,
+        shipmentId: shipment.id,
+        updatedAt: now,
+      }),
+    );
+  });
+
+  await db.batch(queries as [BatchItem<"pg">, ...BatchItem<"pg">[]]);
 
   revalidatePath("/dashboard");
   revalidatePath("/shipments");

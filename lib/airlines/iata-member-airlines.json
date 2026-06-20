@@ -1,0 +1,2646 @@
+{
+  "snapshotDate": "2026-06-21",
+  "sourceUrl": "https://www.iata.org/en/about/members/airline-list/",
+  "sourceScope": "Public IATA member directory. This is not the complete subscription Airline Coding Database.",
+  "records": [
+    {
+      "name": "ABX Air",
+      "iataDesignator": "GB",
+      "prefixCode": "832",
+      "icaoCode": "ABX",
+      "country": "United States"
+    },
+    {
+      "name": "Aegean Airlines",
+      "iataDesignator": "A3",
+      "prefixCode": "390",
+      "icaoCode": "AEE",
+      "country": "Greece"
+    },
+    {
+      "name": "Aer Lingus",
+      "iataDesignator": "EI",
+      "prefixCode": "053",
+      "icaoCode": "EIN",
+      "country": "Ireland"
+    },
+    {
+      "name": "Aero Mongolia",
+      "iataDesignator": "M0",
+      "prefixCode": "970",
+      "icaoCode": "MNG",
+      "country": "Mongolia"
+    },
+    {
+      "name": "Aero Republica",
+      "iataDesignator": "P5",
+      "prefixCode": "",
+      "icaoCode": "RPB",
+      "country": "Colombia"
+    },
+    {
+      "name": "Aeroflot",
+      "iataDesignator": "SU",
+      "prefixCode": "555",
+      "icaoCode": "AFL",
+      "country": "Russian Federation"
+    },
+    {
+      "name": "Aeroitalia",
+      "iataDesignator": "XZ",
+      "prefixCode": "419",
+      "icaoCode": "AEZ",
+      "country": "Italy"
+    },
+    {
+      "name": "Aerolineas Argentinas",
+      "iataDesignator": "AR",
+      "prefixCode": "044",
+      "icaoCode": "ARG",
+      "country": "Argentina"
+    },
+    {
+      "name": "Aeromexico",
+      "iataDesignator": "AM",
+      "prefixCode": "139",
+      "icaoCode": "AMX",
+      "country": "Mexico"
+    },
+    {
+      "name": "Africa World Airlines",
+      "iataDesignator": "AW",
+      "prefixCode": "394",
+      "icaoCode": "AFW",
+      "country": "Ghana"
+    },
+    {
+      "name": "Air Algérie",
+      "iataDesignator": "AH",
+      "prefixCode": "124",
+      "icaoCode": "DAH",
+      "country": "Algeria"
+    },
+    {
+      "name": "Air Arabia",
+      "iataDesignator": "G9",
+      "prefixCode": "514",
+      "icaoCode": "ABY",
+      "country": "United Arab Emirates"
+    },
+    {
+      "name": "Air Astana",
+      "iataDesignator": "KC",
+      "prefixCode": "465",
+      "icaoCode": "KZR",
+      "country": "Kazakhstan"
+    },
+    {
+      "name": "Air Astra",
+      "iataDesignator": "2A",
+      "prefixCode": "610",
+      "icaoCode": "AWA",
+      "country": "Bangladesh"
+    },
+    {
+      "name": "Air Atlanta Icelandic",
+      "iataDesignator": "CC",
+      "prefixCode": "318",
+      "icaoCode": "ABD",
+      "country": "Iceland"
+    },
+    {
+      "name": "Air Austral",
+      "iataDesignator": "UU",
+      "prefixCode": "760",
+      "icaoCode": "REU",
+      "country": "France"
+    },
+    {
+      "name": "Air Baltic",
+      "iataDesignator": "BT",
+      "prefixCode": "657",
+      "icaoCode": "BTI",
+      "country": "Latvia"
+    },
+    {
+      "name": "Air Botswana",
+      "iataDesignator": "BP",
+      "prefixCode": "636",
+      "icaoCode": "BOT",
+      "country": "Botswana"
+    },
+    {
+      "name": "Air Cairo",
+      "iataDesignator": "SM",
+      "prefixCode": "381",
+      "icaoCode": "MSC",
+      "country": "Egypt"
+    },
+    {
+      "name": "Air Caledonie",
+      "iataDesignator": "TY",
+      "prefixCode": "190",
+      "icaoCode": "TPC",
+      "country": "New Caledonia"
+    },
+    {
+      "name": "Air Cambodia",
+      "iataDesignator": "K6",
+      "prefixCode": "188",
+      "icaoCode": "KHV",
+      "country": "Cambodia"
+    },
+    {
+      "name": "Air Canada",
+      "iataDesignator": "AC",
+      "prefixCode": "014",
+      "icaoCode": "ACA",
+      "country": "Canada"
+    },
+    {
+      "name": "Air Caraibes",
+      "iataDesignator": "TX",
+      "prefixCode": "427",
+      "icaoCode": "FWI",
+      "country": "Guadeloupe"
+    },
+    {
+      "name": "Air Changan",
+      "iataDesignator": "9H",
+      "prefixCode": "856",
+      "icaoCode": "CGN",
+      "country": "China (People's Republic of)"
+    },
+    {
+      "name": "Air China",
+      "iataDesignator": "CA",
+      "prefixCode": "999",
+      "icaoCode": "CCA",
+      "country": "China (People's Republic of)"
+    },
+    {
+      "name": "Air Corsica",
+      "iataDesignator": "XK",
+      "prefixCode": "146",
+      "icaoCode": "CCM",
+      "country": "France"
+    },
+    {
+      "name": "Air Dolomiti",
+      "iataDesignator": "EN",
+      "prefixCode": "101",
+      "icaoCode": "DLA",
+      "country": "Italy"
+    },
+    {
+      "name": "Air Europa",
+      "iataDesignator": "UX",
+      "prefixCode": "996",
+      "icaoCode": "AEA",
+      "country": "Spain"
+    },
+    {
+      "name": "Air France",
+      "iataDesignator": "AF",
+      "prefixCode": "057",
+      "icaoCode": "AFR",
+      "country": "France"
+    },
+    {
+      "name": "Air Greenland",
+      "iataDesignator": "GL",
+      "prefixCode": "631",
+      "icaoCode": "GRL",
+      "country": "Greenland"
+    },
+    {
+      "name": "Air Guilin",
+      "iataDesignator": "GT",
+      "prefixCode": "730",
+      "icaoCode": "CGH",
+      "country": "China (People's Republic of)"
+    },
+    {
+      "name": "Air Hong Kong",
+      "iataDesignator": "LD",
+      "prefixCode": "288",
+      "icaoCode": "AHK",
+      "country": "Hong Kong (SAR), China"
+    },
+    {
+      "name": "Air India",
+      "iataDesignator": "AI",
+      "prefixCode": "098",
+      "icaoCode": "AIC",
+      "country": "India"
+    },
+    {
+      "name": "Air India Express",
+      "iataDesignator": "IX",
+      "prefixCode": "236",
+      "icaoCode": "AXB",
+      "country": "India"
+    },
+    {
+      "name": "Air Koryo",
+      "iataDesignator": "JS",
+      "prefixCode": "120",
+      "icaoCode": "KOR",
+      "country": "Korea, Democratic People's Republic of"
+    },
+    {
+      "name": "Air Macau",
+      "iataDesignator": "NX",
+      "prefixCode": "675",
+      "icaoCode": "AMU",
+      "country": "Macao (SAR), China"
+    },
+    {
+      "name": "Air Mauritius",
+      "iataDesignator": "MK",
+      "prefixCode": "239",
+      "icaoCode": "MAU",
+      "country": "Mauritius"
+    },
+    {
+      "name": "Air Montenegro",
+      "iataDesignator": "4O",
+      "prefixCode": "400",
+      "icaoCode": "MNE",
+      "country": "Montenegro"
+    },
+    {
+      "name": "Air New Zealand",
+      "iataDesignator": "NZ",
+      "prefixCode": "086",
+      "icaoCode": "ANZ",
+      "country": "New Zealand"
+    },
+    {
+      "name": "Air Niugini",
+      "iataDesignator": "PX",
+      "prefixCode": "656",
+      "icaoCode": "ANG",
+      "country": "Papua New Guinea"
+    },
+    {
+      "name": "Air Nostrum",
+      "iataDesignator": "YW",
+      "prefixCode": "694",
+      "icaoCode": "ANE",
+      "country": "Spain"
+    },
+    {
+      "name": "Air Peace",
+      "iataDesignator": "P4",
+      "prefixCode": "710",
+      "icaoCode": "APK",
+      "country": "Nigeria"
+    },
+    {
+      "name": "Air Premia",
+      "iataDesignator": "YP",
+      "prefixCode": "350",
+      "icaoCode": "APZ",
+      "country": "Korea, Republic of"
+    },
+    {
+      "name": "Air Senegal",
+      "iataDesignator": "HC",
+      "prefixCode": "490",
+      "icaoCode": "SZN",
+      "country": "Senegal"
+    },
+    {
+      "name": "Air Serbia",
+      "iataDesignator": "JU",
+      "prefixCode": "115",
+      "icaoCode": "ASL",
+      "country": "Serbia"
+    },
+    {
+      "name": "Air Seychelles",
+      "iataDesignator": "HM",
+      "prefixCode": "061",
+      "icaoCode": "SEY",
+      "country": "Seychelles"
+    },
+    {
+      "name": "Air Tahiti",
+      "iataDesignator": "VT",
+      "prefixCode": "135",
+      "icaoCode": "VTA",
+      "country": "French Polynesia"
+    },
+    {
+      "name": "Air Tahiti Nui",
+      "iataDesignator": "TN",
+      "prefixCode": "244",
+      "icaoCode": "THT",
+      "country": "French Polynesia"
+    },
+    {
+      "name": "Air Tanzania",
+      "iataDesignator": "TC",
+      "prefixCode": "197",
+      "icaoCode": "ATC",
+      "country": "Tanzania, United Republic of"
+    },
+    {
+      "name": "Air Transat",
+      "iataDesignator": "TS",
+      "prefixCode": "649",
+      "icaoCode": "TSC",
+      "country": "Canada"
+    },
+    {
+      "name": "Air Vanuatu",
+      "iataDesignator": "NF",
+      "prefixCode": "264",
+      "icaoCode": "AVN",
+      "country": "Vanuatu"
+    },
+    {
+      "name": "Aircalin",
+      "iataDesignator": "SB",
+      "prefixCode": "063",
+      "icaoCode": "ACI",
+      "country": "New Caledonia"
+    },
+    {
+      "name": "Airhub Airlines",
+      "iataDesignator": "RE",
+      "prefixCode": "521",
+      "icaoCode": "GJM",
+      "country": "Malta"
+    },
+    {
+      "name": "Airline GEO SKY",
+      "iataDesignator": "D4",
+      "prefixCode": "330",
+      "icaoCode": "GEL",
+      "country": "Georgia"
+    },
+    {
+      "name": "Airlink",
+      "iataDesignator": "4Z",
+      "prefixCode": "749",
+      "icaoCode": "LNK",
+      "country": "South Africa"
+    },
+    {
+      "name": "AIRZETA",
+      "iataDesignator": "KJ",
+      "prefixCode": "994",
+      "icaoCode": "AIH",
+      "country": "Korea, Republic of"
+    },
+    {
+      "name": "AJet",
+      "iataDesignator": "VF",
+      "prefixCode": "204",
+      "icaoCode": "TKJ",
+      "country": "Türkiye"
+    },
+    {
+      "name": "Akasa Air",
+      "iataDesignator": "QP",
+      "prefixCode": "516",
+      "icaoCode": "AKJ",
+      "country": "India"
+    },
+    {
+      "name": "Alaska Airlines",
+      "iataDesignator": "AS",
+      "prefixCode": "027",
+      "icaoCode": "ASA",
+      "country": "United States"
+    },
+    {
+      "name": "Albastar",
+      "iataDesignator": "AP",
+      "prefixCode": "",
+      "icaoCode": "LAV",
+      "country": "Spain"
+    },
+    {
+      "name": "AlMasria Universal Airlines",
+      "iataDesignator": "UJ",
+      "prefixCode": "110",
+      "icaoCode": "LMU",
+      "country": "Egypt"
+    },
+    {
+      "name": "Amelia",
+      "iataDesignator": "8R",
+      "prefixCode": "948",
+      "icaoCode": "AIA",
+      "country": "France"
+    },
+    {
+      "name": "American Airlines",
+      "iataDesignator": "AA",
+      "prefixCode": "001",
+      "icaoCode": "AAL",
+      "country": "United States"
+    },
+    {
+      "name": "ANA",
+      "iataDesignator": "NH",
+      "prefixCode": "205",
+      "icaoCode": "ANA",
+      "country": "Japan"
+    },
+    {
+      "name": "APG Airlines",
+      "iataDesignator": "GP",
+      "prefixCode": "275",
+      "icaoCode": "RIV",
+      "country": "France"
+    },
+    {
+      "name": "Arajet",
+      "iataDesignator": "DM",
+      "prefixCode": "181",
+      "icaoCode": "DWI",
+      "country": "Dominican Republic"
+    },
+    {
+      "name": "Arkia Israeli Airlines",
+      "iataDesignator": "IZ",
+      "prefixCode": "238",
+      "icaoCode": "AIZ",
+      "country": "Israel"
+    },
+    {
+      "name": "Asiana Airlines",
+      "iataDesignator": "OZ",
+      "prefixCode": "988",
+      "icaoCode": "AAR",
+      "country": "Korea, Republic of"
+    },
+    {
+      "name": "ASKY",
+      "iataDesignator": "KP",
+      "prefixCode": "032",
+      "icaoCode": "SKK",
+      "country": "Togo"
+    },
+    {
+      "name": "ASL Airlines Belgium",
+      "iataDesignator": "3V",
+      "prefixCode": "756",
+      "icaoCode": "TAY",
+      "country": "Belgium"
+    },
+    {
+      "name": "ASL Airlines France",
+      "iataDesignator": "5O",
+      "prefixCode": "558",
+      "icaoCode": "FPO",
+      "country": "France"
+    },
+    {
+      "name": "ASL Airlines Ireland",
+      "iataDesignator": "5H",
+      "prefixCode": "914",
+      "icaoCode": "ABR",
+      "country": "Ireland"
+    },
+    {
+      "name": "Atlantic Airways",
+      "iataDesignator": "RC",
+      "prefixCode": "767",
+      "icaoCode": "FLI",
+      "country": "Faroe Islands"
+    },
+    {
+      "name": "Atlas Air",
+      "iataDesignator": "5Y",
+      "prefixCode": "369",
+      "icaoCode": "GTI",
+      "country": "United States"
+    },
+    {
+      "name": "Austrian",
+      "iataDesignator": "OS",
+      "prefixCode": "257",
+      "icaoCode": "AUA",
+      "country": "Austria"
+    },
+    {
+      "name": "Avianca",
+      "iataDesignator": "AV",
+      "prefixCode": "134",
+      "icaoCode": "AVA",
+      "country": "Colombia"
+    },
+    {
+      "name": "Avianca Costa Rica",
+      "iataDesignator": "LR",
+      "prefixCode": "133",
+      "icaoCode": "LRC",
+      "country": "Costa Rica"
+    },
+    {
+      "name": "Avianca Ecuador",
+      "iataDesignator": "2K",
+      "prefixCode": "547",
+      "icaoCode": "GLG",
+      "country": "Ecuador"
+    },
+    {
+      "name": "Avion Express",
+      "iataDesignator": "X9",
+      "prefixCode": "",
+      "icaoCode": "NVD",
+      "country": "Lithuania"
+    },
+    {
+      "name": "Avion Express Malta",
+      "iataDesignator": "4X",
+      "prefixCode": "",
+      "icaoCode": "MLH",
+      "country": "Malta"
+    },
+    {
+      "name": "Azerbaijan Airlines",
+      "iataDesignator": "J2",
+      "prefixCode": "771",
+      "icaoCode": "AHY",
+      "country": "Azerbaijan"
+    },
+    {
+      "name": "Azores Airlines",
+      "iataDesignator": "S4",
+      "prefixCode": "331",
+      "icaoCode": "RZO",
+      "country": "Portugal"
+    },
+    {
+      "name": "Azul Brazilian Airlines",
+      "iataDesignator": "AD",
+      "prefixCode": "577",
+      "icaoCode": "AZU",
+      "country": "Brazil"
+    },
+    {
+      "name": "Badr Airlines",
+      "iataDesignator": "J4",
+      "prefixCode": "367",
+      "icaoCode": "BDR",
+      "country": "Sudan"
+    },
+    {
+      "name": "Bahamasair",
+      "iataDesignator": "UP",
+      "prefixCode": "111",
+      "icaoCode": "BHS",
+      "country": "Bahamas"
+    },
+    {
+      "name": "Bamboo Airways",
+      "iataDesignator": "QH",
+      "prefixCode": "926",
+      "icaoCode": "BAV",
+      "country": "Vietnam"
+    },
+    {
+      "name": "Bangkok Airways",
+      "iataDesignator": "PG",
+      "prefixCode": "829",
+      "icaoCode": "BKP",
+      "country": "Thailand"
+    },
+    {
+      "name": "Batik Air",
+      "iataDesignator": "ID",
+      "prefixCode": "938",
+      "icaoCode": "BTK",
+      "country": "Indonesia"
+    },
+    {
+      "name": "Batik Air Malaysia",
+      "iataDesignator": "OD",
+      "prefixCode": "816",
+      "icaoCode": "MXD",
+      "country": "Malaysia"
+    },
+    {
+      "name": "BBN Airlines",
+      "iataDesignator": "B5",
+      "prefixCode": "386",
+      "icaoCode": "BBT",
+      "country": "Türkiye"
+    },
+    {
+      "name": "Belavia Belarusian Airlines",
+      "iataDesignator": "B2",
+      "prefixCode": "",
+      "icaoCode": "BRU",
+      "country": "Belarus"
+    },
+    {
+      "name": "Biman Bangladesh Airlines",
+      "iataDesignator": "BG",
+      "prefixCode": "997",
+      "icaoCode": "BBC",
+      "country": "Bangladesh"
+    },
+    {
+      "name": "Binter Canarias",
+      "iataDesignator": "NT",
+      "prefixCode": "474",
+      "icaoCode": "IBB",
+      "country": "Spain"
+    },
+    {
+      "name": "Blue Bird Airways",
+      "iataDesignator": "BZ",
+      "prefixCode": "404",
+      "icaoCode": "BBG",
+      "country": "Greece"
+    },
+    {
+      "name": "BoA Boliviana de Aviacion",
+      "iataDesignator": "OB",
+      "prefixCode": "930",
+      "icaoCode": "BOV",
+      "country": "Bolivia"
+    },
+    {
+      "name": "Braathens Regional Airways",
+      "iataDesignator": "TF*",
+      "prefixCode": "276",
+      "icaoCode": "BRX",
+      "country": "Sweden"
+    },
+    {
+      "name": "British Airways",
+      "iataDesignator": "BA",
+      "prefixCode": "125",
+      "icaoCode": "BAW",
+      "country": "United Kingdom"
+    },
+    {
+      "name": "Brussels Airlines",
+      "iataDesignator": "SN",
+      "prefixCode": "082",
+      "icaoCode": "BEL",
+      "country": "Belgium"
+    },
+    {
+      "name": "Bulgaria Air",
+      "iataDesignator": "FB",
+      "prefixCode": "623",
+      "icaoCode": "LZB",
+      "country": "Bulgaria"
+    },
+    {
+      "name": "Camair-Co",
+      "iataDesignator": "QC",
+      "prefixCode": "040",
+      "icaoCode": "CRC",
+      "country": "Cameroon"
+    },
+    {
+      "name": "Capital Airlines",
+      "iataDesignator": "JD",
+      "prefixCode": "898",
+      "icaoCode": "CBJ",
+      "country": "China (People's Republic of)"
+    },
+    {
+      "name": "Cargojet Airways",
+      "iataDesignator": "W8",
+      "prefixCode": "489",
+      "icaoCode": "CJT",
+      "country": "Canada"
+    },
+    {
+      "name": "Cargolux",
+      "iataDesignator": "CV",
+      "prefixCode": "172",
+      "icaoCode": "CLX",
+      "country": "Luxembourg"
+    },
+    {
+      "name": "Caribbean Airlines",
+      "iataDesignator": "BW",
+      "prefixCode": "106",
+      "icaoCode": "BWA",
+      "country": "Trinidad and Tobago"
+    },
+    {
+      "name": "Carpatair",
+      "iataDesignator": "V3",
+      "prefixCode": "021",
+      "icaoCode": "KRP",
+      "country": "Romania"
+    },
+    {
+      "name": "Cathay Pacific",
+      "iataDesignator": "CX",
+      "prefixCode": "160",
+      "icaoCode": "CPA",
+      "country": "Hong Kong (SAR), China"
+    },
+    {
+      "name": "Cebu Pacific",
+      "iataDesignator": "5J",
+      "prefixCode": "203",
+      "icaoCode": "CEB",
+      "country": "Philippines"
+    },
+    {
+      "name": "CemAir",
+      "iataDesignator": "5Z",
+      "prefixCode": "225",
+      "icaoCode": "KEM",
+      "country": "South Africa"
+    },
+    {
+      "name": "Chair Airlines",
+      "iataDesignator": "CS",
+      "prefixCode": "581",
+      "icaoCode": "CSW",
+      "country": "Switzerland"
+    },
+    {
+      "name": "Chalair",
+      "iataDesignator": "CE",
+      "prefixCode": "980",
+      "icaoCode": "CLG",
+      "country": "France"
+    },
+    {
+      "name": "Challenge Airlines (BE)",
+      "iataDesignator": "X7",
+      "prefixCode": "744",
+      "icaoCode": "CHG",
+      "country": "Belgium"
+    },
+    {
+      "name": "Challenge Airlines (IL)",
+      "iataDesignator": "5C",
+      "prefixCode": "700",
+      "icaoCode": "ICL",
+      "country": "Israel"
+    },
+    {
+      "name": "Chengdu Airlines",
+      "iataDesignator": "EU",
+      "prefixCode": "811",
+      "icaoCode": "UEA",
+      "country": "China (People's Republic of)"
+    },
+    {
+      "name": "China Airlines",
+      "iataDesignator": "CI",
+      "prefixCode": "297",
+      "icaoCode": "CAL",
+      "country": "Chinese Taipei"
+    },
+    {
+      "name": "China Cargo Airlines",
+      "iataDesignator": "CK",
+      "prefixCode": "112",
+      "icaoCode": "CKK",
+      "country": "China (People's Republic of)"
+    },
+    {
+      "name": "China Eastern",
+      "iataDesignator": "MU",
+      "prefixCode": "781",
+      "icaoCode": "CES",
+      "country": "China (People's Republic of)"
+    },
+    {
+      "name": "China Express Airlines",
+      "iataDesignator": "G5",
+      "prefixCode": "987",
+      "icaoCode": "HXA",
+      "country": "China (People's Republic of)"
+    },
+    {
+      "name": "China Postal Airlines",
+      "iataDesignator": "CF",
+      "prefixCode": "804",
+      "icaoCode": "CYZ",
+      "country": "China (People's Republic of)"
+    },
+    {
+      "name": "China Southern Airlines",
+      "iataDesignator": "CZ",
+      "prefixCode": "784",
+      "icaoCode": "CSN",
+      "country": "China (People's Republic of)"
+    },
+    {
+      "name": "China United Airlines",
+      "iataDesignator": "KN",
+      "prefixCode": "822",
+      "icaoCode": "CUA",
+      "country": "China (People's Republic of)"
+    },
+    {
+      "name": "Citilink",
+      "iataDesignator": "QG",
+      "prefixCode": "629",
+      "icaoCode": "CTV",
+      "country": "Indonesia"
+    },
+    {
+      "name": "CityJet",
+      "iataDesignator": "WX",
+      "prefixCode": "689",
+      "icaoCode": "BCY",
+      "country": "Ireland"
+    },
+    {
+      "name": "Clic Air",
+      "iataDesignator": "VE",
+      "prefixCode": "246",
+      "icaoCode": "EFY",
+      "country": "Colombia"
+    },
+    {
+      "name": "Condor",
+      "iataDesignator": "DE",
+      "prefixCode": "881",
+      "icaoCode": "CFG",
+      "country": "Germany"
+    },
+    {
+      "name": "COPA Airlines",
+      "iataDesignator": "CM",
+      "prefixCode": "230",
+      "icaoCode": "CMP",
+      "country": "Panama"
+    },
+    {
+      "name": "Corendon Airlines",
+      "iataDesignator": "XC",
+      "prefixCode": "395",
+      "icaoCode": "CAI",
+      "country": "Türkiye"
+    },
+    {
+      "name": "Corsair International",
+      "iataDesignator": "SS",
+      "prefixCode": "923",
+      "icaoCode": "CRL",
+      "country": "France"
+    },
+    {
+      "name": "Croatia Airlines",
+      "iataDesignator": "OU",
+      "prefixCode": "831",
+      "icaoCode": "CTN",
+      "country": "Croatia"
+    },
+    {
+      "name": "Cubana",
+      "iataDesignator": "CU",
+      "prefixCode": "136",
+      "icaoCode": "CUB",
+      "country": "Cuba"
+    },
+    {
+      "name": "Cyprus Airways",
+      "iataDesignator": "CY",
+      "prefixCode": "078",
+      "icaoCode": "CYP",
+      "country": "Cyprus"
+    },
+    {
+      "name": "DAN AIR",
+      "iataDesignator": "DN",
+      "prefixCode": "",
+      "icaoCode": "DNA",
+      "country": "Romania"
+    },
+    {
+      "name": "DAT (LT)",
+      "iataDesignator": "R6*",
+      "prefixCode": "",
+      "icaoCode": "DNU",
+      "country": "Lithuania"
+    },
+    {
+      "name": "Delta Air Lines",
+      "iataDesignator": "DL",
+      "prefixCode": "006",
+      "icaoCode": "DAL",
+      "country": "United States"
+    },
+    {
+      "name": "DHL Air",
+      "iataDesignator": "D0",
+      "prefixCode": "936",
+      "icaoCode": "DHK",
+      "country": "United Kingdom"
+    },
+    {
+      "name": "DHL Air (Bahrain)",
+      "iataDesignator": "ES*",
+      "prefixCode": "155",
+      "icaoCode": "DHX",
+      "country": "Bahrain"
+    },
+    {
+      "name": "Discover Airlines",
+      "iataDesignator": "4Y",
+      "prefixCode": "693",
+      "icaoCode": "OCN",
+      "country": "Germany"
+    },
+    {
+      "name": "Domestic Airlines",
+      "iataDesignator": "SF",
+      "prefixCode": "515",
+      "icaoCode": "DTH",
+      "country": "Algeria"
+    },
+    {
+      "name": "Eastar Jet",
+      "iataDesignator": "ZE",
+      "prefixCode": "839",
+      "icaoCode": "ESR",
+      "country": "Korea, Republic of"
+    },
+    {
+      "name": "Eastern Airlines",
+      "iataDesignator": "2D*",
+      "prefixCode": "",
+      "icaoCode": "",
+      "country": "United States"
+    },
+    {
+      "name": "Edelweiss Air",
+      "iataDesignator": "WK",
+      "prefixCode": "945",
+      "icaoCode": "EDW",
+      "country": "Switzerland"
+    },
+    {
+      "name": "Egyptair",
+      "iataDesignator": "MS",
+      "prefixCode": "077",
+      "icaoCode": "MSR",
+      "country": "Egypt"
+    },
+    {
+      "name": "EL AL",
+      "iataDesignator": "LY",
+      "prefixCode": "114",
+      "icaoCode": "ELY",
+      "country": "Israel"
+    },
+    {
+      "name": "Electra Airways",
+      "iataDesignator": "3E",
+      "prefixCode": "",
+      "icaoCode": "EAF",
+      "country": "Bulgaria"
+    },
+    {
+      "name": "Emirates",
+      "iataDesignator": "EK",
+      "prefixCode": "176",
+      "icaoCode": "UAE",
+      "country": "United Arab Emirates"
+    },
+    {
+      "name": "Estafeta Cargo",
+      "iataDesignator": "E7",
+      "prefixCode": "355",
+      "icaoCode": "ESF",
+      "country": "Mexico"
+    },
+    {
+      "name": "Ethiopian Airlines",
+      "iataDesignator": "ET",
+      "prefixCode": "071",
+      "icaoCode": "ETH",
+      "country": "Ethiopia"
+    },
+    {
+      "name": "Etihad Airways",
+      "iataDesignator": "EY",
+      "prefixCode": "607",
+      "icaoCode": "ETD",
+      "country": "United Arab Emirates"
+    },
+    {
+      "name": "EuroAtlantic Airways",
+      "iataDesignator": "YU",
+      "prefixCode": "551",
+      "icaoCode": "MMZ",
+      "country": "Portugal"
+    },
+    {
+      "name": "European Air Transport",
+      "iataDesignator": "QY",
+      "prefixCode": "615",
+      "icaoCode": "BCS",
+      "country": "Germany"
+    },
+    {
+      "name": "Eurowings",
+      "iataDesignator": "EW",
+      "prefixCode": "104",
+      "icaoCode": "EWG",
+      "country": "Germany"
+    },
+    {
+      "name": "EVA Air",
+      "iataDesignator": "BR",
+      "prefixCode": "695",
+      "icaoCode": "EVA",
+      "country": "Chinese Taipei"
+    },
+    {
+      "name": "Fastjet Zimbabwe",
+      "iataDesignator": "FN",
+      "prefixCode": "334",
+      "icaoCode": "FJW",
+      "country": "Zimbabwe"
+    },
+    {
+      "name": "FedEx Express",
+      "iataDesignator": "FX",
+      "prefixCode": "023",
+      "icaoCode": "FDX",
+      "country": "United States"
+    },
+    {
+      "name": "Fiji Airways",
+      "iataDesignator": "FJ",
+      "prefixCode": "260",
+      "icaoCode": "FJI",
+      "country": "Fiji"
+    },
+    {
+      "name": "Finnair",
+      "iataDesignator": "AY",
+      "prefixCode": "105",
+      "icaoCode": "FIN",
+      "country": "Finland"
+    },
+    {
+      "name": "FlexFlight",
+      "iataDesignator": "W2",
+      "prefixCode": "365",
+      "icaoCode": "FXT",
+      "country": "Denmark"
+    },
+    {
+      "name": "Fly Baghdad",
+      "iataDesignator": "IF",
+      "prefixCode": "017",
+      "icaoCode": "FBA",
+      "country": "Iraq"
+    },
+    {
+      "name": "Fly Namibia",
+      "iataDesignator": "WV",
+      "prefixCode": "",
+      "icaoCode": "FLN",
+      "country": "Namibia"
+    },
+    {
+      "name": "Fly2Sky",
+      "iataDesignator": "F6*",
+      "prefixCode": "",
+      "icaoCode": "VAW",
+      "country": "Bulgaria"
+    },
+    {
+      "name": "flyadeal",
+      "iataDesignator": "F3",
+      "prefixCode": "560",
+      "icaoCode": "FAD",
+      "country": "Saudi Arabia"
+    },
+    {
+      "name": "flydubai",
+      "iataDesignator": "FZ",
+      "prefixCode": "141",
+      "icaoCode": "FDB",
+      "country": "United Arab Emirates"
+    },
+    {
+      "name": "FlyGabon",
+      "iataDesignator": "J7",
+      "prefixCode": "277",
+      "icaoCode": "ABS",
+      "country": "Gabon"
+    },
+    {
+      "name": "Flynas",
+      "iataDesignator": "XY",
+      "prefixCode": "593",
+      "icaoCode": "KNE",
+      "country": "Saudi Arabia"
+    },
+    {
+      "name": "FLYONE",
+      "iataDesignator": "5F",
+      "prefixCode": "130",
+      "icaoCode": "FIA",
+      "country": "Moldova, Republic of"
+    },
+    {
+      "name": "Freebird Airlines",
+      "iataDesignator": "FH",
+      "prefixCode": "None",
+      "icaoCode": "FHY",
+      "country": "Türkiye"
+    },
+    {
+      "name": "French Bee",
+      "iataDesignator": "BF",
+      "prefixCode": "396",
+      "icaoCode": "FBU",
+      "country": "France"
+    },
+    {
+      "name": "Frontier Airlines",
+      "iataDesignator": "F9",
+      "prefixCode": "422",
+      "icaoCode": "FFT",
+      "country": "United States"
+    },
+    {
+      "name": "Fuzhou Airlines",
+      "iataDesignator": "FU",
+      "prefixCode": "666",
+      "icaoCode": "FZA",
+      "country": "China (People's Republic of)"
+    },
+    {
+      "name": "Garuda Indonesia",
+      "iataDesignator": "GA",
+      "prefixCode": "126",
+      "icaoCode": "GIA",
+      "country": "Indonesia"
+    },
+    {
+      "name": "Georgian Airways",
+      "iataDesignator": "A9",
+      "prefixCode": "606",
+      "icaoCode": "TGZ",
+      "country": "Georgia"
+    },
+    {
+      "name": "German Airways",
+      "iataDesignator": "ZQ",
+      "prefixCode": "944",
+      "icaoCode": "GER",
+      "country": "Germany"
+    },
+    {
+      "name": "GetJet Airlines",
+      "iataDesignator": "GW*",
+      "prefixCode": "059",
+      "icaoCode": "GJT",
+      "country": "Lithuania"
+    },
+    {
+      "name": "Global Airways and Lift",
+      "iataDesignator": "GE",
+      "prefixCode": "698",
+      "icaoCode": "GBB",
+      "country": "South Africa"
+    },
+    {
+      "name": "GlobalX",
+      "iataDesignator": "G6",
+      "prefixCode": "402",
+      "icaoCode": "GXA",
+      "country": "United States"
+    },
+    {
+      "name": "GOL Linhas Aereas",
+      "iataDesignator": "G3",
+      "prefixCode": "127",
+      "icaoCode": "GLO",
+      "country": "Brazil"
+    },
+    {
+      "name": "Greater Bay Airlines",
+      "iataDesignator": "HB",
+      "prefixCode": "283",
+      "icaoCode": "HGB",
+      "country": "Hong Kong (SAR), China"
+    },
+    {
+      "name": "Gulf Air",
+      "iataDesignator": "GF",
+      "prefixCode": "072",
+      "icaoCode": "GFA",
+      "country": "Bahrain"
+    },
+    {
+      "name": "GX Airlines",
+      "iataDesignator": "GX",
+      "prefixCode": "872",
+      "icaoCode": "CBG",
+      "country": "China (People's Republic of)"
+    },
+    {
+      "name": "Hahnair",
+      "iataDesignator": "HR*",
+      "prefixCode": "169",
+      "icaoCode": "HHN",
+      "country": "Germany"
+    },
+    {
+      "name": "Hainan Airlines",
+      "iataDesignator": "HU",
+      "prefixCode": "880",
+      "icaoCode": "CHH",
+      "country": "China (People's Republic of)"
+    },
+    {
+      "name": "Hawaiian Airlines",
+      "iataDesignator": "HA",
+      "prefixCode": "173",
+      "icaoCode": "HAL",
+      "country": "United States"
+    },
+    {
+      "name": "Hebei Airlines",
+      "iataDesignator": "NS",
+      "prefixCode": "836",
+      "icaoCode": "HBH",
+      "country": "China (People's Republic of)"
+    },
+    {
+      "name": "Hello Jets",
+      "iataDesignator": "H3",
+      "prefixCode": "",
+      "icaoCode": "HLJ",
+      "country": "Romania"
+    },
+    {
+      "name": "Heston Airlines",
+      "iataDesignator": "HN*",
+      "prefixCode": "",
+      "icaoCode": "HST",
+      "country": "Lithuania"
+    },
+    {
+      "name": "Hi Fly",
+      "iataDesignator": "5K*",
+      "prefixCode": "",
+      "icaoCode": "HFY",
+      "country": "Portugal"
+    },
+    {
+      "name": "Hi Fly (Malta)",
+      "iataDesignator": "3L*",
+      "prefixCode": "",
+      "icaoCode": "HFM",
+      "country": "Malta"
+    },
+    {
+      "name": "Himalaya Airlines",
+      "iataDesignator": "H9",
+      "prefixCode": "769",
+      "icaoCode": "HIM",
+      "country": "Nepal"
+    },
+    {
+      "name": "Hong Kong Air Cargo",
+      "iataDesignator": "RH",
+      "prefixCode": "828",
+      "icaoCode": "HKC",
+      "country": "Hong Kong (SAR), China"
+    },
+    {
+      "name": "Hong Kong Airlines",
+      "iataDesignator": "HX",
+      "prefixCode": "851",
+      "icaoCode": "CRK",
+      "country": "Hong Kong (SAR), China"
+    },
+    {
+      "name": "Hong Kong Express Airways",
+      "iataDesignator": "UO",
+      "prefixCode": "128",
+      "icaoCode": "HKE",
+      "country": "Hong Kong (SAR), China"
+    },
+    {
+      "name": "IBERIA",
+      "iataDesignator": "IB",
+      "prefixCode": "075",
+      "icaoCode": "IBE",
+      "country": "Spain"
+    },
+    {
+      "name": "Iberojet",
+      "iataDesignator": "6O",
+      "prefixCode": "182",
+      "icaoCode": "OBS",
+      "country": "Portugal"
+    },
+    {
+      "name": "Iberojet Airlines",
+      "iataDesignator": "E9",
+      "prefixCode": "783",
+      "icaoCode": "EVE",
+      "country": "Spain"
+    },
+    {
+      "name": "Ibom Air",
+      "iataDesignator": "QI",
+      "prefixCode": "",
+      "icaoCode": "IAN",
+      "country": "Nigeria"
+    },
+    {
+      "name": "Icelandair",
+      "iataDesignator": "FI",
+      "prefixCode": "108",
+      "icaoCode": "ICE",
+      "country": "Iceland"
+    },
+    {
+      "name": "Ikar",
+      "iataDesignator": "EO",
+      "prefixCode": "770",
+      "icaoCode": "KAR",
+      "country": "Russian Federation"
+    },
+    {
+      "name": "IndiGo",
+      "iataDesignator": "6E",
+      "prefixCode": "312",
+      "icaoCode": "IGO",
+      "country": "India"
+    },
+    {
+      "name": "Iran Air",
+      "iataDesignator": "IR",
+      "prefixCode": "096",
+      "icaoCode": "IRA",
+      "country": "Iran, Islamic Republic of"
+    },
+    {
+      "name": "Iran Airtour Airline",
+      "iataDesignator": "B9",
+      "prefixCode": "491",
+      "icaoCode": "IRB",
+      "country": "Iran, Islamic Republic of"
+    },
+    {
+      "name": "Iran Aseman Airlines",
+      "iataDesignator": "EP",
+      "prefixCode": "815",
+      "icaoCode": "IRC",
+      "country": "Iran, Islamic Republic of"
+    },
+    {
+      "name": "Israir",
+      "iataDesignator": "6H",
+      "prefixCode": "818",
+      "icaoCode": "ISR",
+      "country": "Israel"
+    },
+    {
+      "name": "ITA Airways",
+      "iataDesignator": "AZ",
+      "prefixCode": "055",
+      "icaoCode": "ITY",
+      "country": "Italy"
+    },
+    {
+      "name": "Japan Airlines",
+      "iataDesignator": "JL",
+      "prefixCode": "131",
+      "icaoCode": "JAL",
+      "country": "Japan"
+    },
+    {
+      "name": "Japan Transocean Air",
+      "iataDesignator": "NU",
+      "prefixCode": "353",
+      "icaoCode": "JTA",
+      "country": "Japan"
+    },
+    {
+      "name": "Jazeera Airways",
+      "iataDesignator": "J9",
+      "prefixCode": "486",
+      "icaoCode": "JZR",
+      "country": "Kuwait"
+    },
+    {
+      "name": "JD Airlines",
+      "iataDesignator": "JG",
+      "prefixCode": "619",
+      "icaoCode": "JDL",
+      "country": "China (People's Republic of)"
+    },
+    {
+      "name": "Jeju Air",
+      "iataDesignator": "7C",
+      "prefixCode": "806",
+      "icaoCode": "JJA",
+      "country": "Korea, Republic of"
+    },
+    {
+      "name": "JetBlue",
+      "iataDesignator": "B6",
+      "prefixCode": "279",
+      "icaoCode": "JBU",
+      "country": "United States"
+    },
+    {
+      "name": "JetSMART Argentina",
+      "iataDesignator": "WJ",
+      "prefixCode": "974",
+      "icaoCode": "JES",
+      "country": "Argentina"
+    },
+    {
+      "name": "JetSMART Chile",
+      "iataDesignator": "JA",
+      "prefixCode": "973",
+      "icaoCode": "JAT",
+      "country": "Chile"
+    },
+    {
+      "name": "JetSMART Colombia",
+      "iataDesignator": "J6",
+      "prefixCode": "984",
+      "icaoCode": "JEC",
+      "country": "Colombia"
+    },
+    {
+      "name": "JetSMART Peru",
+      "iataDesignator": "JZ",
+      "prefixCode": "981",
+      "icaoCode": "JAP",
+      "country": "Peru"
+    },
+    {
+      "name": "Jettime",
+      "iataDesignator": "JP*",
+      "prefixCode": "",
+      "icaoCode": "JTD",
+      "country": "Denmark"
+    },
+    {
+      "name": "Jin Air",
+      "iataDesignator": "LJ",
+      "prefixCode": "718",
+      "icaoCode": "JNA",
+      "country": "Korea, Republic of"
+    },
+    {
+      "name": "Jordan Aviation",
+      "iataDesignator": "R5",
+      "prefixCode": "151",
+      "icaoCode": "JAV",
+      "country": "Jordan"
+    },
+    {
+      "name": "Juneyao Airlines",
+      "iataDesignator": "HO",
+      "prefixCode": "018",
+      "icaoCode": "DKH",
+      "country": "China (People's Republic of)"
+    },
+    {
+      "name": "Kam Air",
+      "iataDesignator": "RQ",
+      "prefixCode": "384",
+      "icaoCode": "KMF",
+      "country": "Afghanistan"
+    },
+    {
+      "name": "Kenya Airways",
+      "iataDesignator": "KQ",
+      "prefixCode": "706",
+      "icaoCode": "KQA",
+      "country": "Kenya"
+    },
+    {
+      "name": "KlasJet",
+      "iataDesignator": "KJ*",
+      "prefixCode": "",
+      "icaoCode": "KLJ",
+      "country": "Lithuania"
+    },
+    {
+      "name": "KLM",
+      "iataDesignator": "KL",
+      "prefixCode": "074",
+      "icaoCode": "KLM",
+      "country": "Netherlands"
+    },
+    {
+      "name": "KM Malta Airlines",
+      "iataDesignator": "KM",
+      "prefixCode": "643",
+      "icaoCode": "KMM",
+      "country": "Malta"
+    },
+    {
+      "name": "Korean Air",
+      "iataDesignator": "KE",
+      "prefixCode": "180",
+      "icaoCode": "KAL",
+      "country": "Korea, Republic of"
+    },
+    {
+      "name": "Kunming Airlines",
+      "iataDesignator": "KY",
+      "prefixCode": "833",
+      "icaoCode": "KNA",
+      "country": "China (People's Republic of)"
+    },
+    {
+      "name": "Kuwait Airways",
+      "iataDesignator": "KU",
+      "prefixCode": "229",
+      "icaoCode": "KAC",
+      "country": "Kuwait"
+    },
+    {
+      "name": "La Compagnie",
+      "iataDesignator": "B0",
+      "prefixCode": "002",
+      "icaoCode": "DJT",
+      "country": "France"
+    },
+    {
+      "name": "LAM",
+      "iataDesignator": "TM",
+      "prefixCode": "068",
+      "icaoCode": "LAM",
+      "country": "Mozambique"
+    },
+    {
+      "name": "Lao Airlines",
+      "iataDesignator": "QV",
+      "prefixCode": "627",
+      "icaoCode": "LAO",
+      "country": "Lao PDR"
+    },
+    {
+      "name": "LATAM Airlines Brasil",
+      "iataDesignator": "JJ",
+      "prefixCode": "957",
+      "icaoCode": "TAM",
+      "country": "Brazil"
+    },
+    {
+      "name": "LATAM Airlines Colombia",
+      "iataDesignator": "4C",
+      "prefixCode": "035",
+      "icaoCode": "ARE",
+      "country": "Colombia"
+    },
+    {
+      "name": "LATAM Airlines Ecuador",
+      "iataDesignator": "XL",
+      "prefixCode": "462",
+      "icaoCode": "LNE",
+      "country": "Ecuador"
+    },
+    {
+      "name": "LATAM Airlines Group",
+      "iataDesignator": "LA",
+      "prefixCode": "045",
+      "icaoCode": "LAN",
+      "country": "Chile"
+    },
+    {
+      "name": "LATAM Airlines Paraguay",
+      "iataDesignator": "PZ",
+      "prefixCode": "692",
+      "icaoCode": "LAP",
+      "country": "Paraguay"
+    },
+    {
+      "name": "LATAM Airlines Peru",
+      "iataDesignator": "LP",
+      "prefixCode": "544",
+      "icaoCode": "LPE",
+      "country": "Peru"
+    },
+    {
+      "name": "LATAM Cargo Brasil",
+      "iataDesignator": "M3",
+      "prefixCode": "549",
+      "icaoCode": "LTG",
+      "country": "Brazil"
+    },
+    {
+      "name": "LATAM Cargo Chile",
+      "iataDesignator": "UC",
+      "prefixCode": "145",
+      "icaoCode": "LCO",
+      "country": "Chile"
+    },
+    {
+      "name": "Link Airways",
+      "iataDesignator": "FC",
+      "prefixCode": "441",
+      "icaoCode": "",
+      "country": "Australia"
+    },
+    {
+      "name": "Lion Air",
+      "iataDesignator": "JT",
+      "prefixCode": "990",
+      "icaoCode": "LNI",
+      "country": "Indonesia"
+    },
+    {
+      "name": "Loganair",
+      "iataDesignator": "LM",
+      "prefixCode": "682",
+      "icaoCode": "LOG",
+      "country": "United Kingdom"
+    },
+    {
+      "name": "Loong Air",
+      "iataDesignator": "GJ",
+      "prefixCode": "891",
+      "icaoCode": "CDC",
+      "country": "China (People's Republic of)"
+    },
+    {
+      "name": "LOT Polish Airlines",
+      "iataDesignator": "LO",
+      "prefixCode": "080",
+      "icaoCode": "LOT",
+      "country": "Poland"
+    },
+    {
+      "name": "Lucky Air",
+      "iataDesignator": "8L",
+      "prefixCode": "859",
+      "icaoCode": "LKE",
+      "country": "China (People's Republic of)"
+    },
+    {
+      "name": "Lufthansa",
+      "iataDesignator": "LH",
+      "prefixCode": "220",
+      "icaoCode": "DLH",
+      "country": "Germany"
+    },
+    {
+      "name": "Lufthansa Cargo",
+      "iataDesignator": "LH",
+      "prefixCode": "020",
+      "icaoCode": "GEC",
+      "country": "Germany"
+    },
+    {
+      "name": "Lufthansa City Airlines",
+      "iataDesignator": "VL",
+      "prefixCode": "448",
+      "icaoCode": "LHX",
+      "country": "Germany"
+    },
+    {
+      "name": "Lufthansa CityLine",
+      "iataDesignator": "CL",
+      "prefixCode": "683",
+      "icaoCode": "CLH",
+      "country": "Germany"
+    },
+    {
+      "name": "Luxair",
+      "iataDesignator": "LG",
+      "prefixCode": "149",
+      "icaoCode": "LGL",
+      "country": "Luxembourg"
+    },
+    {
+      "name": "Madagascar Airlines",
+      "iataDesignator": "MD",
+      "prefixCode": "258",
+      "icaoCode": "MGY",
+      "country": "Madagascar"
+    },
+    {
+      "name": "Malaysia Airlines",
+      "iataDesignator": "MH",
+      "prefixCode": "232",
+      "icaoCode": "MAS",
+      "country": "Malaysia"
+    },
+    {
+      "name": "Mandarin Airlines",
+      "iataDesignator": "AE",
+      "prefixCode": "803",
+      "icaoCode": "MDA",
+      "country": "Chinese Taipei"
+    },
+    {
+      "name": "Martinair Cargo",
+      "iataDesignator": "MP",
+      "prefixCode": "129",
+      "icaoCode": "MPH",
+      "country": "Netherlands"
+    },
+    {
+      "name": "MasAir",
+      "iataDesignator": "M7",
+      "prefixCode": "865",
+      "icaoCode": "MAA",
+      "country": "Mexico"
+    },
+    {
+      "name": "Mauritania Airlines International",
+      "iataDesignator": "L6",
+      "prefixCode": "495",
+      "icaoCode": "MAI",
+      "country": "Mauritania"
+    },
+    {
+      "name": "Mavi Gök Airlines (MGA)",
+      "iataDesignator": "4M",
+      "prefixCode": "734",
+      "icaoCode": "MGH",
+      "country": "Türkiye"
+    },
+    {
+      "name": "MEA",
+      "iataDesignator": "ME",
+      "prefixCode": "076",
+      "icaoCode": "MEA",
+      "country": "Lebanon"
+    },
+    {
+      "name": "MIAT Mongolian Airlines",
+      "iataDesignator": "OM",
+      "prefixCode": "289",
+      "icaoCode": "MGL",
+      "country": "Mongolia"
+    },
+    {
+      "name": "MNG Airlines",
+      "iataDesignator": "MB",
+      "prefixCode": "716",
+      "icaoCode": "MNB",
+      "country": "Türkiye"
+    },
+    {
+      "name": "Myanmar Airways International",
+      "iataDesignator": "8M",
+      "prefixCode": "599",
+      "icaoCode": "MMA",
+      "country": "Myanmar"
+    },
+    {
+      "name": "Myanmar National Airlines",
+      "iataDesignator": "UB",
+      "prefixCode": "665",
+      "icaoCode": "UBA",
+      "country": "Myanmar"
+    },
+    {
+      "name": "National Airlines",
+      "iataDesignator": "N8",
+      "prefixCode": "416",
+      "icaoCode": "NCR",
+      "country": "United States"
+    },
+    {
+      "name": "Nauru Airlines",
+      "iataDesignator": "ON",
+      "prefixCode": "123",
+      "icaoCode": "RON",
+      "country": "Australia"
+    },
+    {
+      "name": "Neos",
+      "iataDesignator": "NO",
+      "prefixCode": "703",
+      "icaoCode": "NOS",
+      "country": "Italy"
+    },
+    {
+      "name": "Nesma Airlines",
+      "iataDesignator": "NE",
+      "prefixCode": "477",
+      "icaoCode": "NMA",
+      "country": "Egypt"
+    },
+    {
+      "name": "New Pacific Airlines",
+      "iataDesignator": "7H",
+      "prefixCode": "808",
+      "icaoCode": "RVF",
+      "country": "United States"
+    },
+    {
+      "name": "Nile Air",
+      "iataDesignator": "NP",
+      "prefixCode": "325",
+      "icaoCode": "NIA",
+      "country": "Egypt"
+    },
+    {
+      "name": "Nippon Cargo Airlines",
+      "iataDesignator": "KZ",
+      "prefixCode": "933",
+      "icaoCode": "NCA",
+      "country": "Japan"
+    },
+    {
+      "name": "Nok Air",
+      "iataDesignator": "DD",
+      "prefixCode": "596",
+      "icaoCode": "NOK",
+      "country": "Thailand"
+    },
+    {
+      "name": "NordStar",
+      "iataDesignator": "Y7",
+      "prefixCode": "476",
+      "icaoCode": "TYA",
+      "country": "Russian Federation"
+    },
+    {
+      "name": "Nordwind Airlines",
+      "iataDesignator": "N4",
+      "prefixCode": "216",
+      "icaoCode": "NWS",
+      "country": "Russian Federation"
+    },
+    {
+      "name": "Norra",
+      "iataDesignator": "N7",
+      "prefixCode": "",
+      "icaoCode": "FCM",
+      "country": "Finland"
+    },
+    {
+      "name": "Nouvelair",
+      "iataDesignator": "BJ",
+      "prefixCode": "796",
+      "icaoCode": "LBT",
+      "country": "Tunisia"
+    },
+    {
+      "name": "Okay Airways",
+      "iataDesignator": "BK",
+      "prefixCode": "866",
+      "icaoCode": "OKA",
+      "country": "China (People's Republic of)"
+    },
+    {
+      "name": "Olympic Air",
+      "iataDesignator": "OA",
+      "prefixCode": "050",
+      "icaoCode": "OAL",
+      "country": "Greece"
+    },
+    {
+      "name": "Oman Air",
+      "iataDesignator": "WY",
+      "prefixCode": "910",
+      "icaoCode": "OMA",
+      "country": "Oman"
+    },
+    {
+      "name": "Overland Airways",
+      "iataDesignator": "OF",
+      "prefixCode": "559",
+      "icaoCode": "OLA",
+      "country": "Nigeria"
+    },
+    {
+      "name": "Pakistan International Airlines",
+      "iataDesignator": "PK",
+      "prefixCode": "214",
+      "icaoCode": "PIA",
+      "country": "Pakistan"
+    },
+    {
+      "name": "PAL Express",
+      "iataDesignator": "2P",
+      "prefixCode": "211",
+      "icaoCode": "GAP",
+      "country": "Philippines"
+    },
+    {
+      "name": "Paranair",
+      "iataDesignator": "ZP",
+      "prefixCode": "445",
+      "icaoCode": "AZP",
+      "country": "Paraguay"
+    },
+    {
+      "name": "Pegasus Airlines",
+      "iataDesignator": "PC",
+      "prefixCode": "624",
+      "icaoCode": "PGT",
+      "country": "Türkiye"
+    },
+    {
+      "name": "Petroleum Air Services",
+      "iataDesignator": "UF",
+      "prefixCode": "505",
+      "icaoCode": "PER",
+      "country": "Egypt"
+    },
+    {
+      "name": "PGA-Portugalia Airlines",
+      "iataDesignator": "NI*",
+      "prefixCode": "",
+      "icaoCode": "PGA",
+      "country": "Portugal"
+    },
+    {
+      "name": "Philippine Airlines",
+      "iataDesignator": "PR",
+      "prefixCode": "079",
+      "icaoCode": "PAL",
+      "country": "Philippines"
+    },
+    {
+      "name": "Plus Ultra",
+      "iataDesignator": "PU",
+      "prefixCode": "663",
+      "icaoCode": "PUE",
+      "country": "Spain"
+    },
+    {
+      "name": "Polar Air Cargo",
+      "iataDesignator": "PO",
+      "prefixCode": "403",
+      "icaoCode": "PAC",
+      "country": "United States"
+    },
+    {
+      "name": "PopulAir",
+      "iataDesignator": "HP",
+      "prefixCode": "415",
+      "icaoCode": "APF",
+      "country": "Sweden"
+    },
+    {
+      "name": "Porter Airlines",
+      "iataDesignator": "PD",
+      "prefixCode": "451",
+      "icaoCode": "POE",
+      "country": "Canada"
+    },
+    {
+      "name": "Poste Air Cargo",
+      "iataDesignator": "M4",
+      "prefixCode": "408",
+      "icaoCode": "MSA",
+      "country": "Italy"
+    },
+    {
+      "name": "Precision Air",
+      "iataDesignator": "PW",
+      "prefixCode": "031",
+      "icaoCode": "PRF",
+      "country": "Tanzania, United Republic of"
+    },
+    {
+      "name": "Privilege Style",
+      "iataDesignator": "P6",
+      "prefixCode": "433",
+      "icaoCode": "PVG",
+      "country": "Spain"
+    },
+    {
+      "name": "Proflight Zambia",
+      "iataDesignator": "P0",
+      "prefixCode": "659",
+      "icaoCode": "PFZ",
+      "country": "Zambia"
+    },
+    {
+      "name": "Qantas",
+      "iataDesignator": "QF",
+      "prefixCode": "081",
+      "icaoCode": "QFA",
+      "country": "Australia"
+    },
+    {
+      "name": "Qatar Airways",
+      "iataDesignator": "QR",
+      "prefixCode": "157",
+      "icaoCode": "QTR",
+      "country": "Qatar"
+    },
+    {
+      "name": "Qazaq Air",
+      "iataDesignator": "IQ",
+      "prefixCode": "",
+      "icaoCode": "QAZ",
+      "country": "Kazakhstan"
+    },
+    {
+      "name": "Qingdao Airlines",
+      "iataDesignator": "QW",
+      "prefixCode": "912",
+      "icaoCode": "QDA",
+      "country": "China (People's Republic of)"
+    },
+    {
+      "name": "Red Sea Airlines",
+      "iataDesignator": "4S",
+      "prefixCode": "",
+      "icaoCode": "RSX",
+      "country": "Egypt"
+    },
+    {
+      "name": "Riyadh Air",
+      "iataDesignator": "RX",
+      "prefixCode": "122",
+      "icaoCode": "RXI",
+      "country": "Saudi Arabia"
+    },
+    {
+      "name": "Rossiya Airlines",
+      "iataDesignator": "FV",
+      "prefixCode": "195",
+      "icaoCode": "SDM",
+      "country": "Russian Federation"
+    },
+    {
+      "name": "Royal Air Maroc",
+      "iataDesignator": "AT",
+      "prefixCode": "147",
+      "icaoCode": "RAM",
+      "country": "Morocco"
+    },
+    {
+      "name": "Royal Brunei",
+      "iataDesignator": "BI",
+      "prefixCode": "672",
+      "icaoCode": "RBA",
+      "country": "Brunei Darussalam"
+    },
+    {
+      "name": "Royal Jordanian",
+      "iataDesignator": "RJ",
+      "prefixCode": "512",
+      "icaoCode": "RJA",
+      "country": "Jordan"
+    },
+    {
+      "name": "Ruili Airlines",
+      "iataDesignator": "DR",
+      "prefixCode": "299",
+      "icaoCode": "RLH",
+      "country": "China (People's Republic of)"
+    },
+    {
+      "name": "RusLine",
+      "iataDesignator": "7R",
+      "prefixCode": "362",
+      "icaoCode": "RLU",
+      "country": "Russian Federation"
+    },
+    {
+      "name": "RwandAir",
+      "iataDesignator": "WB",
+      "prefixCode": "459",
+      "icaoCode": "RWD",
+      "country": "Rwanda"
+    },
+    {
+      "name": "S7 Airlines",
+      "iataDesignator": "S7",
+      "prefixCode": "421",
+      "icaoCode": "SBI",
+      "country": "Russian Federation"
+    },
+    {
+      "name": "Safair",
+      "iataDesignator": "FA",
+      "prefixCode": "640",
+      "icaoCode": "SFR",
+      "country": "South Africa"
+    },
+    {
+      "name": "Salam Air",
+      "iataDesignator": "OV",
+      "prefixCode": "960",
+      "icaoCode": "OMS",
+      "country": "Oman"
+    },
+    {
+      "name": "SAS",
+      "iataDesignator": "SK",
+      "prefixCode": "117",
+      "icaoCode": "SAS",
+      "country": "Sweden"
+    },
+    {
+      "name": "SATA Air Acores",
+      "iataDesignator": "SP",
+      "prefixCode": "737",
+      "icaoCode": "SAT",
+      "country": "Portugal"
+    },
+    {
+      "name": "Saudi Arabian Airlines",
+      "iataDesignator": "SV",
+      "prefixCode": "065",
+      "icaoCode": "SVA",
+      "country": "Saudi Arabia"
+    },
+    {
+      "name": "SCAT Airlines",
+      "iataDesignator": "DV",
+      "prefixCode": "655",
+      "icaoCode": "VSV",
+      "country": "Kazakhstan"
+    },
+    {
+      "name": "Scoot",
+      "iataDesignator": "TR",
+      "prefixCode": "668",
+      "icaoCode": "TGW",
+      "country": "Singapore"
+    },
+    {
+      "name": "SF Airlines",
+      "iataDesignator": "O3",
+      "prefixCode": "921",
+      "icaoCode": "CSS",
+      "country": "China (People's Republic of)"
+    },
+    {
+      "name": "Shandong Airlines",
+      "iataDesignator": "SC",
+      "prefixCode": "324",
+      "icaoCode": "CDG",
+      "country": "China (People's Republic of)"
+    },
+    {
+      "name": "Shanghai Airlines",
+      "iataDesignator": "FM",
+      "prefixCode": "774",
+      "icaoCode": "CSH",
+      "country": "China (People's Republic of)"
+    },
+    {
+      "name": "Shenzhen Airlines",
+      "iataDesignator": "ZH",
+      "prefixCode": "479",
+      "icaoCode": "CSZ",
+      "country": "China (People's Republic of)"
+    },
+    {
+      "name": "Sichuan Airlines",
+      "iataDesignator": "3U",
+      "prefixCode": "876",
+      "icaoCode": "CSC",
+      "country": "China (People's Republic of)"
+    },
+    {
+      "name": "Silk Way West Airlines",
+      "iataDesignator": "7L",
+      "prefixCode": "501",
+      "icaoCode": "AZG",
+      "country": "Azerbaijan"
+    },
+    {
+      "name": "Singapore Airlines",
+      "iataDesignator": "SQ",
+      "prefixCode": "618",
+      "icaoCode": "SIA",
+      "country": "Singapore"
+    },
+    {
+      "name": "SKY Airline",
+      "iataDesignator": "H2",
+      "prefixCode": "605",
+      "icaoCode": "SKU",
+      "country": "Chile"
+    },
+    {
+      "name": "Sky express",
+      "iataDesignator": "GQ",
+      "prefixCode": "633",
+      "icaoCode": "SEH",
+      "country": "Greece"
+    },
+    {
+      "name": "SkyUp Airlines",
+      "iataDesignator": "PQ",
+      "prefixCode": "010",
+      "icaoCode": "SQP",
+      "country": "Ukraine"
+    },
+    {
+      "name": "Smartavia",
+      "iataDesignator": "5N",
+      "prefixCode": "316",
+      "icaoCode": "AUL",
+      "country": "Russian Federation"
+    },
+    {
+      "name": "SmartLynx Airlines Malta",
+      "iataDesignator": "2N*",
+      "prefixCode": "",
+      "icaoCode": "LYX",
+      "country": "Malta"
+    },
+    {
+      "name": "Smartwings",
+      "iataDesignator": "QS",
+      "prefixCode": "797",
+      "icaoCode": "TVS",
+      "country": "Czechia"
+    },
+    {
+      "name": "Solomon Airlines",
+      "iataDesignator": "IE",
+      "prefixCode": "193",
+      "icaoCode": "SOL",
+      "country": "Solomon Islands"
+    },
+    {
+      "name": "Somon Air",
+      "iataDesignator": "SZ",
+      "prefixCode": "413",
+      "icaoCode": "SMR",
+      "country": "Tajikistan"
+    },
+    {
+      "name": "South African Airways",
+      "iataDesignator": "SA",
+      "prefixCode": "083",
+      "icaoCode": "SAA",
+      "country": "South Africa"
+    },
+    {
+      "name": "Southwest Airlines",
+      "iataDesignator": "WN",
+      "prefixCode": "526",
+      "icaoCode": "SWA",
+      "country": "United States"
+    },
+    {
+      "name": "Southwind Airlines",
+      "iataDesignator": "2S",
+      "prefixCode": "263",
+      "icaoCode": "STW",
+      "country": "Türkiye"
+    },
+    {
+      "name": "SpiceJet",
+      "iataDesignator": "SG",
+      "prefixCode": "775",
+      "icaoCode": "SEJ",
+      "country": "India"
+    },
+    {
+      "name": "SriLankan Airlines",
+      "iataDesignator": "UL",
+      "prefixCode": "603",
+      "icaoCode": "ALK",
+      "country": "Sri Lanka"
+    },
+    {
+      "name": "STARLUX Airlines",
+      "iataDesignator": "JX",
+      "prefixCode": "189",
+      "icaoCode": "SJX",
+      "country": "Chinese Taipei"
+    },
+    {
+      "name": "Sun Country Airlines",
+      "iataDesignator": "SY",
+      "prefixCode": "337",
+      "icaoCode": "SCX",
+      "country": "United States"
+    },
+    {
+      "name": "SunExpress",
+      "iataDesignator": "XQ",
+      "prefixCode": "564",
+      "icaoCode": "SXS",
+      "country": "Türkiye"
+    },
+    {
+      "name": "Suparna Airlines",
+      "iataDesignator": "Y8",
+      "prefixCode": "871",
+      "icaoCode": "YZR",
+      "country": "China (People's Republic of)"
+    },
+    {
+      "name": "Swiftair",
+      "iataDesignator": "WT",
+      "prefixCode": "221",
+      "icaoCode": "SWT",
+      "country": "Spain"
+    },
+    {
+      "name": "SWISS",
+      "iataDesignator": "LX",
+      "prefixCode": "724",
+      "icaoCode": "SWR",
+      "country": "Switzerland"
+    },
+    {
+      "name": "Syrianair",
+      "iataDesignator": "RB",
+      "prefixCode": "070",
+      "icaoCode": "SYR",
+      "country": "Syrian Arab Republic"
+    },
+    {
+      "name": "TAAG Angola Airlines",
+      "iataDesignator": "DT",
+      "prefixCode": "118",
+      "icaoCode": "DTA",
+      "country": "Angola"
+    },
+    {
+      "name": "TACA",
+      "iataDesignator": "TA",
+      "prefixCode": "202",
+      "icaoCode": "TAI",
+      "country": "El Salvador"
+    },
+    {
+      "name": "TAG Airlines",
+      "iataDesignator": "5U",
+      "prefixCode": "411",
+      "icaoCode": "TGU",
+      "country": "Guatemala"
+    },
+    {
+      "name": "Tailwind Airlines",
+      "iataDesignator": "TI*",
+      "prefixCode": "768",
+      "icaoCode": "TWI",
+      "country": "Türkiye"
+    },
+    {
+      "name": "TAP Air Portugal",
+      "iataDesignator": "TP",
+      "prefixCode": "047",
+      "icaoCode": "TAP",
+      "country": "Portugal"
+    },
+    {
+      "name": "TAROM",
+      "iataDesignator": "RO",
+      "prefixCode": "281",
+      "icaoCode": "ROT",
+      "country": "Romania"
+    },
+    {
+      "name": "Thai Airways International",
+      "iataDesignator": "TG",
+      "prefixCode": "217",
+      "icaoCode": "THA",
+      "country": "Thailand"
+    },
+    {
+      "name": "Thai Lion Air",
+      "iataDesignator": "SL",
+      "prefixCode": "310",
+      "icaoCode": "TLM",
+      "country": "Thailand"
+    },
+    {
+      "name": "Tianjin Airlines",
+      "iataDesignator": "GS",
+      "prefixCode": "826",
+      "icaoCode": "GCR",
+      "country": "China (People's Republic of)"
+    },
+    {
+      "name": "Trinity Airways",
+      "iataDesignator": "TW",
+      "prefixCode": "722",
+      "icaoCode": "TWB",
+      "country": "Korea, Republic of"
+    },
+    {
+      "name": "TUIfly",
+      "iataDesignator": "X3",
+      "prefixCode": "617",
+      "icaoCode": "TUI",
+      "country": "Germany"
+    },
+    {
+      "name": "Tunisair",
+      "iataDesignator": "TU",
+      "prefixCode": "199",
+      "icaoCode": "TAR",
+      "country": "Tunisia"
+    },
+    {
+      "name": "Turkish Airlines",
+      "iataDesignator": "TK",
+      "prefixCode": "235",
+      "icaoCode": "THY",
+      "country": "Türkiye"
+    },
+    {
+      "name": "TUS Airways",
+      "iataDesignator": "U8",
+      "prefixCode": "034",
+      "icaoCode": "CYF",
+      "country": "Cyprus"
+    },
+    {
+      "name": "ULS Airlines Cargo",
+      "iataDesignator": "GO*",
+      "prefixCode": "444",
+      "icaoCode": "KZU",
+      "country": "Türkiye"
+    },
+    {
+      "name": "UNI AIR",
+      "iataDesignator": "B7",
+      "prefixCode": "525",
+      "icaoCode": "UIA",
+      "country": "Chinese Taipei"
+    },
+    {
+      "name": "United Airlines",
+      "iataDesignator": "UA",
+      "prefixCode": "016",
+      "icaoCode": "UAL",
+      "country": "United States"
+    },
+    {
+      "name": "United Nigeria Airlines",
+      "iataDesignator": "UN",
+      "prefixCode": "",
+      "icaoCode": "NUA",
+      "country": "Nigeria"
+    },
+    {
+      "name": "UPS Airlines",
+      "iataDesignator": "5X",
+      "prefixCode": "406",
+      "icaoCode": "UPS",
+      "country": "United States"
+    },
+    {
+      "name": "Ural Airlines",
+      "iataDesignator": "U6",
+      "prefixCode": "262",
+      "icaoCode": "SVR",
+      "country": "Russian Federation"
+    },
+    {
+      "name": "Urumqi Air",
+      "iataDesignator": "UQ",
+      "prefixCode": "886",
+      "icaoCode": "CUH",
+      "country": "China (People's Republic of)"
+    },
+    {
+      "name": "US-Bangla Airlines",
+      "iataDesignator": "BS",
+      "prefixCode": "779",
+      "icaoCode": "UBG",
+      "country": "Bangladesh"
+    },
+    {
+      "name": "UTair",
+      "iataDesignator": "UT",
+      "prefixCode": "298",
+      "icaoCode": "UTA",
+      "country": "Russian Federation"
+    },
+    {
+      "name": "Uzbekistan Airways",
+      "iataDesignator": "HY",
+      "prefixCode": "250",
+      "icaoCode": "UZB",
+      "country": "Uzbekistan"
+    },
+    {
+      "name": "Vietjet",
+      "iataDesignator": "VJ",
+      "prefixCode": "978",
+      "icaoCode": "VJC",
+      "country": "Vietnam"
+    },
+    {
+      "name": "Vietnam Airlines",
+      "iataDesignator": "VN",
+      "prefixCode": "738",
+      "icaoCode": "HVN",
+      "country": "Vietnam"
+    },
+    {
+      "name": "Virgin Atlantic",
+      "iataDesignator": "VS",
+      "prefixCode": "932",
+      "icaoCode": "VIR",
+      "country": "United Kingdom"
+    },
+    {
+      "name": "Virgin Australia",
+      "iataDesignator": "VA",
+      "prefixCode": "795",
+      "icaoCode": "VAU",
+      "country": "Australia"
+    },
+    {
+      "name": "Volaris",
+      "iataDesignator": "Y4",
+      "prefixCode": "036",
+      "icaoCode": "VOI",
+      "country": "Mexico"
+    },
+    {
+      "name": "Volotea",
+      "iataDesignator": "V7",
+      "prefixCode": "712",
+      "icaoCode": "VOE",
+      "country": "Spain"
+    },
+    {
+      "name": "Vueling",
+      "iataDesignator": "VY",
+      "prefixCode": "030",
+      "icaoCode": "VLG",
+      "country": "Spain"
+    },
+    {
+      "name": "Wamos Air",
+      "iataDesignator": "EB",
+      "prefixCode": "460",
+      "icaoCode": "PLM",
+      "country": "Spain"
+    },
+    {
+      "name": "West Air",
+      "iataDesignator": "PN",
+      "prefixCode": "847",
+      "icaoCode": "CHB",
+      "country": "China (People's Republic of)"
+    },
+    {
+      "name": "WestJet",
+      "iataDesignator": "WS",
+      "prefixCode": "838",
+      "icaoCode": "WJA",
+      "country": "Canada"
+    },
+    {
+      "name": "White coloured by you",
+      "iataDesignator": "WI",
+      "prefixCode": "097",
+      "icaoCode": "WHT",
+      "country": "Portugal"
+    },
+    {
+      "name": "Wideroe",
+      "iataDesignator": "WF",
+      "prefixCode": "701",
+      "icaoCode": "WIF",
+      "country": "Norway"
+    },
+    {
+      "name": "World2Fly",
+      "iataDesignator": "2W",
+      "prefixCode": "825",
+      "icaoCode": "WFL",
+      "country": "Spain"
+    },
+    {
+      "name": "Xiamen Airlines",
+      "iataDesignator": "MF",
+      "prefixCode": "731",
+      "icaoCode": "CXA",
+      "country": "China (People's Republic of)"
+    },
+    {
+      "name": "Xizang Airlines",
+      "iataDesignator": "TV",
+      "prefixCode": "088",
+      "icaoCode": "TBA",
+      "country": "China (People's Republic of)"
+    },
+    {
+      "name": "YTO Cargo Airlines",
+      "iataDesignator": "YG",
+      "prefixCode": "860",
+      "icaoCode": "HYT",
+      "country": "China (People's Republic of)"
+    }
+  ]
+}

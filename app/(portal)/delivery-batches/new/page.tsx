@@ -43,7 +43,7 @@ export default async function NewDeliveryBatchPage({ searchParams }: NewDelivery
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Create Delivery Batch</h2>
           <p className="mt-1 text-slate-500">
-            Select parcels and prepare a vendor handover batch.
+            Select shipments and prepare a vendor handover batch.
           </p>
         </div>
       </div>
@@ -58,7 +58,7 @@ export default async function NewDeliveryBatchPage({ searchParams }: NewDelivery
               className="pl-10"
               defaultValue={search}
               name="search"
-              placeholder="Search parcel, receiver, tracking, or city..."
+              placeholder="Search shipment, receiver, tracking, or city..."
             />
           </form>
         </div>
@@ -102,7 +102,7 @@ export default async function NewDeliveryBatchPage({ searchParams }: NewDelivery
               <thead>
                 <tr className="bg-white/5 text-[10px] font-bold uppercase tracking-widest text-slate-500">
                   <th className="px-6 py-4">Select</th>
-                  <th className="px-6 py-4">Parcel</th>
+                  <th className="px-6 py-4">Shipment</th>
                   <th className="px-6 py-4">Receiver</th>
                   <th className="px-6 py-4">Destination</th>
                   <th className="px-6 py-4">Load</th>
@@ -134,7 +134,7 @@ export default async function NewDeliveryBatchPage({ searchParams }: NewDelivery
                       {parcel.destinationCity}
                     </td>
                     <td className="px-6 py-4 text-xs text-slate-400">
-                      {parcel.weight} kg / {parcel.pieces} pcs
+                      {parcel.weight} kg / {parcel.pieces} pieces
                     </td>
                     <td className="px-6 py-4">
                       <span className="inline-flex rounded-full border border-blue-500/20 bg-blue-500/10 px-2 py-1 text-[10px] font-bold uppercase tracking-tight text-blue-300">
@@ -146,7 +146,7 @@ export default async function NewDeliveryBatchPage({ searchParams }: NewDelivery
                 {availableParcels.length === 0 ? (
                   <tr>
                     <td className="px-6 py-12 text-center text-sm text-slate-500" colSpan={6}>
-                      No unassigned parcels found.
+                      No unassigned shipments found.
                     </td>
                   </tr>
                 ) : null}
@@ -157,7 +157,7 @@ export default async function NewDeliveryBatchPage({ searchParams }: NewDelivery
           <div className="flex items-center justify-between border-t border-white/5 p-6">
             <p className="flex items-center gap-2 text-xs text-slate-500">
               <Truck className="h-4 w-4" />
-              Available parcels: {availableParcels.length}
+              Available shipments for delivery: {availableParcels.length}
             </p>
             <Button type="submit">Create Batch</Button>
           </div>
