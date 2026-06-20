@@ -38,4 +38,8 @@
   <url><loc>https://www.ambaraartha.com/id/quote</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://www.ambaraartha.com/id/contact</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://www.ambaraartha.com/id/partners</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://www.ambaraartha.com/en/blog/gross-weight-vs-volumetric-weight-vs-chargeable-weight</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://www.ambaraartha.com/id/blog/gross-weight-vs-volumetric-weight-vs-chargeable-weight</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://www.ambaraartha.com/en/blog/how-to-calculate-cbm-air-cargo</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://www.ambaraartha.com/id/blog/how-to-calculate-cbm-air-cargo</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
 </urlset>
