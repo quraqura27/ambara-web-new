@@ -27,6 +27,7 @@ export function BulkImportForm() {
   const errorCsv = useMemo(() => {
     if (!preview) return "";
     const rows = preview.rows.filter((row) => row.errors.length > 0);
+    if (rows.length === 0) return "";
     return [
       "row,errors",
       ...rows.map((row) => `${row.rowNumber},"${row.errors.join("; ").replace(/"/g, '""')}"`),
