@@ -70,6 +70,7 @@ export function AwbInput({
       <Input
         aria-describedby="awb-format-help"
         aria-invalid={Boolean(error)}
+        aria-label="Airline AWB number"
         autoComplete="off"
         inputMode="numeric"
         name="mawb"
