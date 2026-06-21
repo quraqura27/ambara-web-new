@@ -1,0 +1,56 @@
+{
+  "updatedAt": "2026-06-21",
+  "sourceUrl": "",
+  "sourceScope": "Manual Ambara operating overrides for airlines missing from the public IATA member snapshot. Verify against carrier cargo documentation before regulatory use.",
+  "records": [
+    {
+      "name": "AirAsia",
+      "iataDesignator": "AK",
+      "prefixCode": "807",
+      "icaoCode": "AXM",
+      "country": "Malaysia"
+    },
+    {
+      "name": "AirAsia X",
+      "iataDesignator": "D7",
+      "prefixCode": "843",
+      "icaoCode": "XAX",
+      "country": "Malaysia"
+    },
+    {
+      "name": "Indonesia AirAsia",
+      "iataDesignator": "QZ",
+      "prefixCode": "975",
+      "icaoCode": "AWQ",
+      "country": "Indonesia"
+    },
+    {
+      "name": "Thai AirAsia",
+      "iataDesignator": "FD",
+      "prefixCode": "900",
+      "icaoCode": "AIQ",
+      "country": "Thailand"
+    },
+    {
+      "name": "Citilink",
+      "iataDesignator": "QG",
+      "prefixCode": "888",
+      "icaoCode": "CTV",
+      "country": "Indonesia"
+    },
+    {
+      "name": "Super Air Jet",
+      "iataDesignator": "IU",
+      "prefixCode": "920",
+      "icaoCode": "SJV",
+      "country": "Indonesia"
+    },
+    {
+      "name": "TransNusa",
+      "iataDesignator": "8B",
+      "prefixCode": "557",
+      "icaoCode": "TNU",
+      "country": "Indonesia"
+    }
+  ]
+}
