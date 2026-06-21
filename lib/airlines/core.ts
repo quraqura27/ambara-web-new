@@ -1,4 +1,5 @@
 import airlineSnapshotJson from "./iata-member-airlines.json" with { type: "json" };
+import manualAirlineOverridesJson from "./manual-airline-overrides.json" with { type: "json" };
 
 export type AirlineReference = {
   country: string;
@@ -13,6 +14,13 @@ type AirlineReferenceSnapshot = {
   snapshotDate: string;
   sourceScope: string;
   sourceUrl: string;
+};
+
+type AirlineReferenceOverrides = {
+  records: AirlineReference[];
+  sourceScope: string;
+  sourceUrl: string;
+  updatedAt: string;
 };
 
 export type ResolvedAirWaybill = {
@@ -32,14 +40,35 @@ export type ResolvedFlightLeg = {
 };
 
 const airlineSnapshot = airlineSnapshotJson as AirlineReferenceSnapshot;
+const manualAirlineOverrides = manualAirlineOverridesJson as AirlineReferenceOverrides;
 
 export const airlineReferenceMetadata = {
   snapshotDate: airlineSnapshot.snapshotDate,
   sourceScope: airlineSnapshot.sourceScope,
   sourceUrl: airlineSnapshot.sourceUrl,
+  manualOverrideCount: manualAirlineOverrides.records.length,
+  manualOverrideUpdatedAt: manualAirlineOverrides.updatedAt,
 } as const;
 
-export const airlineReference = airlineSnapshot.records as readonly AirlineReference[];
+const manualAirlineReference = manualAirlineOverrides.records as readonly AirlineReference[];
+const snapshotAirlineReference = airlineSnapshot.records as readonly AirlineReference[];
+
+function hasManualOverrideFor(airline: AirlineReference) {
+  return manualAirlineReference.some((manualAirline) => {
+    const hasSamePrefix =
+      Boolean(manualAirline.prefixCode) &&
+      Boolean(airline.prefixCode) &&
+      manualAirline.prefixCode === airline.prefixCode;
+    const hasSameDesignator = manualAirline.iataDesignator === airline.iataDesignator;
+
+    return hasSamePrefix || hasSameDesignator;
+  });
+}
+
+export const airlineReference = [
+  ...manualAirlineReference,
+  ...snapshotAirlineReference.filter((airline) => !hasManualOverrideFor(airline)),
+] as readonly AirlineReference[];
 
 function normalizedCode(value: unknown) {
   return String(value ?? "").trim().toUpperCase();
