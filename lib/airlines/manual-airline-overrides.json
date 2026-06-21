@@ -30,6 +30,27 @@
       "prefixCode": "900",
       "icaoCode": "AIQ",
       "country": "Thailand"
+    },
+    {
+      "name": "Citilink",
+      "iataDesignator": "QG",
+      "prefixCode": "888",
+      "icaoCode": "CTV",
+      "country": "Indonesia"
+    },
+    {
+      "name": "Super Air Jet",
+      "iataDesignator": "IU",
+      "prefixCode": "920",
+      "icaoCode": "SJV",
+      "country": "Indonesia"
+    },
+    {
+      "name": "TransNusa",
+      "iataDesignator": "8B",
+      "prefixCode": "557",
+      "icaoCode": "TNU",
+      "country": "Indonesia"
     }
   ]
 }
