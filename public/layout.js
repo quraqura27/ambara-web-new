@@ -33,9 +33,70 @@ AMBARA.getNavbar = (active = '') => {
     { label: { en: 'Tools', id: 'Tools' }, key: 'tools', dropdown: toolLinks },
     { href: `${base}/about`, label: { en: 'About', id: 'Tentang' }, key: 'about' },
   ];
-  const renderDesktopLink = (l) => l.dropdown ? `<div class="nav-dropdown ${active === l.key ? 'active' : ''}"><button class="nav-dropdown-trigger" type="button" aria-haspopup="true" aria-expanded="false">${l.label[lang]} <span aria-hidden="true">▾</span></button><div class="nav-dropdown-menu" role="menu">${l.dropdown.map(item => `<a href="${item.href}" role="menuitem">${item.label}</a>`).join('')}</div></div>` : `<a href="${l.href}" ${active === l.key ? 'class="active"' : ''}>${l.label[lang]}</a>`;
-  const renderMobileLink = (l) => l.dropdown ? `<details class="mobile-nav-group" ${active === l.key ? 'open' : ''}><summary>${l.label[lang]}</summary><div class="mobile-nav-submenu">${l.dropdown.map(item => `<a href="${item.href}">${item.label}</a>`).join('')}</div></details>` : `<a href="${l.href}" class="mobile-nav-link">${l.label[lang]}</a>`;
-  return `<nav class="navbar"><div class="container"><a href="${base}/" class="navbar-brand"><div class="navbar-logo"><img src="/logo.png" alt="PT Ambara Artha Globaltrans" class="brand-logo-image" width="4000" height="622"></div></a><div class="navbar-links">${links.map(renderDesktopLink).join('')}</div><div class="navbar-actions"><a href="/dashboard" class="btn btn-outline btn-sm" style="margin-right:8px;border-color:rgba(255,255,255,0.2);color:white">${lang === 'id' ? 'Portal Klien' : 'Client Portal'}</a><div class="lang-toggle"><button data-lang="en" ${lang === 'en' ? 'class="active"' : ''}>EN</button><button data-lang="id" ${lang === 'id' ? 'class="active"' : ''}>ID</button></div><a href="${base}/quote" class="btn btn-primary btn-sm">${lang === 'id' ? 'Minta Penawaran' : 'Get Quote'}</a></div><button class="mobile-menu-btn" aria-label="Menu">☰</button></div><div class="mobile-nav"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;width:100%"><div class="navbar-logo"><img src="/logo.png" alt="PT Ambara Artha Globaltrans" class="brand-logo-image" width="4000" height="622"></div><button class="mobile-menu-btn" aria-label="Close" style="color:white;font-size:2rem">&times;</button></div><div class="lang-toggle" style="margin-bottom:32px;width:100%;display:flex;background:rgba(255,255,255,0.1);border-radius:8px"><button data-lang="en" ${lang === 'en' ? 'class="active"' : ''} style="flex:1;color:white;border-color:transparent">EN</button><button data-lang="id" ${lang === 'id' ? 'class="active"' : ''} style="flex:1;color:white;border-color:transparent">ID</button></div><div class="mobile-nav-list">${links.map(renderMobileLink).join('')}</div><a href="/dashboard" class="btn btn-outline" style="margin-top:auto;width:100%;justify-content:center;margin-bottom:12px;border-color:rgba(255,255,255,0.2);color:white">${lang === 'id' ? 'Portal Klien' : 'Client Portal'}</a><a href="${base}/quote" class="btn btn-primary" style="width:100%;justify-content:center">${lang === 'id' ? 'Minta Penawaran' : 'Get Quote'}</a></div></nav>`;
+  const renderDesktopLink = (link) => {
+    if (!link.dropdown) {
+      return `<a href="${link.href}" ${active === link.key ? 'class="active"' : ''}>${link.label[lang]}</a>`;
+    }
+    return `<div class="nav-dropdown ${active === link.key ? 'active' : ''}">
+      <button class="nav-dropdown-trigger" type="button" aria-haspopup="true" aria-expanded="false">${link.label[lang]} <span aria-hidden="true">▾</span></button>
+      <div class="nav-dropdown-menu" role="menu">
+        ${link.dropdown.map(item => `<a href="${item.href}" role="menuitem">${item.label}</a>`).join('')}
+      </div>
+    </div>`;
+  };
+  const renderMobileLink = (link) => {
+    if (!link.dropdown) return `<a href="${link.href}" class="mobile-nav-link">${link.label[lang]}</a>`;
+    return `<details class="mobile-nav-group" ${active === link.key ? 'open' : ''}>
+      <summary>${link.label[lang]}</summary>
+      <div class="mobile-nav-submenu">${link.dropdown.map(item => `<a href="${item.href}">${item.label}</a>`).join('')}</div>
+    </details>`;
+  };
+  return `
+  <nav class="navbar">
+    <div class="container">
+      <a href="${base}/" class="navbar-brand"><div class="navbar-logo"><img src="/logo.png" alt="PT Ambara Artha Globaltrans" class="brand-logo-image" width="4000" height="622"></div></a>
+      <div class="navbar-links">${links.map(renderDesktopLink).join('')}</div>
+      <div class="navbar-actions">
+        <a href="/dashboard" class="btn btn-outline btn-sm" style="margin-right:8px;border-color:rgba(255,255,255,0.2);color:white">${lang === 'id' ? 'Portal Klien' : 'Client Portal'}</a>
+        <div class="lang-toggle"><button data-lang="en" ${lang === 'en' ? 'class="active"' : ''}>EN</button><button data-lang="id" ${lang === 'id' ? 'class="active"' : ''}>ID</button></div>
+        <a href="${base}/quote" class="btn btn-primary btn-sm">${lang === 'id' ? 'Minta Penawaran' : 'Get Quote'}</a>
+      </div>
+      <button class="mobile-menu-btn" aria-label="Menu"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+    </div>
+    <div class="mobile-nav">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;width:100%"><div class="navbar-logo"><img src="/logo.png" alt="PT Ambara Artha Globaltrans" class="brand-logo-image" width="4000" height="622"></div><button class="mobile-menu-btn" aria-label="Close" style="color:white;font-size:2rem">&times;</button></div>
+      <div class="lang-toggle" style="margin-bottom:32px;width:100%;display:flex;background:rgba(255,255,255,0.1);border-radius:8px"><button data-lang="en" ${lang === 'en' ? 'class="active"' : ''} style="flex:1;color:white;border-color:transparent">EN</button><button data-lang="id" ${lang === 'id' ? 'class="active"' : ''} style="flex:1;color:white;border-color:transparent">ID</button></div>
+      <div class="mobile-nav-list">${links.map(renderMobileLink).join('')}</div>
+      <a href="/dashboard" class="btn btn-outline" style="margin-top:auto;width:100%;justify-content:center;margin-bottom:12px;border-color:rgba(255,255,255,0.2);color:white">${lang === 'id' ? 'Portal Klien' : 'Client Portal'}</a>
+      <a href="${base}/quote" class="btn btn-primary" style="width:100%;justify-content:center">${lang === 'id' ? 'Minta Penawaran' : 'Get Quote'}</a>
+    </div>
+  </nav>`;
+};
+
+AMBARA.getFooter = () => {
+  const lang = AMBARA.getLang();
+  const base = `/${lang}`;
+  const t = {
+    en: { services: 'Services', company: 'Company', support: 'Support', contact: 'Contact Us', quote: 'Get Quote', portal: 'Client Portal', about: 'About Us', network: 'Network', copy: '© 2025–2026 PT Ambara Artha Globaltrans. All rights reserved.' },
+    id: { services: 'Layanan', company: 'Perusahaan', support: 'Dukungan', contact: 'Hubungi Kami', quote: 'Minta Penawaran', portal: 'Portal Klien', about: 'Tentang Kami', network: 'Jaringan', copy: '© 2025–2026 PT Ambara Artha Globaltrans. Hak cipta dilindungi.' },
+  }[lang];
+  return `
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <a href="${base}/" class="navbar-brand" style="margin-bottom:20px;display:flex"><div class="navbar-logo" style="margin-right:12px"><img src="/logo.png" alt="PT Ambara Artha Globaltrans" class="brand-logo-image" width="4000" height="622"></div></a>
+          <p style="font-size:0.875rem;margin-bottom:20px">Your secure way for global delivery.</p>
+          <div style="font-size:0.875rem;color:var(--text-muted)"><div style="margin-bottom:8px">CGK Cargo Terminal, Soekarno-Hatta</div><div style="margin-bottom:8px">+62 821-2545-2800</div><div>cs@ambaraartha.com</div></div>
+        </div>
+        <div><div style="font-weight:700;margin-bottom:20px;font-size:0.875rem;text-transform:uppercase;letter-spacing:0.05em">${t.services}</div><div style="display:flex;flex-direction:column;gap:12px"><a href="${base}/freight-forwarding-indonesia" style="font-size:0.875rem;color:var(--text-muted)">Freight Forwarding</a><a href="${base}/air-freight-to-indonesia" style="font-size:0.875rem;color:var(--text-muted)">Air Freight to Indonesia</a><a href="${base}/air-freight-from-indonesia" style="font-size:0.875rem;color:var(--text-muted)">Air Freight from Indonesia</a><a href="${base}/indonesia-customs-clearance" style="font-size:0.875rem;color:var(--text-muted)">Customs Clearance</a><a href="${base}/undername-import-indonesia" style="font-size:0.875rem;color:var(--text-muted)">Undername Import</a><a href="${base}/ddp-shipping-indonesia" style="font-size:0.875rem;color:var(--text-muted)">DDP / DDU Shipping</a><a href="${base}/cgk-air-cargo-agent" style="font-size:0.875rem;color:var(--text-muted)">CGK Air Cargo</a></div></div>
+        <div><div style="font-weight:700;margin-bottom:20px;font-size:0.875rem;text-transform:uppercase;letter-spacing:0.05em">${t.company}</div><div style="display:flex;flex-direction:column;gap:12px"><a href="${base}/about" style="font-size:0.875rem;color:var(--text-muted)">${t.about}</a><a href="${base}/network" style="font-size:0.875rem;color:var(--text-muted)">${t.network}</a><a href="${base}/hs-code-checker" style="font-size:0.875rem;color:var(--text-muted)">HS Code Checker</a><a href="${base}/document-preparation" style="font-size:0.875rem;color:var(--text-muted)">Document Preparation</a><a href="${base}/partners" style="font-size:0.875rem;color:var(--text-muted)">Partners</a><a href="${base}/blog" style="font-size:0.875rem;color:var(--text-muted)">Blog</a></div></div>
+        <div><div style="font-weight:700;margin-bottom:20px;font-size:0.875rem;text-transform:uppercase;letter-spacing:0.05em">${t.support}</div><div style="display:flex;flex-direction:column;gap:12px"><a href="${base}/contact" style="font-size:0.875rem;color:var(--text-muted)">${t.contact}</a><a href="${base}/faq" style="font-size:0.875rem;color:var(--text-muted)">FAQ</a><a href="${base}/quote" style="font-size:0.875rem;color:var(--text-muted)">${t.quote}</a><a href="/dashboard" style="font-size:0.875rem;color:var(--text-muted)">${t.portal}</a></div></div>
+      </div>
+      <div class="footer-bottom"><div class="footer-copy">${t.copy}</div><a href="${lang === 'en' ? '/id/' : '/en/'}" style="font-size:0.875rem;color:var(--text-muted)">${lang === 'en' ? 'Bahasa Indonesia' : 'English'}</a></div>
+    </div>
+  </footer>
+  <a href="https://wa.me/6282125452800" target="_blank" class="whatsapp-fab" aria-label="WhatsApp" data-cta-location="floating_whatsapp" data-service-category="general">WhatsApp</a>`;
 };
 
 (function initHomepageStatsFromPortal() {
