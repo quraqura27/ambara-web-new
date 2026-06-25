@@ -49,7 +49,7 @@ AMBARA.getNavbar = (active = '') => {
   function updateRemark() {
     const remark = document.querySelector('.stats-remark');
     if (!remark) return;
-    remark.textContent = getLang() === 'id' ? 'Berdasarkan dataset performa bulanan 2026.' : 'Based on 2026 monthly performance dataset.';
+    remark.textContent = getLang() === 'id' ? 'Berdasarkan dataset rata-rata bulanan.' : 'Based on average monthly dataset.';
   }
   function applyStats(stats = {}) {
     const tonsShipped = Number.isFinite(Number(stats.tonsShipped)) ? Number(stats.tonsShipped) : FALLBACK_TONS_SHIPPED;
