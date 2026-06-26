@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { ClipboardList, Package, Search, Users } from "lucide-react";
+import { ClipboardList, FileText, Package, Search, Users } from "lucide-react";
 
 import { searchPortal } from "@/actions/portal-search";
-import { Card } from "@/components/ui/core";
+import { Button, Card } from "@/components/ui/core";
 
 type SearchPageProps = {
   searchParams: Promise<{ q?: string }>;
@@ -11,7 +11,7 @@ type SearchPageProps = {
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   const query = (await searchParams).q?.trim() ?? "";
   const results = await searchPortal(query);
-  const total = results.shipments.length + results.customers.length + results.batches.length;
+  const total = results.shipments.length + results.customers.length + results.batches.length + results.mawbs.length;
 
   return (
     <div className="space-y-8">
@@ -37,11 +37,40 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           </h2>
           <div className="grid gap-3 md:grid-cols-2">
             {results.shipments.map((shipment) => (
-              <Link href={`/shipments/${encodeURIComponent(shipment.trackingNumber)}`} key={shipment.trackingNumber}>
-                <Card className="h-full p-5 transition hover:border-blue-500/30">
+              <Card className="h-full p-5 transition hover:border-blue-500/30" key={shipment.trackingNumber}>
+                <Link href={`/shipments/${encodeURIComponent(shipment.trackingNumber)}`}>
                   <p className="font-mono text-sm font-bold text-white">{shipment.trackingNumber}</p>
                   <p className="mt-2 text-sm text-slate-300">{shipment.customerName || shipment.title}</p>
                   <p className="mt-1 text-xs text-slate-500">{shipment.origin} → {shipment.destination} / {shipment.status.replace(/_/g, " ")}</p>
+                </Link>
+                {results.canUseMawbs ? (
+                  <Link className="mt-4 block" href={`/mawbs/new?shipment=${encodeURIComponent(shipment.trackingNumber)}`}>
+                    <Button className="w-full gap-2" variant="secondary">
+                      <FileText className="h-4 w-4" />
+                      MAWB
+                    </Button>
+                  </Link>
+                ) : null}
+              </Card>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {results.mawbs.length > 0 ? (
+        <section className="space-y-3">
+          <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-slate-500">
+            <FileText className="h-4 w-4" /> MAWB Documents
+          </h2>
+          <div className="grid gap-3 md:grid-cols-2">
+            {results.mawbs.map((mawb) => (
+              <Link href={`/mawbs/${mawb.id}`} key={mawb.id}>
+                <Card className="h-full p-5 transition hover:border-blue-500/30">
+                  <p className="font-mono text-sm font-bold text-white">{mawb.mawbNumber}</p>
+                  <p className="mt-2 text-sm text-slate-300">{mawb.carrierCode} / {mawb.carrierName}</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {mawb.originIata} → {mawb.destinationIata} / {mawb.shipperName} to {mawb.consigneeName}
+                  </p>
                 </Card>
               </Link>
             ))}

@@ -1,9 +1,11 @@
 import Link from "next/link";
-import { MapPin, Package, Plus, Printer, Search, Truck } from "lucide-react";
+import { FileText, MapPin, Package, Plus, Printer, Search, Truck } from "lucide-react";
 
 import { getShipmentsPage } from "@/actions/shipments";
 import { BulkPrintConsignmentNotesButton } from "@/components/consignment-notes/bulk-print-button";
 import { Button, Card, Input } from "@/components/ui/core";
+import { canUseMawbWorkflow } from "@/lib/mawbs/core";
+import { getPortalUser } from "@/lib/portal-auth";
 import { shipmentStatusDefinitions, shipmentStatusValues } from "@/lib/shipments/status-model";
 
 type ShipmentsPageProps = {
@@ -38,6 +40,8 @@ export default async function ShipmentsPage({ searchParams }: ShipmentsPageProps
     to: params.to,
     view: params.view ?? "",
   });
+  const user = await getPortalUser();
+  const canUseMawbs = canUseMawbWorkflow(user);
   const makeHref = (page: number) => {
     const query = new URLSearchParams();
     if (params.search) query.set("search", params.search);
@@ -59,6 +63,14 @@ export default async function ShipmentsPage({ searchParams }: ShipmentsPageProps
         </div>
         <div className="flex flex-wrap gap-3">
           <BulkPrintConsignmentNotesButton />
+          {canUseMawbs ? (
+            <Link href="/mawbs/new">
+              <Button className="gap-2" variant="secondary">
+                <FileText className="h-4 w-4" />
+                New MAWB
+              </Button>
+            </Link>
+          ) : null}
           <Link href="/shipments/new"><Button className="gap-2"><Plus className="h-4 w-4" /> Create Shipment</Button></Link>
         </div>
       </div>
@@ -134,6 +146,14 @@ export default async function ShipmentsPage({ searchParams }: ShipmentsPageProps
                     <td className="px-5 py-4">
                       <div className="flex justify-end gap-2">
                         {cn ? <Link href={`/shipments/${encodeURIComponent(cn)}/consignment-note`}><Button className="gap-2" variant="ghost"><Printer className="h-4 w-4" /> Print</Button></Link> : null}
+                        {canUseMawbs ? (
+                          <Link href={`/mawbs/new?shipment=${encodeURIComponent(shipment.trackingNumber)}`}>
+                            <Button className="gap-2" variant="ghost">
+                              <FileText className="h-4 w-4" />
+                              MAWB
+                            </Button>
+                          </Link>
+                        ) : null}
                         <Link href={`/shipments/${encodeURIComponent(shipment.trackingNumber)}`}><Button variant="secondary">Open</Button></Link>
                       </div>
                     </td>

@@ -47,6 +47,68 @@ const migration007Indexes = [
   "shipment_flight_legs_shipment_idx",
   "shipment_flight_legs_designator_idx",
 ];
+const migration008Columns = [
+  ["mawb_documents", "idempotency_key"],
+  ["mawb_documents", "mawb_number"],
+  ["mawb_documents", "awb_prefix"],
+  ["mawb_documents", "awb_serial"],
+  ["mawb_documents", "carrier_code"],
+  ["mawb_documents", "carrier_name"],
+  ["mawb_documents", "action_mode"],
+  ["mawb_documents", "service_type"],
+  ["mawb_documents", "agent_name"],
+  ["mawb_documents", "shipper_name"],
+  ["mawb_documents", "shipper_address"],
+  ["mawb_documents", "consignee_name"],
+  ["mawb_documents", "consignee_address"],
+  ["mawb_documents", "shipment_customer_id"],
+  ["mawb_documents", "shipment_customer_name"],
+  ["mawb_documents", "shipment_contact_phone"],
+  ["mawb_documents", "departure_airport"],
+  ["mawb_documents", "origin_iata"],
+  ["mawb_documents", "destination_airport"],
+  ["mawb_documents", "destination_iata"],
+  ["mawb_documents", "routing_to_1"],
+  ["mawb_documents", "routing_by_1"],
+  ["mawb_documents", "routing_to_2"],
+  ["mawb_documents", "routing_by_2"],
+  ["mawb_documents", "flight_number"],
+  ["mawb_documents", "flight_date"],
+  ["mawb_documents", "executed_date"],
+  ["mawb_documents", "executed_place"],
+  ["mawb_documents", "currency"],
+  ["mawb_documents", "declared_value_for_carriage"],
+  ["mawb_documents", "declared_value_for_customs"],
+  ["mawb_documents", "insurance_amount"],
+  ["mawb_documents", "pieces"],
+  ["mawb_documents", "gross_weight"],
+  ["mawb_documents", "chargeable_weight"],
+  ["mawb_documents", "rate"],
+  ["mawb_documents", "weight_charge"],
+  ["mawb_documents", "other_charges_total"],
+  ["mawb_documents", "total_prepaid"],
+  ["mawb_documents", "other_charges_json"],
+  ["mawb_documents", "commodity"],
+  ["mawb_documents", "goods_description"],
+  ["mawb_documents", "handling_information"],
+  ["mawb_documents", "nature_quantity"],
+  ["mawb_documents", "created_by_staff"],
+  ["mawb_documents", "updated_by_staff"],
+  ["mawb_shipment_links", "mawb_document_id"],
+  ["mawb_shipment_links", "shipment_id"],
+  ["mawb_shipment_links", "link_mode"],
+  ["mawb_shipment_links", "copied_fields_json"],
+  ["mawb_shipment_links", "created_by_staff"],
+];
+const migration008Tables = ["mawb_documents", "mawb_shipment_links"];
+const migration008Indexes = [
+  "mawb_documents_mawb_number_idx",
+  "mawb_documents_created_at_idx",
+  "mawb_documents_idempotency_key_unique_idx",
+  "mawb_shipment_links_document_idx",
+  "mawb_shipment_links_shipment_idx",
+  "mawb_shipment_links_unique_idx",
+];
 
 function checksum(contents) {
   return createHash("sha256").update(contents).digest("hex");
@@ -130,7 +192,19 @@ async function migrationMissingObjects(sql, name) {
     });
   }
 
+  if (name.startsWith("008-")) {
+    return missingSchemaObjects(sql, {
+      columns: migration008Columns,
+      tables: migration008Tables,
+      indexes: migration008Indexes,
+    });
+  }
+
   return [];
+}
+
+function hasSchemaObjectCheck(name) {
+  return name.startsWith("006-") || name.startsWith("007-") || name.startsWith("008-");
 }
 
 async function ensureHistoryTable(sql) {
@@ -206,7 +280,7 @@ async function run() {
         throw new Error(`Migration ${name} has not been applied.`);
       }
 
-      if ((name.startsWith("006-") || name.startsWith("007-")) && missingBefore.length === 0) {
+      if (hasSchemaObjectCheck(name) && missingBefore.length === 0) {
         await sql`
           insert into schema_migrations (name, checksum)
           values (${name}, ${fileChecksum})
@@ -223,7 +297,7 @@ async function run() {
         `;
       });
 
-      if (name.startsWith("006-") || name.startsWith("007-")) {
+      if (hasSchemaObjectCheck(name)) {
         const missingAfter = await migrationMissingObjects(sql, name);
         if (missingAfter.length > 0) {
           throw new Error(

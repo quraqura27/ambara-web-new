@@ -3,16 +3,18 @@
 import { desc, ilike, or } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { customers, deliveryBatches, shipments } from "@/lib/db/schema";
+import { customers, deliveryBatches, mawbDocuments, shipments } from "@/lib/db/schema";
+import { canUseMawbWorkflow } from "@/lib/mawbs/core";
 import { requirePortalUser } from "@/lib/portal-auth";
 
 export async function searchPortal(query: string) {
-  await requirePortalUser();
+  const user = await requirePortalUser();
+  const canUseMawbs = canUseMawbWorkflow(user);
   const search = query.trim();
-  if (!search) return { batches: [], customers: [], shipments: [] };
+  if (!search) return { batches: [], canUseMawbs, customers: [], mawbs: [], shipments: [] };
   const pattern = `%${search}%`;
 
-  const [shipmentRows, customerRows, batchRows] = await Promise.all([
+  const [shipmentRows, customerRows, batchRows, mawbRows] = await Promise.all([
     db
       .select({
         customerName: shipments.customerName,
@@ -72,7 +74,31 @@ export async function searchPortal(query: string) {
       )
       .orderBy(desc(deliveryBatches.updatedAt))
       .limit(8),
+    canUseMawbs
+      ? db
+          .select({
+            carrierCode: mawbDocuments.carrierCode,
+            carrierName: mawbDocuments.carrierName,
+            consigneeName: mawbDocuments.consigneeName,
+            destinationIata: mawbDocuments.destinationIata,
+            id: mawbDocuments.id,
+            mawbNumber: mawbDocuments.mawbNumber,
+            originIata: mawbDocuments.originIata,
+            shipperName: mawbDocuments.shipperName,
+          })
+          .from(mawbDocuments)
+          .where(
+            or(
+              ilike(mawbDocuments.mawbNumber, pattern),
+              ilike(mawbDocuments.carrierName, pattern),
+              ilike(mawbDocuments.shipperName, pattern),
+              ilike(mawbDocuments.consigneeName, pattern),
+            ),
+          )
+          .orderBy(desc(mawbDocuments.createdAt))
+          .limit(8)
+      : Promise.resolve([]),
   ]);
 
-  return { batches: batchRows, customers: customerRows, shipments: shipmentRows };
+  return { batches: batchRows, canUseMawbs, customers: customerRows, mawbs: mawbRows, shipments: shipmentRows };
 }

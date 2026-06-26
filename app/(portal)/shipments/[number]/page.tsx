@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Clock,
   ExternalLink,
+  FileText,
   MapPin,
   Pencil,
   Plane,
@@ -22,6 +23,7 @@ import { getShipmentStatusDefinition } from "@/lib/shipments/status-model";
 import type { TrackingEvent } from "@/lib/tracking/interface";
 import { TrackingUpdateForm } from "@/components/portal/tracking-update-form";
 import { TrackingCorrectionForm } from "@/components/portal/tracking-correction-form";
+import { canUseMawbWorkflow } from "@/lib/mawbs/core";
 
 type TrackingDetailPageProps = {
   params: Promise<{ number: string }>;
@@ -178,6 +180,7 @@ export default async function TrackingDetailPage({
   const consignmentNoteTrackingNo = shipment?.internalTrackingNo ?? "";
   const primaryParcel = parcels[0];
   const canEditShipment = shipment && canEditShipmentDetails(user);
+  const canUseMawbs = canUseMawbWorkflow(user);
   const statusLabel = shipment
     ? getShipmentStatusDefinition(liveData.status, shipment.serviceType).label
     : formatStatus(liveData.status);
@@ -204,6 +207,14 @@ export default async function TrackingDetailPage({
               <Button className="gap-2" variant="secondary">
                 <Printer className="h-4 w-4" />
                 Print CN
+              </Button>
+            </Link>
+          ) : null}
+          {shipment && canUseMawbs ? (
+            <Link href={`/mawbs/new?shipment=${encodeURIComponent(shipment.trackingNumber)}`}>
+              <Button className="gap-2" variant="secondary">
+                <FileText className="h-4 w-4" />
+                MAWB
               </Button>
             </Link>
           ) : null}
