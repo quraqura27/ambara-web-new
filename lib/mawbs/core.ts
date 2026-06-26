@@ -1,3 +1,4 @@
+import { findAirlinesByPrefix, resolveAirWaybill } from "../airlines/core.ts";
 import { normalizePortalRole, isSuperadmin, type PortalRoleUser } from "../portal-roles.ts";
 import { normalizeShipmentService } from "../shipments/service-model.ts";
 
@@ -79,6 +80,11 @@ export type MawbFormValues = {
   insuranceAmount: string;
   mawbNumber: string;
   natureQuantity: string | null;
+  newCustomerAddress: string | null;
+  newCustomerCompanyName: string | null;
+  newCustomerEmail: string | null;
+  newCustomerFullName: string | null;
+  newCustomerPhone: string | null;
   originIata: string;
   otherChargeLines: MawbChargeLine[];
   overwriteExistingShipment: boolean;
@@ -107,22 +113,23 @@ export class MawbFormError extends Error {
 }
 
 export function normalizeMawbNumber(value: unknown): NormalizedMawbNumber | null {
-  const compact = String(value ?? "").replace(/[^0-9]/g, "");
+  try {
+    const resolved = resolveAirWaybill(value);
+    const awbSerial = resolved.canonicalNumber.replace(/[^0-9]/g, "").slice(3);
+    const airline = findAirlinesByPrefix(resolved.prefix).find(
+      (candidate) => candidate.name.toLowerCase() === resolved.airlineName.toLowerCase(),
+    ) ?? findAirlinesByPrefix(resolved.prefix)[0];
 
-  if (!compact) return null;
-  if (!/^\d{11}$/.test(compact)) return null;
-
-  const prefix = compact.slice(0, 3);
-  const awbSerial = compact.slice(3);
-  const carrier = mawbCarrierByPrefix[prefix];
-
-  if (!carrier) return null;
-
-  return {
-    ...carrier,
-    awbSerial,
-    mawbNumber: `${prefix}-${awbSerial}`,
-  };
+    return {
+      awbSerial,
+      code: airline?.iataDesignator || resolved.prefix,
+      mawbNumber: resolved.canonicalNumber,
+      name: resolved.airlineName,
+      prefix: resolved.prefix,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export function normalizeMawbAction(value: unknown): MawbActionValue {
@@ -279,10 +286,11 @@ export function parseMawbForm(formData: FormData): MawbFormValues {
   const requestedServiceType = cleanText(formData.get("serviceType"));
   const originIataValue = cleanText(formData.get("originIata")) || cleanText(formData.get("originIATA"));
   const destinationIataValue = cleanText(formData.get("destinationIata"));
+  const newCustomerPhone = optionalText(formData, "newCustomerPhone");
 
   if (!normalizedMawb) {
     fieldErrors.mawbNumber =
-      "Enter a known MAWB number with 3-digit prefix and 8-digit number, such as 126-91929552.";
+      "Enter a valid MAWB number with 3-digit prefix and 7 or 8-digit number, such as 126-91929552.";
   }
 
   if (requestedServiceType && !normalizeShipmentService(requestedServiceType)) {
@@ -319,13 +327,18 @@ export function parseMawbForm(formData: FormData): MawbFormValues {
     insuranceAmount: cleanText(formData.get("insuranceAmount")).toUpperCase() || "NIL",
     mawbNumber: normalizedMawb?.mawbNumber ?? "",
     natureQuantity: optionalText(formData, "natureQuantity"),
+    newCustomerAddress: optionalText(formData, "newCustomerAddress"),
+    newCustomerCompanyName: optionalText(formData, "newCustomerCompanyName"),
+    newCustomerEmail: optionalText(formData, "newCustomerEmail"),
+    newCustomerFullName: optionalText(formData, "newCustomerFullName"),
+    newCustomerPhone,
     originIata: originIataValue.toUpperCase(),
     otherChargeLines: parseMawbChargeLines(formData, fieldErrors),
     overwriteExistingShipment: cleanText(formData.get("overwriteExistingShipment")) === "yes",
     pieces: positiveInteger(formData, "pieces", "Pieces", fieldErrors),
     rate: decimalString(formData, "rate", "Rate", fieldErrors, { allowZero: true }),
     serviceType,
-    shipmentContactPhone: optionalText(formData, "shipmentContactPhone"),
+    shipmentContactPhone: optionalText(formData, "shipmentContactPhone") || newCustomerPhone,
     shipmentCustomerId: optionalPositiveId(formData, "shipmentCustomerId"),
     shipmentCustomerName: optionalText(formData, "shipmentCustomerName"),
     shipperAddress: requiredText(formData, "shipperAddress", "Shipper address", fieldErrors),
@@ -346,11 +359,9 @@ export function parseMawbForm(formData: FormData): MawbFormValues {
     fieldErrors.destinationIata = "Destination IATA must be 3 letters.";
   }
   if (actionMode === "create_shipment") {
-    if (!values.shipmentCustomerId) {
-      fieldErrors.shipmentCustomerId = "Select an existing customer when creating a shipment.";
-    }
-    if (!values.shipmentContactPhone) {
-      fieldErrors.shipmentContactPhone = "Shipment contact phone is required when creating a shipment.";
+    const hasNewCustomer = Boolean(values.newCustomerFullName || values.newCustomerCompanyName);
+    if (!values.shipmentCustomerId && !hasNewCustomer) {
+      fieldErrors.newCustomerName = "Select an existing customer or enter a new customer name/company.";
     }
   }
   if (actionMode === "link_shipment" && !values.existingShipmentTracking) {
