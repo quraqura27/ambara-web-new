@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { redirect } from "next/navigation";
 
+import { getLinkedMawbIdForShipmentTracking } from "@/actions/mawb-links";
 import { getMawbCustomerOptions } from "@/actions/mawbs";
 import { MawbForm } from "@/components/mawbs/mawb-form";
 import { Button } from "@/components/ui/core";
@@ -21,6 +22,14 @@ export default async function NewMawbPage({ searchParams }: NewMawbPageProps) {
 
   const params = await searchParams;
   const initialShipmentTracking = params.shipment?.trim() ?? "";
+  const linkedMawbId = initialShipmentTracking
+    ? await getLinkedMawbIdForShipmentTracking(initialShipmentTracking)
+    : null;
+
+  if (linkedMawbId) {
+    redirect(`/mawbs/${linkedMawbId}`);
+  }
+
   const customers = await getMawbCustomerOptions();
 
   return (
