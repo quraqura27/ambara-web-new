@@ -72,6 +72,7 @@ export function MawbForm({
   const [originIata, setOriginIata] = useState("");
   const [destinationIata, setDestinationIata] = useState("");
   const [customerSearch, setCustomerSearch] = useState("");
+  const [customerMode, setCustomerMode] = useState<"existing" | "new">("existing");
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
   const [shipmentContactPhone, setShipmentContactPhone] = useState("");
   const [grossWeight, setGrossWeight] = useState("");
@@ -102,7 +103,9 @@ export function MawbForm({
   }, [customerSearch, customers]);
   const selectedCustomer = customers.find((customer) => String(customer.id) === selectedCustomerId);
   const selectedCustomerName =
-    selectedCustomer?.fullName || selectedCustomer?.companyName || (selectedCustomer ? `Customer #${selectedCustomer.id}` : "");
+    customerMode === "existing"
+      ? selectedCustomer?.fullName || selectedCustomer?.companyName || (selectedCustomer ? `Customer #${selectedCustomer.id}` : "")
+      : "";
 
   function updateChargeLine(index: number, patch: Partial<MawbChargeLine>) {
     setChargeLines((current) =>
@@ -111,6 +114,13 @@ export function MawbForm({
   }
 
   function updateSelectedCustomer(value: string) {
+    if (value === "__new") {
+      setCustomerMode("new");
+      setSelectedCustomerId("");
+      return;
+    }
+
+    setCustomerMode("existing");
     setSelectedCustomerId(value);
     const customer = customers.find((option) => String(option.id) === value);
     if (customer?.phone) setShipmentContactPhone(customer.phone);
@@ -182,7 +192,7 @@ export function MawbForm({
           <div className="rounded-lg border border-white/5 bg-slate-950/40 p-4">
             <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Carrier</p>
             <p className={cn("mt-2 text-sm font-semibold", normalizedMawb ? "text-blue-200" : "text-rose-300")}>
-              {normalizedMawb ? `${normalizedMawb.code} / ${normalizedMawb.name}` : "Unknown prefix"}
+              {normalizedMawb ? `${normalizedMawb.prefix} / ${normalizedMawb.name}` : "Unknown prefix"}
             </p>
           </div>
           <Field error={fieldErrors.serviceType} label="Shipment service">
@@ -197,36 +207,64 @@ export function MawbForm({
         </div>
 
         {actionMode === "create_shipment" ? (
-          <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Find customer">
-              <Input
-                onChange={(event) => setCustomerSearch(event.target.value)}
-                placeholder="Search customer, company, or phone..."
-                value={customerSearch}
-              />
-            </Field>
-            <Field error={fieldErrors.shipmentCustomerId} label="Customer *">
-              <select
-                className={inputClassName}
-                name="shipmentCustomerId"
-                onChange={(event) => updateSelectedCustomer(event.target.value)}
-                value={selectedCustomerId}
-              >
-                <option value="">Select customer</option>
-                {filteredCustomers.map((customer) => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.fullName || customer.companyName || `Customer #${customer.id}`}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field error={fieldErrors.shipmentContactPhone} label="Shipment contact phone *">
-              <Input
-                name="shipmentContactPhone"
-                onChange={(event) => setShipmentContactPhone(event.target.value)}
-                value={shipmentContactPhone}
-              />
-            </Field>
+          <div className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Find customer">
+                <Input
+                  onChange={(event) => setCustomerSearch(event.target.value)}
+                  placeholder="Search customer, company, or phone..."
+                  value={customerSearch}
+                />
+              </Field>
+              <Field error={fieldErrors.shipmentCustomerId || fieldErrors.newCustomerName} label="Customer *">
+                <select
+                  className={inputClassName}
+                  name="shipmentCustomerId"
+                  onChange={(event) => updateSelectedCustomer(event.target.value)}
+                  value={customerMode === "new" ? "__new" : selectedCustomerId}
+                >
+                  <option value="">Select existing customer</option>
+                  <option value="__new">Create new customer</option>
+                  {filteredCustomers.map((customer) => (
+                    <option key={customer.id} value={customer.id}>
+                      {customer.fullName || customer.companyName || `Customer #${customer.id}`}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+
+            {customerMode === "new" ? (
+              <div className="grid gap-4 rounded-xl border border-blue-500/10 bg-blue-500/5 p-4 md:grid-cols-2">
+                <Field error={fieldErrors.newCustomerFullName || fieldErrors.newCustomerName} label="New customer name">
+                  <Input name="newCustomerFullName" placeholder="Contact person / customer name" />
+                </Field>
+                <Field error={fieldErrors.newCustomerCompanyName || fieldErrors.newCustomerName} label="New customer company">
+                  <Input name="newCustomerCompanyName" placeholder="Company name if any" />
+                </Field>
+                <Field label="New customer email">
+                  <Input name="newCustomerEmail" type="email" />
+                </Field>
+                <Field label="New customer phone">
+                  <Input name="newCustomerPhone" />
+                </Field>
+                <div className="md:col-span-2">
+                  <Field label="New customer address">
+                    <textarea className={inputClassName} name="newCustomerAddress" rows={3} />
+                  </Field>
+                </div>
+              </div>
+            ) : null}
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field error={fieldErrors.shipmentContactPhone} label="Shipment contact phone">
+                <Input
+                  name="shipmentContactPhone"
+                  onChange={(event) => setShipmentContactPhone(event.target.value)}
+                  value={shipmentContactPhone}
+                />
+              </Field>
+            </div>
           </div>
         ) : null}
 
