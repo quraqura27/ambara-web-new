@@ -148,6 +148,49 @@ function customerDisplayName(customer: {
   return customer.fullName || customer.companyName || `Customer #${customer.id}`;
 }
 
+async function resolveMawbShipmentCustomer(input: MawbFormValues, now: Date) {
+  if (input.shipmentCustomerId) {
+    const [customer] = await db
+      .select({
+        companyName: customers.companyName,
+        fullName: customers.fullName,
+        id: customers.id,
+        phone: customers.phone,
+      })
+      .from(customers)
+      .where(eq(customers.id, input.shipmentCustomerId))
+      .limit(1);
+
+    if (!customer) return null;
+    return customer;
+  }
+
+  const hasNewCustomer = Boolean(input.newCustomerFullName || input.newCustomerCompanyName);
+  if (!hasNewCustomer) return null;
+
+  const [createdCustomer] = await db
+    .insert(customers)
+    .values({
+      address: input.newCustomerAddress,
+      companyName: input.newCustomerCompanyName,
+      countryCode: "ID",
+      email: input.newCustomerEmail,
+      fullName: input.newCustomerFullName,
+      phone: input.newCustomerPhone || input.shipmentContactPhone,
+      type: "shipper",
+      createdAt: now,
+      updatedAt: now,
+    })
+    .returning({
+      companyName: customers.companyName,
+      fullName: customers.fullName,
+      id: customers.id,
+      phone: customers.phone,
+    });
+
+  return createdCustomer ?? null;
+}
+
 function mawbDocumentInsertValues(input: MawbFormValues, userId: number, mawbId: number, now: Date) {
   const normalized = normalizeMawbNumber(input.mawbNumber);
   if (!normalized) throw new Error("Cannot save MAWB without a recognized airline prefix.");
@@ -359,35 +402,6 @@ export async function saveMawbFromForm(
     };
   }
 
-  if (input.actionMode === "create_shipment") {
-    const [customer] = await db
-      .select({
-        companyName: customers.companyName,
-        fullName: customers.fullName,
-        id: customers.id,
-        phone: customers.phone,
-      })
-      .from(customers)
-      .where(eq(customers.id, input.shipmentCustomerId ?? 0))
-      .limit(1);
-
-    if (!customer) {
-      return {
-        chargeLines: input.otherChargeLines,
-        fieldErrors: {
-          shipmentCustomerId: "Select a customer from the customer list.",
-        },
-        values,
-      };
-    }
-
-    input = {
-      ...input,
-      shipmentContactPhone: input.shipmentContactPhone || customer.phone,
-      shipmentCustomerName: customerDisplayName(customer),
-    };
-  }
-
   let existingSubmission: { id: number } | undefined;
   try {
     [existingSubmission] = await db
@@ -406,6 +420,29 @@ export async function saveMawbFromForm(
   }
   if (existingSubmission) {
     redirect(`/mawbs/${existingSubmission.id}`);
+  }
+
+  const now = new Date();
+
+  if (input.actionMode === "create_shipment") {
+    const customer = await resolveMawbShipmentCustomer(input, now);
+
+    if (!customer) {
+      return {
+        chargeLines: input.otherChargeLines,
+        fieldErrors: {
+          newCustomerName: "Select an existing customer or create a new customer.",
+        },
+        values,
+      };
+    }
+
+    input = {
+      ...input,
+      shipmentContactPhone: input.shipmentContactPhone || customer.phone,
+      shipmentCustomerId: customer.id,
+      shipmentCustomerName: customerDisplayName(customer),
+    };
   }
 
   let linkedShipment:
@@ -456,7 +493,6 @@ export async function saveMawbFromForm(
     }
   }
 
-  const now = new Date();
   const ids = await allocateMawbIds(input.actionMode === "create_shipment");
   const mawbInsert = db.insert(mawbDocuments).values(mawbDocumentInsertValues(input, user.id, ids.mawb_id, now));
   const queries: BatchItem<"pg">[] = [mawbInsert];
@@ -698,6 +734,11 @@ export async function getMawbWorkbookInput(id: number): Promise<MawbFormValues |
     insuranceAmount: document.insuranceAmount ?? "NIL",
     mawbNumber: document.mawbNumber,
     natureQuantity: document.natureQuantity,
+    newCustomerAddress: null,
+    newCustomerCompanyName: null,
+    newCustomerEmail: null,
+    newCustomerFullName: null,
+    newCustomerPhone: null,
     originIata: document.originIata,
     otherChargeLines: detail.otherChargeLines,
     overwriteExistingShipment: false,
