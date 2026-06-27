@@ -1,4 +1,4 @@
-import { findAirlinesByPrefix, resolveAirWaybill } from "../airlines/core.ts";
+import { calculateAirWaybillCheckDigit, findAirlinesByPrefix } from "../airlines/core.ts";
 import { normalizePortalRole, isSuperadmin, type PortalRoleUser } from "../portal-roles.ts";
 import { normalizeShipmentService } from "../shipments/service-model.ts";
 
@@ -10,14 +10,6 @@ export type MawbCarrier = {
   code: string;
   name: string;
   prefix: string;
-};
-
-export const mawbCarrierByPrefix: Record<string, MawbCarrier> = {
-  "126": { code: "GA", name: "GARUDA INDONESIA", prefix: "126" },
-  "807": { code: "QZ", name: "AIRASIA", prefix: "807" },
-  "888": { code: "QG", name: "CITILINK", prefix: "888" },
-  "975": { code: "AK", name: "AIRASIA INDONESIA", prefix: "975" },
-  "157": { code: "QR", name: "QATAR AIRWAYS", prefix: "157" },
 };
 
 export type NormalizedMawbNumber = MawbCarrier & {
@@ -113,23 +105,30 @@ export class MawbFormError extends Error {
 }
 
 export function normalizeMawbNumber(value: unknown): NormalizedMawbNumber | null {
-  try {
-    const resolved = resolveAirWaybill(value);
-    const awbSerial = resolved.canonicalNumber.replace(/[^0-9]/g, "").slice(3);
-    const airline = findAirlinesByPrefix(resolved.prefix).find(
-      (candidate) => candidate.name.toLowerCase() === resolved.airlineName.toLowerCase(),
-    ) ?? findAirlinesByPrefix(resolved.prefix)[0];
+  const compact = String(value ?? "").replace(/[^0-9]/g, "");
 
-    return {
-      awbSerial,
-      code: airline?.iataDesignator || resolved.prefix,
-      mawbNumber: resolved.canonicalNumber,
-      name: resolved.airlineName,
-      prefix: resolved.prefix,
-    };
-  } catch {
+  if (!/^\d{10,11}$/.test(compact)) return null;
+
+  const prefix = compact.slice(0, 3);
+  const enteredSerial = compact.slice(3);
+  const airline = findAirlinesByPrefix(prefix)[0];
+
+  if (!airline) {
     return null;
   }
+
+  const awbSerial =
+    enteredSerial.length === 7
+      ? `${enteredSerial}${calculateAirWaybillCheckDigit(enteredSerial)}`
+      : enteredSerial;
+
+  return {
+    awbSerial,
+    code: airline.iataDesignator || prefix,
+    mawbNumber: `${prefix}-${awbSerial}`,
+    name: airline.name,
+    prefix,
+  };
 }
 
 export function normalizeMawbAction(value: unknown): MawbActionValue {
@@ -149,6 +148,45 @@ function optionalText(formData: FormData, key: string) {
 
 function optionalUpperText(formData: FormData, key: string) {
   return optionalText(formData, key)?.toUpperCase() ?? null;
+}
+
+const mawbAirportDisplayByIata: Record<
+  string,
+  {
+    departure: string;
+    destination: string;
+  }
+> = {
+  BKK: { departure: "Bangkok", destination: "Bangkok" },
+  CAN: { departure: "Guangzhou", destination: "Guangzhou" },
+  CGK: { departure: "Jakarta", destination: "Indonesia" },
+  DMK: { departure: "Bangkok", destination: "Bangkok" },
+  HKG: { departure: "Hong Kong", destination: "Hong Kong" },
+  KUL: { departure: "Kuala Lumpur", destination: "Kuala Lumpur" },
+  MEX: { departure: "Mexico City", destination: "Mexico" },
+  MLE: { departure: "Male", destination: "Maldives" },
+  SIN: { departure: "Singapore", destination: "Singapore" },
+  TPE: { departure: "Taipei", destination: "Taiwan" },
+};
+
+export function resolveMawbAirportDisplay(
+  iataCode: string,
+  usage: "departure" | "destination",
+) {
+  const normalized = iataCode.trim().toUpperCase();
+  return mawbAirportDisplayByIata[normalized]?.[usage] ?? normalized;
+}
+
+function airportDisplayText(
+  formData: FormData,
+  field: string,
+  iataCode: string,
+  usage: "departure" | "destination",
+) {
+  const normalizedIata = iataCode.trim().toUpperCase();
+  const explicitValue = cleanText(formData.get(field));
+  if (explicitValue && explicitValue.toUpperCase() !== normalizedIata) return explicitValue;
+  return resolveMawbAirportDisplay(normalizedIata, usage);
 }
 
 function optionalPositiveId(formData: FormData, key: string) {
@@ -310,10 +348,8 @@ export function parseMawbForm(formData: FormData): MawbFormValues {
       cleanText(formData.get("declaredValueForCarriage")).toUpperCase() || "NVD",
     declaredValueForCustoms:
       cleanText(formData.get("declaredValueForCustoms")).toUpperCase() || "NCV",
-    departureAirport:
-      cleanText(formData.get("departureAirport")).toUpperCase() || originIataValue.toUpperCase(),
-    destinationAirport:
-      cleanText(formData.get("destinationAirport")).toUpperCase() || destinationIataValue.toUpperCase(),
+    departureAirport: airportDisplayText(formData, "departureAirport", originIataValue, "departure"),
+    destinationAirport: airportDisplayText(formData, "destinationAirport", destinationIataValue, "destination"),
     destinationIata: requiredText(formData, "destinationIata", "Destination IATA", fieldErrors).toUpperCase(),
     executedDate: optionalDate(formData, "executedDate", "Execution date", fieldErrors),
     executedPlace: cleanText(formData.get("executedPlace")).toUpperCase() || "CGK",

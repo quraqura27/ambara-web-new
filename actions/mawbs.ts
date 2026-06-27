@@ -47,6 +47,8 @@ export type MawbCustomerOption = {
   phone: string | null;
 };
 
+type MawbCustomerRecord = MawbCustomerOption;
+
 function text(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
@@ -98,13 +100,19 @@ async function shipmentTrackingNumberExists(trackingNumber: string) {
   return Boolean(existing);
 }
 
-async function allocateMawbIds(includeShipment: boolean) {
+async function allocateMawbIds(includeShipment: boolean, includeCustomer: boolean) {
   const result = await db.execute<{
+    customer_id: number | null;
     mawb_id: number;
     parcel_id: number | null;
     shipment_id: number | null;
   }>(sql`
     select
+      case
+        when ${includeCustomer}
+        then nextval(pg_get_serial_sequence('customers', 'id'))::int
+        else null
+      end as customer_id,
       nextval(pg_get_serial_sequence('mawb_documents', 'id'))::int as mawb_id,
       case
         when ${includeShipment}
@@ -148,47 +156,90 @@ function customerDisplayName(customer: {
   return customer.fullName || customer.companyName || `Customer #${customer.id}`;
 }
 
-async function resolveMawbShipmentCustomer(input: MawbFormValues, now: Date) {
-  if (input.shipmentCustomerId) {
-    const [customer] = await db
-      .select({
-        companyName: customers.companyName,
-        fullName: customers.fullName,
-        id: customers.id,
-        phone: customers.phone,
-      })
-      .from(customers)
-      .where(eq(customers.id, input.shipmentCustomerId))
-      .limit(1);
+function mawbCustomerSelect() {
+  return {
+    companyName: customers.companyName,
+    fullName: customers.fullName,
+    id: customers.id,
+    phone: customers.phone,
+  };
+}
 
-    if (!customer) return null;
-    return customer;
+function hasNewMawbCustomerInput(input: MawbFormValues) {
+  return Boolean(input.newCustomerFullName || input.newCustomerCompanyName);
+}
+
+async function findMawbCustomerById(customerId: number) {
+  const [customer] = await db
+    .select(mawbCustomerSelect())
+    .from(customers)
+    .where(eq(customers.id, customerId))
+    .limit(1);
+
+  return customer ?? null;
+}
+
+async function findReusableMawbCustomer(input: MawbFormValues) {
+  const normalizedEmail = text(input.newCustomerEmail).toLowerCase();
+  if (normalizedEmail) {
+    const [customer] = await db
+      .select(mawbCustomerSelect())
+      .from(customers)
+      .where(sql`lower(btrim(${customers.email})) = ${normalizedEmail}`)
+      .limit(1);
+    if (customer) return customer;
   }
 
-  const hasNewCustomer = Boolean(input.newCustomerFullName || input.newCustomerCompanyName);
-  if (!hasNewCustomer) return null;
+  const normalizedPhone = text(input.newCustomerPhone || input.shipmentContactPhone);
+  if (normalizedPhone) {
+    const [customer] = await db
+      .select(mawbCustomerSelect())
+      .from(customers)
+      .where(sql`btrim(${customers.phone}) = ${normalizedPhone}`)
+      .limit(1);
+    if (customer) return customer;
+  }
 
-  const [createdCustomer] = await db
-    .insert(customers)
-    .values({
-      address: input.newCustomerAddress,
-      companyName: input.newCustomerCompanyName,
-      countryCode: "ID",
-      email: input.newCustomerEmail,
-      fullName: input.newCustomerFullName,
-      phone: input.newCustomerPhone || input.shipmentContactPhone,
-      type: "shipper",
-      createdAt: now,
-      updatedAt: now,
-    })
-    .returning({
-      companyName: customers.companyName,
-      fullName: customers.fullName,
-      id: customers.id,
-      phone: customers.phone,
-    });
+  const normalizedFullName = text(input.newCustomerFullName).toLowerCase();
+  const normalizedCompanyName = text(input.newCustomerCompanyName).toLowerCase();
+  if (normalizedFullName || normalizedCompanyName) {
+    const [customer] = await db
+      .select(mawbCustomerSelect())
+      .from(customers)
+      .where(sql`
+        lower(btrim(coalesce(${customers.fullName}, ''))) = ${normalizedFullName}
+        and lower(btrim(coalesce(${customers.companyName}, ''))) = ${normalizedCompanyName}
+      `)
+      .limit(1);
+    if (customer) return customer;
+  }
 
-  return createdCustomer ?? null;
+  return null;
+}
+
+function pendingMawbCustomer(input: MawbFormValues, customerId: number): MawbCustomerRecord {
+  return {
+    companyName: input.newCustomerCompanyName,
+    fullName: input.newCustomerFullName,
+    id: customerId,
+    phone: input.newCustomerPhone || input.shipmentContactPhone,
+  };
+}
+
+function newMawbCustomerInsert(input: MawbFormValues, customerId: number, now: Date) {
+  return db.insert(customers).values({
+    id: customerId,
+    address: input.newCustomerAddress,
+    companyName: input.newCustomerCompanyName,
+    country: "Indonesia",
+    countryCode: "ID",
+    email: input.newCustomerEmail,
+    fullName: input.newCustomerFullName,
+    phone: input.newCustomerPhone || input.shipmentContactPhone,
+    type: "shipper",
+    createdAt: now,
+    updatedAt: now,
+  });
 }
 
 function mawbDocumentInsertValues(input: MawbFormValues, userId: number, mawbId: number, now: Date) {
@@ -423,11 +474,18 @@ export async function saveMawbFromForm(
   }
 
   const now = new Date();
+  let shipmentCustomer: MawbCustomerRecord | null = null;
+  let shouldCreateCustomer = false;
 
   if (input.actionMode === "create_shipment") {
-    const customer = await resolveMawbShipmentCustomer(input, now);
+    if (input.shipmentCustomerId) {
+      shipmentCustomer = await findMawbCustomerById(input.shipmentCustomerId);
+    } else if (hasNewMawbCustomerInput(input)) {
+      shipmentCustomer = await findReusableMawbCustomer(input);
+      shouldCreateCustomer = !shipmentCustomer;
+    }
 
-    if (!customer) {
+    if (!shipmentCustomer && !shouldCreateCustomer) {
       return {
         chargeLines: input.otherChargeLines,
         fieldErrors: {
@@ -436,13 +494,6 @@ export async function saveMawbFromForm(
         values,
       };
     }
-
-    input = {
-      ...input,
-      shipmentContactPhone: input.shipmentContactPhone || customer.phone,
-      shipmentCustomerId: customer.id,
-      shipmentCustomerName: customerDisplayName(customer),
-    };
   }
 
   let linkedShipment:
@@ -493,11 +544,31 @@ export async function saveMawbFromForm(
     }
   }
 
-  const ids = await allocateMawbIds(input.actionMode === "create_shipment");
+  const ids = await allocateMawbIds(input.actionMode === "create_shipment", shouldCreateCustomer);
+  if (shouldCreateCustomer) {
+    if (!ids.customer_id) {
+      throw new Error("Customer identifier was not allocated.");
+    }
+    shipmentCustomer = pendingMawbCustomer(input, ids.customer_id);
+  }
+
+  if (input.actionMode === "create_shipment" && shipmentCustomer) {
+    input = {
+      ...input,
+      shipmentContactPhone: input.shipmentContactPhone || shipmentCustomer.phone,
+      shipmentCustomerId: shipmentCustomer.id,
+      shipmentCustomerName: customerDisplayName(shipmentCustomer),
+    };
+  }
+
   const mawbInsert = db.insert(mawbDocuments).values(mawbDocumentInsertValues(input, user.id, ids.mawb_id, now));
   const queries: BatchItem<"pg">[] = [mawbInsert];
 
   if (input.actionMode === "create_shipment") {
+    if (shouldCreateCustomer) {
+      queries.unshift(newMawbCustomerInsert(input, input.shipmentCustomerId!, now));
+    }
+
     const shipmentValues = createdShipmentValues(input, user, ids, trackingNumber, now);
     queries.push(
       shipmentValues.shipmentInsert,

@@ -190,6 +190,10 @@ test("generates a 10-sheet workbook while preserving template dimensions", async
     inlineCellValue(generatedEntries.get("xl/worksheets/sheet1.xml") ?? "", "AS29"),
     "NATURE TEST\nDIMS 10X10X10 / 1",
   );
+  assert.equal(
+    inlineCellValue(generatedEntries.get("xl/worksheets/sheet1.xml") ?? "", "AN2"),
+    "Garuda Indonesia",
+  );
   assert.equal(cellValue(generatedEntries.get("xl/worksheets/sheet1.xml") ?? "", "A46"), "30");
   assert.equal(cellValue(generatedEntries.get("xl/worksheets/sheet1.xml") ?? "", "A50"), "12030");
   assert.equal(cellValue(generatedEntries.get("xl/worksheets/sheet6.xml") ?? "", "A49"), "30");
