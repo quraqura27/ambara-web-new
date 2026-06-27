@@ -51,9 +51,8 @@ export function BulkImportForm() {
               {pending ? "Previewing..." : "Preview Import"}
             </Button>
             <p className="text-xs leading-relaxed text-slate-500">
-              Every accepted row creates one independent shipment, tracking number, CN, and
-              Delivery Record. AWB is mandatory. Pieces are physical cargo units and do not create
-              extra shipments or Delivery Records.
+              Every accepted row creates one shipment, tracking number, and CN. Rows with the same
+              MAWB number are grouped into one MAWB document. Destination IATA is mandatory.
             </p>
           </div>
 
@@ -64,7 +63,7 @@ export function BulkImportForm() {
             <textarea
               className="min-h-[220px] w-full rounded-lg border border-slate-700 bg-slate-900/50 px-4 py-3 font-mono text-xs text-slate-100 outline-none transition-all placeholder:text-slate-600 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/30"
               name="pastedTable"
-              placeholder="awb_number,awb_airline_name,customer_name,customer_reference,origin_city,receiver_name,receiver_phone,receiver_address,destination_city,postal_code,commodity,weight,chargeable_weight,pieces,service_type,flight_1,flight_1_airline_name,flight_2,flight_2_airline_name,flight_3,flight_3_airline_name,flight_4,flight_4_airline_name"
+              placeholder="awb_number,origin_iata,destination_iata,customer_name,customer_reference,origin_city,receiver_name,receiver_phone,receiver_address,destination_city,postal_code,commodity,weight,chargeable_weight,pieces,service_type,mawb_shipper_name,mawb_shipper_address,mawb_consignee_name,mawb_consignee_address,flight_1,flight_1_airline_name,flight_2,flight_2_airline_name,flight_3,flight_3_airline_name,flight_4,flight_4_airline_name"
             />
           </label>
         </form>
@@ -100,7 +99,8 @@ export function BulkImportForm() {
               <thead>
                 <tr className="bg-white/5 text-[10px] font-bold uppercase tracking-widest text-slate-500">
                   <th className="px-6 py-4">Row</th>
-                  <th className="px-6 py-4">AWB / Airline</th>
+                  <th className="px-6 py-4">MAWB / Airline</th>
+                  <th className="px-6 py-4">IATA</th>
                   <th className="px-6 py-4">Reference</th>
                   <th className="px-6 py-4">Receiver</th>
                   <th className="px-6 py-4">Destination</th>
@@ -122,6 +122,10 @@ export function BulkImportForm() {
                       <p className="text-xs text-slate-500">
                         {row.data.awbAirlineName || "-"}
                       </p>
+                    </td>
+                    <td className="px-6 py-4 text-xs text-slate-400">
+                      <p>{row.data.originIata || "-"} / {row.data.destinationIata || "-"}</p>
+                      <p>{row.data.departureAirport || "-"} / {row.data.destinationAirport || "-"}</p>
                     </td>
                     <td className="px-6 py-4 text-sm text-slate-300">
                       {row.data.customerReference || "-"}

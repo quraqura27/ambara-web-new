@@ -2,15 +2,12 @@ import { randomUUID } from "crypto";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
-import { getCommonShipmentLocations, getCustomersForSelect } from "@/actions/shipments";
-import { GuidedShipmentForm } from "@/components/portal/guided-shipment-form";
+import { getCustomersForSelect } from "@/actions/shipments";
+import { MawbShipmentForm } from "@/components/portal/mawb-shipment-form";
 import { Button } from "@/components/ui/core";
 
 export default async function NewShipmentPage() {
-  const [customers, locations] = await Promise.all([
-    getCustomersForSelect(),
-    getCommonShipmentLocations(),
-  ]);
+  const customers = await getCustomersForSelect();
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">
@@ -21,17 +18,16 @@ export default async function NewShipmentPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Input One Shipment</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Create Shipments + MAWB</h1>
           <p className="mt-1 text-slate-500">
-            One submission creates one tracking number and one consignment note.
+            Enter one MAWB header, then add one shipment line for each tracking number/CN.
           </p>
         </div>
       </div>
 
-      <GuidedShipmentForm
+      <MawbShipmentForm
         customers={customers}
         idempotencyKey={randomUUID()}
-        locations={locations}
       />
     </div>
   );

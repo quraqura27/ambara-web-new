@@ -145,7 +145,7 @@ export function PortalShell({
     {
       label: "Primary Tasks",
       items: [
-        { href: "/shipments/new", icon: UserPlus, label: "Input One Shipment", mobileSafe: true },
+        { href: "/shipments/new", icon: UserPlus, label: "Create Shipments + MAWB", mobileSafe: true },
         { href: "/shipments/bulk-import", icon: Upload, label: "Bulk Input" },
         { href: "/search", icon: Search, label: "Find and Track", mobileSafe: true },
       ],

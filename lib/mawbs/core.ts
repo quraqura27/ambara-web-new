@@ -1,4 +1,9 @@
 import { calculateAirWaybillCheckDigit, findAirlinesByPrefix } from "../airlines/core.ts";
+import {
+  resolveAirportByIata,
+  resolveMawbDepartureAirport,
+  resolveMawbDestinationDisplay,
+} from "../airports/core.ts";
 import { normalizePortalRole, isSuperadmin, type PortalRoleUser } from "../portal-roles.ts";
 import { normalizeShipmentService } from "../shipments/service-model.ts";
 
@@ -150,31 +155,16 @@ function optionalUpperText(formData: FormData, key: string) {
   return optionalText(formData, key)?.toUpperCase() ?? null;
 }
 
-const mawbAirportDisplayByIata: Record<
-  string,
-  {
-    departure: string;
-    destination: string;
-  }
-> = {
-  BKK: { departure: "Bangkok", destination: "Bangkok" },
-  CAN: { departure: "Guangzhou", destination: "Guangzhou" },
-  CGK: { departure: "Jakarta", destination: "Indonesia" },
-  DMK: { departure: "Bangkok", destination: "Bangkok" },
-  HKG: { departure: "Hong Kong", destination: "Hong Kong" },
-  KUL: { departure: "Kuala Lumpur", destination: "Kuala Lumpur" },
-  MEX: { departure: "Mexico City", destination: "Mexico" },
-  MLE: { departure: "Male", destination: "Maldives" },
-  SIN: { departure: "Singapore", destination: "Singapore" },
-  TPE: { departure: "Taipei", destination: "Taiwan" },
-};
-
 export function resolveMawbAirportDisplay(
   iataCode: string,
   usage: "departure" | "destination",
 ) {
   const normalized = iataCode.trim().toUpperCase();
-  return mawbAirportDisplayByIata[normalized]?.[usage] ?? normalized;
+  return (
+    usage === "departure"
+      ? resolveMawbDepartureAirport(normalized)
+      : resolveMawbDestinationDisplay(normalized)
+  ) ?? normalized;
 }
 
 function airportDisplayText(
@@ -390,9 +380,13 @@ export function parseMawbForm(formData: FormData): MawbFormValues {
   if (!values.destinationAirport) fieldErrors.destinationIata = "Destination IATA is required.";
   if (values.originIata && values.originIata.length !== 3) {
     fieldErrors.originIata = "Origin IATA must be 3 letters.";
+  } else if (values.originIata && !resolveAirportByIata(values.originIata)) {
+    fieldErrors.originIata = "Origin IATA was not found in the airport reference.";
   }
   if (values.destinationIata.length !== 3) {
     fieldErrors.destinationIata = "Destination IATA must be 3 letters.";
+  } else if (values.destinationIata && !resolveAirportByIata(values.destinationIata)) {
+    fieldErrors.destinationIata = "Destination IATA was not found in the airport reference.";
   }
   if (actionMode === "create_shipment") {
     const hasNewCustomer = Boolean(values.newCustomerFullName || values.newCustomerCompanyName);

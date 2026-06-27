@@ -64,14 +64,13 @@ export default async function ShipmentsPage({ searchParams }: ShipmentsPageProps
         <div className="flex flex-wrap gap-3">
           <BulkPrintConsignmentNotesButton />
           {canUseMawbs ? (
-            <Link href="/mawbs/new">
-              <Button className="gap-2" variant="secondary">
-                <FileText className="h-4 w-4" />
-                New MAWB
+            <Link href="/shipments/new">
+              <Button className="gap-2">
+                <Plus className="h-4 w-4" />
+                Create Shipments + MAWB
               </Button>
             </Link>
           ) : null}
-          <Link href="/shipments/new"><Button className="gap-2"><Plus className="h-4 w-4" /> Create Shipment</Button></Link>
         </div>
       </div>
 

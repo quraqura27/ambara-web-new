@@ -48,9 +48,9 @@ const batchParcels: MatchableBatchParcel[] = [
 ];
 
 test("validates bulk shipment rows with errors and warnings", () => {
-  const rows = parseDelimitedText(`awb_number,customer_name,customer_reference,origin_city,receiver_name,receiver_phone,receiver_address,destination_city,postal_code,commodity,weight,pieces,service_type
-126-9360193,ACME,REF-1,Bandung,Budi,+62812345678,Jl Sudirman 10,Jakarta,,General Cargo,12,1,DTD
-053-1234567,ACME,REF-1,Bandung,,+62812456789,Jl Thamrin 20,Jakarta,10310,,0,0,UNKNOWN`);
+  const rows = parseDelimitedText(`awb_number,destination_iata,customer_name,customer_reference,origin_city,receiver_name,receiver_phone,receiver_address,destination_city,postal_code,commodity,weight,pieces,service_type
+126-9360193,KUL,ACME,REF-1,Bandung,Budi,+62812345678,Jl Sudirman 10,Jakarta,,General Cargo,12,1,DTD
+126-1234567,ZZZ,ACME,REF-1,Bandung,,+62812456789,Jl Thamrin 20,Jakarta,10310,,0,0,UNKNOWN`);
 
   const preview = prepareBulkShipmentImport(rows);
 
@@ -67,9 +67,9 @@ test("validates bulk shipment rows with errors and warnings", () => {
 });
 
 test("requires delivery address only for DTD and PTD rows", () => {
-  const rows = parseDelimitedText(`awb_number,origin_city,receiver_name,receiver_phone,receiver_address,destination_city,commodity,weight,pieces,service_type
-126-9360193,Jakarta,Port Consignee,081230000001,,Singapore,General Cargo,5,2,DTP
-053-1234567,Singapore,Door Receiver,081230000002,,Jakarta,General Cargo,5,2,PTD`);
+  const rows = parseDelimitedText(`awb_number,destination_iata,origin_city,receiver_name,receiver_phone,receiver_address,destination_city,commodity,weight,pieces,service_type
+126-9360193,SIN,Jakarta,Port Consignee,081230000001,,Singapore,General Cargo,5,2,DTP
+126-1234567,TPE,Singapore,Door Receiver,081230000002,,Jakarta,General Cargo,5,2,PTD`);
 
   const preview = prepareBulkShipmentImport(rows);
 
@@ -78,13 +78,17 @@ test("requires delivery address only for DTD and PTD rows", () => {
 });
 
 test("normalizes mandatory AWB and four fixed flight columns", () => {
-  const rows = parseDelimitedText(`awb_number,origin_city,receiver_name,receiver_phone,destination_city,commodity,weight,pieces,service_type,flight_1,flight_2,flight_3,flight_4
-126-9360193,Jakarta,Port Consignee,081230000001,Singapore,General Cargo,5,2,DTP,GA820,A390,M0123,GA821`);
+  const rows = parseDelimitedText(`awb_number,destination_iata,origin_city,receiver_name,receiver_phone,destination_city,commodity,weight,pieces,service_type,flight_1,flight_2,flight_3,flight_4
+126-9360193,TPE,Jakarta,Port Consignee,081230000001,Singapore,General Cargo,5,2,DTP,GA820,A390,M0123,GA821`);
 
   const preview = prepareBulkShipmentImport(rows);
 
   assert.equal(preview.rows[0]?.data.awbNumber, "126-93601933");
   assert.equal(preview.rows[0]?.data.awbAirlineName, "Garuda Indonesia");
+  assert.equal(preview.rows[0]?.data.originIata, "CGK");
+  assert.equal(preview.rows[0]?.data.departureAirport, "Soekarno-Hatta International Airport");
+  assert.equal(preview.rows[0]?.data.destinationIata, "TPE");
+  assert.equal(preview.rows[0]?.data.destinationAirport, "Taiwan");
   assert.deepEqual(
     preview.rows[0]?.data.flightLegs.map((leg) => leg.formattedNumber),
     ["GA820", "A390", "M0123", "GA821"],
@@ -93,18 +97,30 @@ test("normalizes mandatory AWB and four fixed flight columns", () => {
 
 test("requires AWB in bulk rows and permits the same AWB on independent shipments", () => {
   const missingAwb = prepareBulkShipmentImport(
-    parseDelimitedText(`origin_city,receiver_name,receiver_phone,destination_city,commodity,weight,pieces,service_type
-Jakarta,Port Consignee,081230000001,Singapore,General Cargo,5,2,DTP`),
+    parseDelimitedText(`destination_iata,origin_city,receiver_name,receiver_phone,destination_city,commodity,weight,pieces,service_type
+SIN,Jakarta,Port Consignee,081230000001,Singapore,General Cargo,5,2,DTP`),
   );
   assert.ok(missingAwb.rows[0]?.errors.includes("missing awb_number"));
 
   const sharedAwb = prepareBulkShipmentImport(
-    parseDelimitedText(`awb_number,origin_city,receiver_name,receiver_phone,destination_city,commodity,weight,pieces,service_type
-126-9360193,Jakarta,Consignee One,081230000001,Singapore,General Cargo,5,2,DTP
-126-9360193,Jakarta,Consignee Two,081230000002,Singapore,General Cargo,6,3,DTP`),
+    parseDelimitedText(`awb_number,destination_iata,origin_city,receiver_name,receiver_phone,destination_city,commodity,weight,pieces,service_type
+126-9360193,KUL,Jakarta,Consignee One,081230000001,Singapore,General Cargo,5,2,DTP
+126-9360193,KUL,Jakarta,Consignee Two,081230000002,Singapore,General Cargo,6,3,DTP`),
   );
   assert.equal(sharedAwb.summary.validRows, 2);
   assert.equal(sharedAwb.summary.warningRows, 0);
+});
+
+test("bulk import rejects unknown destination IATA and allows blank receiver phone", () => {
+  const preview = prepareBulkShipmentImport(
+    parseDelimitedText(`awb_number,destination_iata,origin_city,receiver_name,receiver_phone,destination_city,commodity,weight,pieces,service_type
+126-9360193,ZZZ,Jakarta,Consignee One,,Taiwan,General Cargo,5,2,DTP
+126-9360193,DMK,Jakarta,Consignee Two,,Bangkok,General Cargo,6,3,DTP`),
+  );
+
+  assert.ok(preview.rows[0]?.errors.includes("invalid destination_iata"));
+  assert.equal(preview.rows[1]?.errors.length, 0);
+  assert.equal(preview.rows[1]?.data.destinationAirport, "Bangkok");
 });
 
 test("builds vendor upload rows with required Ambara references", () => {

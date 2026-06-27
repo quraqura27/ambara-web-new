@@ -154,7 +154,7 @@ test("defaults airport fields from IATA entries and maps onward routing cells", 
   }));
   const values = buildMawbTemplateValues(parsed);
 
-  assert.equal(parsed.departureAirport, "Kuala Lumpur");
+  assert.equal(parsed.departureAirport, "Kuala Lumpur International Airport");
   assert.equal(parsed.destinationAirport, "Taiwan");
   assert.equal(resolveMawbAirportDisplay("DMK", "destination"), "Bangkok");
   assert.equal(resolveMawbAirportDisplay("XYZ", "destination"), "XYZ");

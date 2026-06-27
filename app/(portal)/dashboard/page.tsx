@@ -18,13 +18,13 @@ function formatDate(value: Date | string | null) {
 
 const quickActions = [
   {
-    description: "Create one tracking number and one CN.",
+    description: "Create one MAWB with one or more tracking numbers/CNs.",
     href: "/shipments/new",
     icon: PackagePlus,
-    label: "Input One Shipment",
+    label: "Create Shipments + MAWB",
   },
   {
-    description: "Every accepted row becomes one shipment.",
+    description: "Rows are grouped into MAWBs by MAWB number.",
     href: "/shipments/bulk-import",
     icon: FileUp,
     label: "Bulk Input",

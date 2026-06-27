@@ -13,6 +13,8 @@ import {
   bulkUpdateItems,
   bulkUpdateJobs,
   deliveryBatches,
+  mawbDocuments,
+  mawbShipmentLinks,
   parcels,
   parcelVendorTracking,
   portalAuditLogs,
@@ -34,6 +36,7 @@ import {
   normalizeShipmentStatus,
 } from "@/lib/shipments/status-model";
 import { buildCustomerVisibleTrackingEvent } from "@/lib/tracking/public-events";
+import { calculateMawbCharges } from "@/lib/mawbs/core";
 import {
   buildAmbaraParcelId,
   buildVendorUploadCsv,
@@ -53,6 +56,7 @@ import {
   type BulkShipmentImportPreview,
   type MatchableBatchParcel,
   type NormalizedBulkShipmentRow,
+  type ValidatedBulkShipmentRow,
   type VendorReturnRow,
 } from "@/lib/vendor-tracking/core";
 
@@ -269,11 +273,27 @@ function selectedBulkRows(preview: BulkShipmentImportPreview, approvedWarningRow
   );
 }
 
+function groupBulkRowsByMawb(rows: ValidatedBulkShipmentRow[]) {
+  const groups = new Map<string, ValidatedBulkShipmentRow[]>();
+  rows.forEach((row) => {
+    const key = row.data.awbNumber;
+    const group = groups.get(key) ?? [];
+    group.push(row);
+    groups.set(key, group);
+  });
+  return Array.from(groups.entries()).map(([mawbNumber, items]) => ({ items, mawbNumber }));
+}
+
+function uniqueText(values: string[]) {
+  return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean))).join("; ");
+}
+
 function revalidateBulkPreview(preview: BulkShipmentImportPreview) {
   return prepareBulkShipmentImport(
     preview.rows.map((row) => ({
       rowNumber: row.rowNumber,
       values: {
+        awb_airline_code: row.data.awbAirlineCode,
         awb_airline_name: row.data.awbAirlineName,
         awb_number: row.data.awbNumber,
         chargeable_weight:
@@ -284,6 +304,13 @@ function revalidateBulkPreview(preview: BulkShipmentImportPreview) {
         customer_reference: row.data.customerReference,
         delivery_instruction: row.data.deliveryInstruction,
         destination_city: row.data.destinationCity,
+        destination_iata: row.data.destinationIata,
+        mawb_agent_name: row.data.mawbAgentName,
+        mawb_consignee_address: row.data.mawbConsigneeAddress,
+        mawb_consignee_name: row.data.mawbConsigneeName,
+        mawb_shipper_address: row.data.mawbShipperAddress,
+        mawb_shipper_name: row.data.mawbShipperName,
+        origin_iata: row.data.originIata,
         origin_city: row.data.originCity,
         pieces: String(row.data.pieces),
         postal_code: row.data.postalCode,
@@ -307,14 +334,19 @@ function revalidateBulkPreview(preview: BulkShipmentImportPreview) {
   );
 }
 
-async function allocateBulkImportIds(rowCount: number) {
+async function allocateBulkImportIds(rowCount: number, mawbGroupCount = 0) {
   const result = await db.execute<{
     job_id: number;
+    mawb_ids: number[];
     parcel_ids: number[];
     shipment_ids: number[];
   }>(sql`
     select
       nextval(pg_get_serial_sequence('bulk_shipment_import_jobs', 'id'))::int as job_id,
+      array(
+        select nextval(pg_get_serial_sequence('mawb_documents', 'id'))::int
+        from generate_series(1, ${mawbGroupCount})
+      ) as mawb_ids,
       array(
         select nextval(pg_get_serial_sequence('parcels', 'id'))::int
         from generate_series(1, ${rowCount})
@@ -325,7 +357,12 @@ async function allocateBulkImportIds(rowCount: number) {
       ) as shipment_ids
   `);
   const ids = result.rows[0];
-  if (!ids || ids.parcel_ids.length !== rowCount || ids.shipment_ids.length !== rowCount) {
+  if (
+    !ids ||
+    ids.mawb_ids.length !== mawbGroupCount ||
+    ids.parcel_ids.length !== rowCount ||
+    ids.shipment_ids.length !== rowCount
+  ) {
     throw new Error("Unable to allocate import identifiers.");
   }
   return ids;
@@ -392,6 +429,7 @@ export async function commitBulkShipmentImport(formData: FormData) {
       "No valid rows were selected. Review warning rows or upload a corrected file.",
     );
   }
+  const mawbGroups = groupBulkRowsByMawb(selectedRows);
 
   const [existingJob] = await db
     .select({ id: bulkShipmentImportJobs.id })
@@ -402,8 +440,9 @@ export async function commitBulkShipmentImport(formData: FormData) {
     redirectWithNotice("/shipments/bulk-import", "This import was already processed.");
   }
   const now = new Date();
-  const ids = await allocateBulkImportIds(selectedRows.length);
+  const ids = await allocateBulkImportIds(selectedRows.length, mawbGroups.length);
   const trackingNumbers = await createUniqueTrackingNumbers(selectedRows.length);
+  const mawbIdByNumber = new Map<string, number>();
   const queries: BatchItem<"pg">[] = [
     db.insert(bulkShipmentImportJobs).values({
       id: ids.job_id,
@@ -422,13 +461,89 @@ export async function commitBulkShipmentImport(formData: FormData) {
     }),
   ];
 
+  mawbGroups.forEach((group, index) => {
+    const first = group.items[0]!.data;
+    const mawbId = ids.mawb_ids[index]!;
+    mawbIdByNumber.set(group.mawbNumber, mawbId);
+    const totals = group.items.reduce(
+      (sum, item) => ({
+        chargeableWeight: sum.chargeableWeight + (item.data.chargeableWeight ?? item.data.weight),
+        pieces: sum.pieces + item.data.pieces,
+        weight: sum.weight + item.data.weight,
+      }),
+      { chargeableWeight: 0, pieces: 0, weight: 0 },
+    );
+    const chargeSummary = calculateMawbCharges({
+      chargeableWeight: totals.chargeableWeight,
+      grossWeight: totals.weight,
+      otherChargeLines: [],
+      rate: 0,
+    });
+
+    queries.push(
+      db.insert(mawbDocuments).values({
+        id: mawbId,
+        actionMode: "create_shipment",
+        agentName: first.mawbAgentName || "PT PLI",
+        awbPrefix: first.awbAirlinePrefix,
+        awbSerial: group.mawbNumber.replace(/^\d{3}-/, ""),
+        carrierCode: first.awbAirlineCode || first.awbAirlinePrefix,
+        carrierName: first.awbAirlineName,
+        chargeableWeight: String(totals.chargeableWeight),
+        commodity: uniqueText(group.items.map((item) => item.data.commodity)),
+        consigneeAddress: first.mawbConsigneeAddress || first.receiverAddress || "-",
+        consigneeName: first.mawbConsigneeName || first.receiverName || "-",
+        createdAt: now,
+        createdByStaff: user.id,
+        currency: "IDR",
+        declaredValueForCarriage: "NVD",
+        declaredValueForCustoms: "NCV",
+        departureAirport: first.departureAirport,
+        destinationAirport: first.destinationAirport,
+        destinationIata: first.destinationIata,
+        executedDate: null,
+        executedPlace: first.originIata,
+        flightDate: null,
+        flightNumber: first.flightLegs[0]?.formattedNumber ?? "TBA",
+        goodsDescription: uniqueText(group.items.map((item) => item.data.commodity)),
+        grossWeight: String(totals.weight),
+        handlingInformation: null,
+        idempotencyKey: `${payload.idempotencyKey}:mawb:${index + 1}`,
+        insuranceAmount: "NIL",
+        mawbNumber: group.mawbNumber,
+        natureQuantity: null,
+        originIata: first.originIata,
+        otherChargesJson: JSON.stringify([]),
+        otherChargesTotal: String(chargeSummary.otherChargesTotal),
+        pieces: totals.pieces,
+        rate: "0",
+        routingBy1: first.flightLegs[0]?.airlineDesignator ?? null,
+        routingBy2: first.flightLegs[1]?.airlineDesignator ?? null,
+        routingTo1: first.destinationIata,
+        routingTo2: null,
+        serviceType: first.serviceType,
+        shipmentContactPhone: first.receiverPhone || null,
+        shipmentCustomerId: null,
+        shipmentCustomerName: first.customerName || null,
+        shipperAddress: first.mawbShipperAddress || "-",
+        shipperName: first.mawbShipperName || first.shipperName || first.customerName || "-",
+        totalPrepaid: String(chargeSummary.totalPrepaid),
+        updatedAt: now,
+        updatedByStaff: user.id,
+        weightCharge: String(chargeSummary.weightCharge),
+      }),
+    );
+  });
+
   selectedRows.forEach((item, index) => {
     const row = item.data;
     const trackingNumber = trackingNumbers[index]!;
     const shipmentId = ids.shipment_ids[index]!;
     const parcelId = ids.parcel_ids[index]!;
+    const mawbDocumentId = mawbIdByNumber.get(row.awbNumber)!;
     const serviceType = normalizeShipmentService(row.serviceType)!;
     const doorDelivery = isDoorDeliveryService(serviceType);
+    const receiverPhone = row.receiverPhone || "-";
     const receiverAddress = doorDelivery
       ? row.receiverAddress
       : `Destination port: ${row.destinationCity}`;
@@ -446,13 +561,15 @@ export async function commitBulkShipmentImport(formData: FormData) {
         customerReference: row.customerReference || null,
         title: shipmentTitle(row),
         origin: row.originCity || "Unknown",
+        originIata: row.originIata,
         destination: row.destinationCity,
+        destinationIata: row.destinationIata,
         serviceType,
         shipperName: row.shipperName || null,
         shipperPhone: row.shipperPhone || null,
         consigneeName: row.receiverName,
         consigneeAddress: doorDelivery ? row.receiverAddress : null,
-        consigneePhone: row.receiverPhone,
+        consigneePhone: receiverPhone,
         customerName: row.customerName || null,
         goodsDescription: row.commodity || null,
         totalPcs: row.pieces,
@@ -473,7 +590,7 @@ export async function commitBulkShipmentImport(formData: FormData) {
         ambaraParcelId: buildAmbaraParcelId(trackingNumber, 1),
         parcelNumber: 1,
         receiverName: row.receiverName,
-        receiverPhone: row.receiverPhone,
+        receiverPhone,
         receiverAddress,
         destinationCity: row.destinationCity,
         postalCode: doorDelivery ? row.postalCode || null : null,
@@ -520,6 +637,14 @@ export async function commitBulkShipmentImport(formData: FormData) {
         receiverName: row.receiverName,
         validationStatus: item.warnings.length > 0 ? "warning" : "valid",
         errorMessage: item.warnings.join("; ") || null,
+        createdAt: now,
+      }),
+      db.insert(mawbShipmentLinks).values({
+        mawbDocumentId,
+        shipmentId,
+        linkMode: "create_shipment",
+        copiedFieldsJson: JSON.stringify({ bulkImportJobId: ids.job_id, trackingNumber }),
+        createdByStaff: user.id,
         createdAt: now,
       }),
     );
@@ -675,6 +800,9 @@ export async function rollbackBulkShipmentImportJob(jobId: number, formData: For
     db.delete(trackingUpdates).where(inArray(trackingUpdates.shipmentId, shipmentIds)),
     db.delete(parcels).where(inArray(parcels.id, parcelIds)),
     db.delete(shipments).where(inArray(shipments.id, shipmentIds)),
+    db
+      .delete(mawbDocuments)
+      .where(sql`${mawbDocuments.idempotencyKey} like ${`${job.idempotencyKey}:mawb:%`}`),
     db
       .update(bulkShipmentImportJobs)
       .set({ status: "rolled_back", completedAt })

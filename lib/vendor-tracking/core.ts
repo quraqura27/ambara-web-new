@@ -3,10 +3,15 @@ import {
   normalizeShipmentService,
 } from "../shipments/service-model.ts";
 import {
-  resolveAirWaybill,
+  resolveAirportByIata,
+  resolveMawbDepartureAirport,
+  resolveMawbDestinationDisplay,
+} from "../airports/core.ts";
+import {
   resolveFlightLeg,
   type ResolvedFlightLeg,
 } from "../airlines/core.ts";
+import { normalizeMawbNumber } from "../mawbs/core.ts";
 
 export const ambaraStatusCodes = [
   "DRAFT",
@@ -30,13 +35,23 @@ export type RawTableRow = {
 export type NormalizedBulkShipmentRow = {
   rowNumber: number;
   awbAirlineName: string;
+  awbAirlineCode: string;
   awbAirlinePrefix: string;
   awbAirlineUnresolved: boolean;
   awbNumber: string;
   chargeableWeight: number | null;
   customerName: string;
   customerReference: string;
+  departureAirport: string;
+  destinationAirport: string;
+  destinationIata: string;
   shipperName: string;
+  mawbAgentName: string;
+  mawbConsigneeAddress: string;
+  mawbConsigneeName: string;
+  mawbShipperAddress: string;
+  mawbShipperName: string;
+  originIata: string;
   shipperPhone: string;
   originCity: string;
   receiverName: string;
@@ -229,7 +244,14 @@ const bulkShipmentColumns = {
   awbAirlineName: ["awb_airline_name", "airline_name"],
   customerName: ["customer_name", "customer", "customer_full_name"],
   customerReference: ["customer_reference", "customer_ref", "reference", "order_id"],
+  destinationIata: ["destination_iata", "destination_airport_iata", "destination_airport_code"],
   shipperName: ["shipper_name", "shipper"],
+  mawbAgentName: ["mawb_agent_name", "agent_name"],
+  mawbConsigneeAddress: ["mawb_consignee_address", "consignee_address_mawb"],
+  mawbConsigneeName: ["mawb_consignee_name", "consignee_name_mawb"],
+  mawbShipperAddress: ["mawb_shipper_address", "shipper_address_mawb"],
+  mawbShipperName: ["mawb_shipper_name", "shipper_name_mawb"],
+  originIata: ["origin_iata", "departure_iata", "origin_airport_iata", "departure_airport_code"],
   shipperPhone: ["shipper_phone", "shipper_mobile"],
   originCity: ["origin_city", "origin"],
   receiverName: ["receiver_name", "consignee_name", "recipient_name"],
@@ -421,24 +443,37 @@ export function prepareBulkShipmentImport(rows: RawTableRow[]): BulkShipmentImpo
     const awbInput = getValue(row, bulkShipmentColumns.awbNumber);
     const awbAirlineNameInput = getValue(row, bulkShipmentColumns.awbAirlineName);
     let awbNumber = "";
+    let awbAirlineCode = "";
     let awbAirlinePrefix = "";
     let awbAirlineName = awbAirlineNameInput;
     let awbAirlineUnresolved = false;
+    const originIata = (getValue(row, bulkShipmentColumns.originIata) || "CGK").toUpperCase();
+    const destinationIata = getValue(row, bulkShipmentColumns.destinationIata).toUpperCase();
+    const departureAirport = resolveMawbDepartureAirport(originIata) ?? "";
+    const destinationAirport = resolveMawbDestinationDisplay(destinationIata) ?? "";
 
     if (!awbInput) {
       parseErrors.push("missing awb_number");
     } else {
-      try {
-        const awb = resolveAirWaybill(awbInput, awbAirlineNameInput);
-        awbNumber = awb.canonicalNumber;
-        awbAirlinePrefix = awb.prefix;
-        awbAirlineName = awb.airlineName;
-        awbAirlineUnresolved = awb.airlineUnresolved;
-      } catch (error) {
-        parseErrors.push(
-          `invalid awb_number: ${error instanceof Error ? error.message : "invalid value"}`,
-        );
+      const mawb = normalizeMawbNumber(awbInput);
+      if (!mawb) {
+        parseErrors.push("invalid awb_number: unknown airline prefix or invalid MAWB number");
+      } else {
+        awbNumber = mawb.mawbNumber;
+        awbAirlineCode = mawb.code;
+        awbAirlinePrefix = mawb.prefix;
+        awbAirlineName = mawb.name;
+        awbAirlineUnresolved = false;
       }
+    }
+
+    if (!resolveAirportByIata(originIata)) {
+      parseErrors.push("invalid origin_iata");
+    }
+    if (!destinationIata) {
+      parseErrors.push("missing destination_iata");
+    } else if (!resolveAirportByIata(destinationIata)) {
+      parseErrors.push("invalid destination_iata");
     }
 
     const flightFields = [
@@ -465,19 +500,29 @@ export function prepareBulkShipmentImport(rows: RawTableRow[]): BulkShipmentImpo
     return {
       rowNumber: row.rowNumber,
       awbAirlineName,
+      awbAirlineCode,
       awbAirlinePrefix,
       awbAirlineUnresolved,
       awbNumber,
       chargeableWeight,
       customerName: getValue(row, bulkShipmentColumns.customerName),
       customerReference: getValue(row, bulkShipmentColumns.customerReference),
+      departureAirport,
+      destinationAirport,
+      destinationIata,
+      mawbAgentName: getValue(row, bulkShipmentColumns.mawbAgentName),
+      mawbConsigneeAddress: getValue(row, bulkShipmentColumns.mawbConsigneeAddress),
+      mawbConsigneeName: getValue(row, bulkShipmentColumns.mawbConsigneeName),
+      mawbShipperAddress: getValue(row, bulkShipmentColumns.mawbShipperAddress),
+      mawbShipperName: getValue(row, bulkShipmentColumns.mawbShipperName),
+      originIata,
       shipperName: getValue(row, bulkShipmentColumns.shipperName),
       shipperPhone: normalizePhone(getValue(row, bulkShipmentColumns.shipperPhone)),
-      originCity: getValue(row, bulkShipmentColumns.originCity),
+      originCity: getValue(row, bulkShipmentColumns.originCity) || originIata,
       receiverName: getValue(row, bulkShipmentColumns.receiverName),
       receiverPhone: normalizePhone(getValue(row, bulkShipmentColumns.receiverPhone)),
       receiverAddress: getValue(row, bulkShipmentColumns.receiverAddress),
-      destinationCity: getValue(row, bulkShipmentColumns.destinationCity),
+      destinationCity: getValue(row, bulkShipmentColumns.destinationCity) || destinationAirport,
       postalCode: getValue(row, bulkShipmentColumns.postalCode),
       commodity: getValue(row, bulkShipmentColumns.commodity),
       weight,
@@ -520,7 +565,6 @@ export function prepareBulkShipmentImport(rows: RawTableRow[]): BulkShipmentImpo
 
     errors.push(...row.parseErrors);
     if (!row.receiverName) errors.push("missing receiver_name");
-    if (!row.receiverPhone) errors.push("missing receiver_phone");
     if (row.receiverPhone && !/^\+?\d{8,15}$/.test(row.receiverPhone)) {
       errors.push("invalid receiver_phone");
     }

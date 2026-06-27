@@ -35,12 +35,12 @@ export default async function MawbsPage({ searchParams }: MawbsPageProps) {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">MAWB Documents</h1>
-          <p className="mt-1 text-slate-500">Create, link, and print neutral MAWB workbook formats.</p>
+          <p className="mt-1 text-slate-500">Review, print, download, and correct MAWB workbook records.</p>
         </div>
-        <Link href="/mawbs/new">
+        <Link href="/shipments/new">
           <Button className="gap-2">
             <Plus className="h-4 w-4" />
-            New MAWB
+            Create Shipments + MAWB
           </Button>
         </Link>
       </div>
