@@ -13,6 +13,7 @@ import {
   MawbFormError,
   normalizeMawbNumber,
   parseMawbForm,
+  resolveMawbAirportDisplay,
 } from "./core.ts";
 
 function validForm(overrides: Record<string, string> = {}) {
@@ -63,15 +64,39 @@ test("normalizes MAWB number and recognizes known airline prefixes", () => {
     awbSerial: "91929552",
     code: "GA",
     mawbNumber: "126-91929552",
-    name: "GARUDA INDONESIA",
+    name: "Garuda Indonesia",
     prefix: "126",
   });
-  assert.equal(normalizeMawbNumber("999-91929552"), null);
+  assert.deepEqual(normalizeMawbNumber("999-91929552"), {
+    awbSerial: "91929552",
+    code: "CA",
+    mawbNumber: "999-91929552",
+    name: "Air China",
+    prefix: "999",
+  });
+  assert.equal(normalizeMawbNumber("000-91929552"), null);
+});
+
+test("MAWB normalization uses airline lookup without rejecting entered check digits", () => {
+  assert.deepEqual(normalizeMawbNumber("126-9360193"), {
+    awbSerial: "93601933",
+    code: "GA",
+    mawbNumber: "126-93601933",
+    name: "Garuda Indonesia",
+    prefix: "126",
+  });
+  assert.deepEqual(normalizeMawbNumber("126-93601939"), {
+    awbSerial: "93601939",
+    code: "GA",
+    mawbNumber: "126-93601939",
+    name: "Garuda Indonesia",
+    prefix: "126",
+  });
 });
 
 test("blocks save when MAWB prefix is unknown", () => {
   assert.throws(
-    () => parseMawbForm(validForm({ mawbNumber: "999-91929552" })),
+    () => parseMawbForm(validForm({ mawbNumber: "000-91929552" })),
     MawbFormError,
   );
 });
@@ -113,6 +138,7 @@ test("builds the 10-copy print model and template totals", () => {
     "9",
     "10",
   ]);
+  assert.equal(values.AN2, "Garuda Indonesia");
   assert.equal(values.A46, "80540");
   assert.equal(values.A50, "92540");
 });
@@ -121,27 +147,41 @@ test("defaults airport fields from IATA entries and maps onward routing cells", 
   const parsed = parseMawbForm(validForm({
     departureAirport: "",
     destinationAirport: "",
+    originIata: "KUL",
     destinationIata: "TPE",
     routingBy1: "ak",
     routingTo1: "mle",
   }));
   const values = buildMawbTemplateValues(parsed);
 
-  assert.equal(parsed.departureAirport, "CGK");
-  assert.equal(parsed.destinationAirport, "TPE");
+  assert.equal(parsed.departureAirport, "Kuala Lumpur");
+  assert.equal(parsed.destinationAirport, "Taiwan");
+  assert.equal(resolveMawbAirportDisplay("DMK", "destination"), "Bangkok");
+  assert.equal(resolveMawbAirportDisplay("XYZ", "destination"), "XYZ");
   assert.equal(values.A20, "TPE");
-  assert.equal(values.A23, "TPE");
+  assert.equal(values.A23, "Taiwan");
   assert.equal(values.V20, "to\n\nMLE");
   assert.equal(values.Y20, "by\n\nAK");
   assert.equal(values.AB20, "to");
   assert.equal(values.AE20, "by");
 });
 
-test("create-shipment mode requires an existing customer id", () => {
+test("create-shipment mode requires existing or new customer data", () => {
   assert.throws(
     () => parseMawbForm(validForm({ shipmentCustomerId: "" })),
     MawbFormError,
   );
+  assert.equal(
+    parseMawbForm(validForm({ shipmentContactPhone: "", shipmentCustomerId: "42" })).shipmentContactPhone,
+    null,
+  );
+  const parsed = parseMawbForm(validForm({
+    newCustomerCompanyName: "New Customer Co",
+    shipmentContactPhone: "",
+    shipmentCustomerId: "",
+  }));
+  assert.equal(parsed.newCustomerCompanyName, "New Customer Co");
+  assert.equal(parsed.shipmentContactPhone, null);
 });
 
 test("blank-fill copy rules do not overwrite existing shipment fields for operations", () => {
