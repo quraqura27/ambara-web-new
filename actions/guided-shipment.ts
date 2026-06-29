@@ -28,7 +28,7 @@ import {
 import {
   calculateMawbCharges,
   canUseMawbWorkflow,
-  defaultMawbChargeLines,
+  createBlankMawbChargeLine,
   normalizeMawbNumber,
   parseMawbChargeLines,
   type MawbChargeLine,
@@ -42,6 +42,7 @@ import { buildCustomerVisibleTrackingEvent } from "@/lib/tracking/public-events"
 import { resolveAmbaraTrackingNumber } from "@/lib/vendor-tracking/core";
 
 export type GuidedShipmentActionState = PortalActionState & {
+  chargeLines?: MawbChargeLine[];
   duplicateWarnings?: string[];
 };
 
@@ -265,6 +266,12 @@ function optionalUpper(formData: FormData, field: string) {
   return text(formData, field).toUpperCase() || null;
 }
 
+function chargeLinesForState(formData: FormData) {
+  const ignoredErrors: Record<string, string> = {};
+  const chargeLines = parseMawbChargeLines(formData, ignoredErrors, { requireAtLeastOne: false });
+  return chargeLines.length > 0 ? chargeLines : [createBlankMawbChargeLine()];
+}
+
 function parseGuidedMawbInput(
   formData: FormData,
   fallback: {
@@ -280,6 +287,7 @@ function parseGuidedMawbInput(
     weightKg: number;
   },
   fieldErrors: Record<string, string>,
+  options: { requireChargeLines?: boolean } = {},
 ): GuidedMawbInput | null {
   const normalizedMawb = normalizeMawbNumber(text(formData, "mawb"));
   if (!normalizedMawb) {
@@ -306,7 +314,9 @@ function parseGuidedMawbInput(
   }
 
   const rate = nonNegativeNumber(text(formData, "rate") || "0", "rate", "Rate", fieldErrors);
-  const chargeLines = parseMawbChargeLines(formData, fieldErrors);
+  const chargeLines = parseMawbChargeLines(formData, fieldErrors, {
+    requireAtLeastOne: options.requireChargeLines ?? true,
+  });
   const flightDate = optionalDate(text(formData, "flightDate"), "flightDate", "Flight date", fieldErrors);
   const executedDate = optionalDate(
     text(formData, "executedDate"),
@@ -323,7 +333,7 @@ function parseGuidedMawbInput(
     awbSerial: normalizedMawb.awbSerial,
     carrierCode: normalizedMawb.code,
     carrierName: normalizedMawb.name,
-    chargeLines: chargeLines.length > 0 ? chargeLines : defaultMawbChargeLines,
+    chargeLines,
     consigneeAddress:
       text(formData, "mawbConsigneeAddress") ||
       fallback.receiverAddress ||
@@ -371,6 +381,7 @@ export async function createGuidedShipment(
 ): Promise<GuidedShipmentActionState> {
   const user = await requirePortalUser();
   const values = formValues(formData);
+  const submittedChargeLines = chargeLinesForState(formData);
   const fieldErrors: Record<string, string> = {};
   const customerMode = text(formData, "customerMode") || "existing";
   const serviceType = normalizeShipmentService(
@@ -519,10 +530,29 @@ export async function createGuidedShipment(
 
   const createMawbDocument = text(formData, "createMawbDocument") === "yes";
   let guidedMawb: GuidedMawbInput | null = null;
+  let existingMawb:
+    | {
+        id: number;
+        otherChargesJson: string;
+        rate: string;
+      }
+    | undefined;
   if (createMawbDocument) {
     if (!canUseMawbWorkflow(user)) {
       fieldErrors.createMawbDocument = "Your role cannot create or link MAWB documents.";
     } else {
+      const normalizedGuidedMawb = normalizeMawbNumber(text(formData, "mawb"));
+      if (normalizedGuidedMawb) {
+        [existingMawb] = await db
+          .select({
+            id: mawbDocuments.id,
+            otherChargesJson: mawbDocuments.otherChargesJson,
+            rate: mawbDocuments.rate,
+          })
+          .from(mawbDocuments)
+          .where(eq(mawbDocuments.mawbNumber, normalizedGuidedMawb.mawbNumber))
+          .limit(1);
+      }
       guidedMawb = parseGuidedMawbInput(
         formData,
         {
@@ -538,12 +568,13 @@ export async function createGuidedShipment(
           weightKg: weightKg ?? 0,
         },
         fieldErrors,
+        { requireChargeLines: !existingMawb },
       );
     }
   }
 
   if (Object.keys(fieldErrors).length > 0) {
-    return { fieldErrors, values };
+    return { chargeLines: submittedChargeLines, fieldErrors, values };
   }
 
   const [existingSubmission] = await db
@@ -582,6 +613,7 @@ export async function createGuidedShipment(
             confirmCustomerDuplicate:
               "Review possible duplicate customers before creating a new record.",
           },
+          chargeLines: submittedChargeLines,
           values,
         };
       }
@@ -601,6 +633,7 @@ export async function createGuidedShipment(
       fieldErrors: {
         confirmDuplicates: "Review and acknowledge the possible duplicate shipment.",
       },
+      chargeLines: submittedChargeLines,
       values,
     };
   }
@@ -615,25 +648,19 @@ export async function createGuidedShipment(
       fieldErrors: {
         trackingNumber: error instanceof Error ? error.message : "Invalid tracking number.",
       },
+      chargeLines: submittedChargeLines,
       values,
     };
   }
 
-  const [existingMawb] = guidedMawb
-    ? await db
-        .select({
-          id: mawbDocuments.id,
-          otherChargesJson: mawbDocuments.otherChargesJson,
-          rate: mawbDocuments.rate,
-        })
-        .from(mawbDocuments)
-        .where(eq(mawbDocuments.mawbNumber, guidedMawb.mawbNumber))
-        .limit(1)
-    : [];
   const ids = await allocateCreationIds(Boolean(quickCustomer), Boolean(guidedMawb && !existingMawb));
   if (quickCustomer) {
     if (!ids.customer_id) {
-      return { formError: "Unable to allocate a customer identifier.", values };
+      return {
+        chargeLines: submittedChargeLines,
+        formError: "Unable to allocate a customer identifier.",
+        values,
+      };
     }
     customerId = ids.customer_id;
   }
@@ -803,7 +830,6 @@ export async function createGuidedShipment(
       const chargeLines = existingMawb
         ? parseStoredChargeLines(existingMawb.otherChargesJson)
         : guidedMawb.chargeLines;
-      const effectiveChargeLines = chargeLines.length > 0 ? chargeLines : defaultMawbChargeLines;
       const rate = existingMawb ? String(existingMawb.rate) : guidedMawb.rate;
       let mawbDocumentId = ids.mawb_id;
       let totals = {
@@ -852,7 +878,7 @@ export async function createGuidedShipment(
       const chargeSummary = calculateMawbCharges({
         chargeableWeight: totals.chargeableWeight,
         grossWeight: totals.weightKg,
-        otherChargeLines: effectiveChargeLines,
+        otherChargeLines: chargeLines,
         rate,
       });
 
@@ -876,7 +902,11 @@ export async function createGuidedShipment(
         );
       } else {
         if (!mawbDocumentId) {
-          return { formError: "Unable to allocate a MAWB document identifier.", values };
+          return {
+            chargeLines: submittedChargeLines,
+            formError: "Unable to allocate a MAWB document identifier.",
+            values,
+          };
         }
         queries.unshift(
           db.insert(mawbDocuments).values({
@@ -911,7 +941,7 @@ export async function createGuidedShipment(
             mawbNumber: guidedMawb.mawbNumber,
             natureQuantity: guidedMawb.natureQuantity,
             originIata: guidedMawb.originIata,
-            otherChargesJson: JSON.stringify(effectiveChargeLines),
+            otherChargesJson: JSON.stringify(chargeLines),
             otherChargesTotal: String(chargeSummary.otherChargesTotal),
             pieces: totals.pieces,
             rate,

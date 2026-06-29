@@ -31,12 +31,9 @@ export type MawbChargeLine = {
   currency: string;
 };
 
-export const defaultMawbChargeLines: MawbChargeLine[] = [
-  { amount: "55500", basis: "fixed", code: "AWC", currency: "IDR" },
-  { amount: "84", basis: "per_kg", code: "ZB", currency: "IDR" },
-  { amount: "1887", basis: "per_kg", code: "MYC", currency: "IDR" },
-  { amount: "533", basis: "per_kg", code: "FCC", currency: "IDR" },
-];
+export function createBlankMawbChargeLine(): MawbChargeLine {
+  return { amount: "", basis: "per_kg", code: "", currency: "IDR" };
+}
 
 export const mawbPrintCopies = [
   { copy: 1, sheetName: "1", weightChargeCell: "A38", otherChargesCell: "A46", totalCell: "A50" },
@@ -263,7 +260,12 @@ function normalizeChargeBasis(value: unknown): MawbChargeBasis {
   return String(value ?? "").trim() === "fixed" ? "fixed" : "per_kg";
 }
 
-export function parseMawbChargeLines(formData: FormData, fieldErrors: Record<string, string>) {
+export function parseMawbChargeLines(
+  formData: FormData,
+  fieldErrors: Record<string, string>,
+  options: { requireAtLeastOne?: boolean } = {},
+) {
+  const requireAtLeastOne = options.requireAtLeastOne ?? true;
   const codes = formData.getAll("chargeCode");
   const currencies = formData.getAll("chargeCurrency");
   const amounts = formData.getAll("chargeAmount");
@@ -286,19 +288,21 @@ export function parseMawbChargeLines(formData: FormData, fieldErrors: Record<str
     }
 
     const amount = Number(amountText);
-    if (!Number.isFinite(amount) || amount < 0) {
+    if (!amountText) {
+      fieldErrors.chargeAmount = "Each charge line needs an amount.";
+    } else if (!Number.isFinite(amount) || amount < 0) {
       fieldErrors.chargeAmount = "Each charge line amount must be zero or a positive number.";
     }
 
     lines.push({
-      amount: Number.isFinite(amount) ? String(amount) : "0",
+      amount: amountText && Number.isFinite(amount) ? String(amount) : amountText,
       basis,
       code,
       currency,
     });
   }
 
-  if (lines.length === 0) {
+  if (lines.length === 0 && requireAtLeastOne) {
     fieldErrors.chargeCode = "Add at least one other-charge line item.";
   }
 

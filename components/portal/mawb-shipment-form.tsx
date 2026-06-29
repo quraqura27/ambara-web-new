@@ -9,7 +9,7 @@ import {
 } from "@/actions/mawb-shipments";
 import { Button, Card, Input, cn } from "@/components/ui/core";
 import { airportReferenceOptions, resolveMawbDepartureAirport, resolveMawbDestinationDisplay } from "@/lib/airports/core";
-import { defaultMawbChargeLines, normalizeMawbNumber } from "@/lib/mawbs/core";
+import { createBlankMawbChargeLine, normalizeMawbNumber, type MawbChargeLine } from "@/lib/mawbs/core";
 import {
   getShipmentServiceDefinition,
   shipmentServiceDefinitions,
@@ -110,6 +110,7 @@ export function MawbShipmentForm({ customers, idempotencyKey }: MawbShipmentForm
   const [mawbNumber, setMawbNumber] = useState("");
   const [originIata, setOriginIata] = useState("CGK");
   const [destinationIata, setDestinationIata] = useState("");
+  const [chargeLines, setChargeLines] = useState<MawbChargeLine[]>(() => [createBlankMawbChargeLine()]);
   const [lines, setLines] = useState<ShipmentLine[]>(() => [newShipmentLine()]);
   const fieldErrors = useMemo(() => state.fieldErrors ?? {}, [state.fieldErrors]);
   const service = getShipmentServiceDefinition(serviceType);
@@ -129,6 +130,12 @@ export function MawbShipmentForm({ customers, idempotencyKey }: MawbShipmentForm
       ),
     [lines],
   );
+
+  function updateChargeLine(index: number, patch: Partial<MawbChargeLine>) {
+    setChargeLines((current) =>
+      current.map((line, lineIndex) => (lineIndex === index ? { ...line, ...patch } : line)),
+    );
+  }
 
   useEffect(() => {
     const firstError = Object.keys(fieldErrors)[0];
@@ -389,20 +396,78 @@ export function MawbShipmentForm({ customers, idempotencyKey }: MawbShipmentForm
           </Field>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
-          {defaultMawbChargeLines.map((line) => (
-            <div className="grid gap-2 rounded-lg border border-white/5 bg-white/[0.02] p-3" key={line.code}>
-              <div className="grid grid-cols-[1fr_72px] gap-2">
-                <Input aria-label={`${line.code} charge code`} defaultValue={line.code} name="chargeCode" />
-                <Input aria-label={`${line.code} currency`} defaultValue={line.currency} name="chargeCurrency" />
-              </div>
-              <Input aria-label={`${line.code} amount`} defaultValue={line.amount} inputMode="decimal" name="chargeAmount" />
-              <select aria-label={`${line.code} basis`} className={inputClassName} defaultValue={line.basis} name="chargeBasis">
-                <option value="fixed">Fixed</option>
-                <option value="per_kg">Per kg</option>
-              </select>
+        <div className="space-y-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="text-sm font-bold text-slate-100">Other charges</h3>
+              <p className="mt-1 text-xs text-slate-500">
+                Enter the airline-specific surcharge lines for this MAWB.
+              </p>
             </div>
-          ))}
+            <Button
+              className="gap-2"
+              onClick={() => setChargeLines((current) => [...current, createBlankMawbChargeLine()])}
+              type="button"
+              variant="secondary"
+            >
+              <CirclePlus className="h-4 w-4" />
+              Add surcharge
+            </Button>
+          </div>
+          <div className="space-y-3">
+            {chargeLines.map((line, index) => (
+              <div
+                className="grid gap-3 rounded-lg border border-white/5 bg-white/[0.02] p-3 md:grid-cols-[1fr_90px_1fr_130px_auto]"
+                key={`${line.code || "charge"}-${index}`}
+              >
+                <Input
+                  aria-label={`Charge code ${index + 1}`}
+                  name="chargeCode"
+                  onChange={(event) => updateChargeLine(index, { code: event.target.value.toUpperCase() })}
+                  placeholder="Code"
+                  value={line.code}
+                />
+                <Input
+                  aria-label={`Charge currency ${index + 1}`}
+                  maxLength={3}
+                  name="chargeCurrency"
+                  onChange={(event) => updateChargeLine(index, { currency: event.target.value.toUpperCase() })}
+                  value={line.currency}
+                />
+                <Input
+                  aria-label={`Charge amount ${index + 1}`}
+                  inputMode="decimal"
+                  min="0"
+                  name="chargeAmount"
+                  onChange={(event) => updateChargeLine(index, { amount: event.target.value })}
+                  placeholder="0"
+                  step="0.01"
+                  type="number"
+                  value={line.amount}
+                />
+                <select
+                  aria-label={`Charge basis ${index + 1}`}
+                  className={inputClassName}
+                  name="chargeBasis"
+                  onChange={(event) => updateChargeLine(index, { basis: event.target.value === "fixed" ? "fixed" : "per_kg" })}
+                  value={line.basis}
+                >
+                  <option value="fixed">Fixed</option>
+                  <option value="per_kg">Per kg</option>
+                </select>
+                <Button
+                  aria-label={`Remove charge row ${index + 1}`}
+                  className="h-full px-3"
+                  disabled={chargeLines.length === 1}
+                  onClick={() => setChargeLines((current) => current.filter((_, lineIndex) => lineIndex !== index))}
+                  type="button"
+                  variant="ghost"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
         </div>
         <FieldError error={fieldErrors.chargeCode || fieldErrors.chargeAmount} />
 

@@ -21,7 +21,6 @@ import { formValues, type PortalActionState } from "@/lib/forms/action-state";
 import {
   calculateMawbCharges,
   canUseMawbWorkflow,
-  defaultMawbChargeLines,
   normalizeMawbNumber,
   parseMawbChargeLines,
   type MawbChargeLine,
@@ -243,7 +242,7 @@ function parseMawbShipmentInput(formData: FormData): {
   return {
     fieldErrors,
     input: {
-      chargeLines: chargeLines.length > 0 ? chargeLines : defaultMawbChargeLines,
+      chargeLines,
       customerMode: text(formData, "customerMode") || "existing",
       idempotencyKey,
       lineCount,

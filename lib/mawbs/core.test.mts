@@ -8,15 +8,24 @@ import {
   calculateMawbCharges,
   canOverwriteShipmentFromMawb,
   canUseMawbWorkflow,
-  defaultMawbChargeLines,
+  createBlankMawbChargeLine,
   mawbPrintCopies,
   MawbFormError,
+  type MawbChargeLine,
   normalizeMawbNumber,
   parseMawbForm,
+  parseMawbChargeLines,
   resolveMawbAirportDisplay,
 } from "./core.ts";
 
-function validForm(overrides: Record<string, string> = {}) {
+const sampleChargeLines: MawbChargeLine[] = [
+  { amount: "55500", basis: "fixed", code: "AWC", currency: "IDR" },
+  { amount: "84", basis: "per_kg", code: "ZB", currency: "IDR" },
+  { amount: "1887", basis: "per_kg", code: "MYC", currency: "IDR" },
+  { amount: "533", basis: "per_kg", code: "FCC", currency: "IDR" },
+];
+
+function validForm(overrides: Record<string, string> = {}, chargeLines = sampleChargeLines) {
   const values = {
     actionMode: "create_shipment",
     agentName: "PT PLI",
@@ -50,7 +59,7 @@ function validForm(overrides: Record<string, string> = {}) {
   };
   const formData = new FormData();
   Object.entries(values).forEach(([key, value]) => formData.set(key, value));
-  defaultMawbChargeLines.forEach((line) => {
+  chargeLines.forEach((line) => {
     formData.append("chargeCode", line.code);
     formData.append("chargeCurrency", line.currency);
     formData.append("chargeAmount", line.amount);
@@ -101,11 +110,47 @@ test("blocks save when MAWB prefix is unknown", () => {
   );
 });
 
+test("requires a real manual surcharge line", () => {
+  assert.throws(
+    () => parseMawbForm(validForm({}, [createBlankMawbChargeLine()])),
+    (error) =>
+      error instanceof MawbFormError &&
+      error.fieldErrors.chargeCode === "Add at least one other-charge line item.",
+  );
+});
+
+test("requires surcharge amount when code is entered", () => {
+  const fieldErrors: Record<string, string> = {};
+  const formData = new FormData();
+  formData.append("chargeCode", "AWC");
+  formData.append("chargeCurrency", "IDR");
+  formData.append("chargeAmount", "");
+  formData.append("chargeBasis", "fixed");
+
+  assert.deepEqual(parseMawbChargeLines(formData, fieldErrors), [
+    { amount: "", basis: "fixed", code: "AWC", currency: "IDR" },
+  ]);
+  assert.equal(fieldErrors.chargeAmount, "Each charge line needs an amount.");
+});
+
+test("allows blank surcharge scaffolding when linking to an existing MAWB", () => {
+  const fieldErrors: Record<string, string> = {};
+  const formData = new FormData();
+  const blankLine = createBlankMawbChargeLine();
+  formData.append("chargeCode", blankLine.code);
+  formData.append("chargeCurrency", blankLine.currency);
+  formData.append("chargeAmount", blankLine.amount);
+  formData.append("chargeBasis", blankLine.basis);
+
+  assert.deepEqual(parseMawbChargeLines(formData, fieldErrors, { requireAtLeastOne: false }), []);
+  assert.deepEqual(fieldErrors, {});
+});
+
 test("calculates other charges from editable line items", () => {
   const result = calculateMawbCharges({
     chargeableWeight: "12",
     grossWeight: "10",
-    otherChargeLines: defaultMawbChargeLines,
+    otherChargeLines: sampleChargeLines,
     rate: "1000",
   });
 
@@ -116,7 +161,7 @@ test("calculates other charges from editable line items", () => {
 
 test("builds text-box charge rows from editable lines", () => {
   assert.equal(
-    buildOtherChargesText(defaultMawbChargeLines),
+    buildOtherChargesText(sampleChargeLines),
     "AWC IDR 55.500\nZB IDR 84\nMYC IDR 1.887\nFCC IDR 533",
   );
 });

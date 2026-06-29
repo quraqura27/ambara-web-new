@@ -1,14 +1,14 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
 import { FileText, Plus, Trash2 } from "lucide-react";
 
 import { saveMawbFromForm, type MawbActionState, type MawbCustomerOption } from "@/actions/mawbs";
 import { Button, Card, Input, cn } from "@/components/ui/core";
 import {
   calculateMawbCharges,
-  defaultMawbChargeLines,
   formatMawbChargeAmount,
+  createBlankMawbChargeLine,
   normalizeMawbNumber,
   type MawbActionValue,
   type MawbChargeLine,
@@ -59,10 +59,6 @@ function Field({
   );
 }
 
-function newChargeLine(): MawbChargeLine {
-  return { amount: "", basis: "per_kg", code: "", currency: "IDR" };
-}
-
 export function MawbForm({
   canOverwrite,
   customers,
@@ -84,7 +80,7 @@ export function MawbForm({
   const [grossWeight, setGrossWeight] = useState("");
   const [chargeableWeight, setChargeableWeight] = useState("");
   const [rate, setRate] = useState("0");
-  const [chargeLines, setChargeLines] = useState<MawbChargeLine[]>(defaultMawbChargeLines);
+  const [chargeLines, setChargeLines] = useState<MawbChargeLine[]>(() => [createBlankMawbChargeLine()]);
   const fieldErrors = state.fieldErrors ?? {};
   const normalizedMawb = normalizeMawbNumber(mawbNumber);
   const chargeSummary = useMemo(
@@ -115,6 +111,15 @@ export function MawbForm({
   const departureAirport = resolveMawbDepartureAirport(originIata) ?? "";
   const resolvedDestinationAirport = resolveMawbDestinationDisplay(destinationIata) ?? "";
   const destinationNeedsManual = needsManualDestinationAirport(destinationIata);
+
+  useEffect(() => {
+    const nextChargeLines = state.chargeLines;
+    if (!nextChargeLines) return;
+    const frame = window.requestAnimationFrame(() => {
+      setChargeLines(nextChargeLines.length > 0 ? nextChargeLines : [createBlankMawbChargeLine()]);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [state.chargeLines]);
 
   function updateChargeLine(index: number, patch: Partial<MawbChargeLine>) {
     setChargeLines((current) =>
@@ -457,7 +462,7 @@ export function MawbForm({
           </div>
           <Button
             className="gap-2"
-            onClick={() => setChargeLines((current) => [...current, newChargeLine()])}
+            onClick={() => setChargeLines((current) => [...current, createBlankMawbChargeLine()])}
             type="button"
             variant="secondary"
           >
@@ -472,7 +477,7 @@ export function MawbForm({
                 aria-label={`Charge code ${index + 1}`}
                 name="chargeCode"
                 onChange={(event) => updateChargeLine(index, { code: event.target.value.toUpperCase() })}
-                placeholder="AWC"
+                placeholder="Code"
                 value={line.code}
               />
               <Input
