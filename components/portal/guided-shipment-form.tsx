@@ -11,6 +11,13 @@ import { AwbInput } from "@/components/portal/awb-input";
 import { FlightLegsEditor } from "@/components/portal/flight-legs-editor";
 import { Button, Card, Input, cn } from "@/components/ui/core";
 import {
+  airportReferenceOptions,
+  needsManualDestinationAirport,
+  resolveMawbDepartureAirport,
+  resolveMawbDestinationDisplay,
+} from "@/lib/airports/core";
+import { defaultMawbChargeLines } from "@/lib/mawbs/core";
+import {
   getShipmentServiceDefinition,
   shipmentServiceDefinitions,
   shipmentServiceValues,
@@ -40,21 +47,40 @@ const initialValues: Record<string, string> = {
   commodity: "",
   confirmCustomerDuplicate: "",
   confirmDuplicates: "",
+  createMawbDocument: "yes",
   customerId: "",
   customerMode: "existing",
   customerName: "",
   customerReference: "",
+  currency: "IDR",
+  declaredValueForCarriage: "NVD",
+  declaredValueForCustoms: "NCV",
   deliveryInstruction: "",
   destination: "",
+  destinationAirport: "",
   destinationCity: "",
+  destinationIata: "",
+  executedDate: "",
+  executedPlace: "CGK",
+  flightDate: "",
+  flightNumber: "",
   goodsDescription: "",
   handlingConfirmed: "",
+  handlingInformation: "",
   idempotencyKey: "",
   internalNote: "",
   mawb: "",
+  agentName: "PT PLI",
+  insuranceAmount: "NIL",
   awbAirlineName: "",
   flightLegsJson: "[]",
+  mawbConsigneeAddress: "",
+  mawbConsigneeName: "",
+  mawbShipperAddress: "",
+  mawbShipperName: "",
+  natureQuantity: "",
   origin: "",
+  originIata: "CGK",
   pieces: "1",
   postalCode: "",
   quickAddress: "",
@@ -62,10 +88,15 @@ const initialValues: Record<string, string> = {
   quickEmail: "",
   quickFullName: "",
   quickPhone: "",
+  rate: "0",
   receiverAddress: "",
   receiverName: "",
   receiverPhone: "",
   reviewConfirmed: "",
+  routingBy1: "",
+  routingBy2: "",
+  routingTo1: "",
+  routingTo2: "",
   serviceType: "DTD",
   shipperAddress: "",
   shipperName: "",
@@ -124,6 +155,11 @@ export function GuidedShipmentForm({
   const fieldErrors = useMemo(() => state.fieldErrors ?? {}, [state.fieldErrors]);
   const service = getShipmentServiceDefinition(values.serviceType);
   const doorDelivery = service?.doorDelivery === true;
+  const airportOptions = useMemo(() => airportReferenceOptions(), []);
+  const createMawbDocument = values.createMawbDocument === "yes";
+  const departureAirport = resolveMawbDepartureAirport(values.originIata) ?? "";
+  const resolvedDestinationAirport = resolveMawbDestinationDisplay(values.destinationIata) ?? "";
+  const destinationNeedsManual = needsManualDestinationAirport(values.destinationIata);
 
   useEffect(() => {
     const firstError = Object.keys(fieldErrors)[0];
@@ -148,6 +184,19 @@ export function GuidedShipmentForm({
     "customerReference",
     "deliveryInstruction",
     "goodsDescription",
+    "originIata",
+    "destinationIata",
+    "destinationAirport",
+    "agentName",
+    "mawbShipperName",
+    "mawbShipperAddress",
+    "mawbConsigneeName",
+    "mawbConsigneeAddress",
+    "flightDate",
+    "executedDate",
+    "rate",
+    "chargeCode",
+    "chargeAmount",
     "internalNote",
     "shipperAddress",
     "shipperName",
@@ -179,9 +228,24 @@ export function GuidedShipmentForm({
 
   function update(name: string, value: string) {
     setValues((current) => {
-      const next = { ...current, [name]: value };
+      const nextValue =
+        name === "originIata" ||
+        name === "destinationIata" ||
+        name === "executedPlace" ||
+        name === "routingTo1" ||
+        name === "routingTo2" ||
+        name === "routingBy1" ||
+        name === "routingBy2"
+          ? value.toUpperCase()
+          : value;
+      const next = { ...current, [name]: nextValue };
       if (name === "destination" && (!current.destinationCity || current.destinationCity === current.destination)) {
         next.destinationCity = value;
+      }
+      if (name === "destinationIata") {
+        const autoDisplay = resolveMawbDestinationDisplay(nextValue);
+        if (autoDisplay) next.destinationAirport = autoDisplay;
+        else next.destinationAirport = "";
       }
       if (name === "serviceType") {
         const nextService = getShipmentServiceDefinition(value);
@@ -394,6 +458,177 @@ export function GuidedShipmentForm({
       </Card>
 
       <Card className="space-y-6 p-5 sm:p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="text-lg font-bold">MAWB document</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Uses the AWB above to create or link the MAWB workbook from this shipment.
+            </p>
+          </div>
+          <label className="flex items-center gap-3 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2 text-sm text-slate-200">
+            <input name="createMawbDocument" type="hidden" value="no" />
+            <input
+              checked={createMawbDocument}
+              name="createMawbDocument"
+              onChange={(event) => update("createMawbDocument", event.target.checked ? "yes" : "no")}
+              type="checkbox"
+              value="yes"
+            />
+            Create/link MAWB
+          </label>
+        </div>
+
+        {createMawbDocument ? (
+          <>
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <Field error={fieldErrors.originIata} helper={departureAirport || "Default: CGK"} label="Departure IATA">
+                <Input
+                  list="airport-iata-options"
+                  maxLength={3}
+                  name="originIata"
+                  onChange={(event) => update("originIata", event.target.value)}
+                  value={values.originIata}
+                />
+              </Field>
+              <Field
+                error={fieldErrors.destinationIata}
+                helper={resolvedDestinationAirport || "Enter a 3-letter destination IATA"}
+                label="Destination IATA"
+              >
+                <Input
+                  list="airport-iata-options"
+                  maxLength={3}
+                  name="destinationIata"
+                  onChange={(event) => update("destinationIata", event.target.value)}
+                  value={values.destinationIata}
+                />
+              </Field>
+              <Field
+                error={fieldErrors.destinationAirport}
+                helper={
+                  destinationNeedsManual
+                    ? "Required because this destination IATA is not in the airport reference."
+                    : "Auto-filled from destination IATA."
+                }
+                label="Destination airport/display"
+              >
+                <Input
+                  name="destinationAirport"
+                  onChange={(event) => update("destinationAirport", event.target.value)}
+                  placeholder={destinationNeedsManual ? "Type destination airport or city" : resolvedDestinationAirport}
+                  value={values.destinationAirport || resolvedDestinationAirport}
+                />
+              </Field>
+              <Field label="Agent name and city">
+                <Input name="agentName" onChange={(event) => update("agentName", event.target.value)} value={values.agentName} />
+              </Field>
+            </div>
+
+            <datalist id="airport-iata-options">
+              {airportOptions.map((airport) => (
+                <option key={airport.iata} value={airport.iata}>
+                  {airport.airportName}
+                </option>
+              ))}
+            </datalist>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field helper="Blank uses shipment shipper/customer." label="MAWB shipper name">
+                <Input name="mawbShipperName" onChange={(event) => update("mawbShipperName", event.target.value)} value={values.mawbShipperName} />
+              </Field>
+              <Field helper="Blank uses receiver/consignee." label="MAWB consignee name">
+                <Input name="mawbConsigneeName" onChange={(event) => update("mawbConsigneeName", event.target.value)} value={values.mawbConsigneeName} />
+              </Field>
+              <Field helper="Blank uses shipper/pickup address." label="MAWB shipper address">
+                <textarea className={inputClassName} name="mawbShipperAddress" onChange={(event) => update("mawbShipperAddress", event.target.value)} rows={3} value={values.mawbShipperAddress} />
+              </Field>
+              <Field helper="Blank uses receiver address or destination." label="MAWB consignee address">
+                <textarea className={inputClassName} name="mawbConsigneeAddress" onChange={(event) => update("mawbConsigneeAddress", event.target.value)} rows={3} value={values.mawbConsigneeAddress} />
+              </Field>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
+              <Field label="Flight number">
+                <Input name="flightNumber" onChange={(event) => update("flightNumber", event.target.value)} placeholder="TBA" value={values.flightNumber} />
+              </Field>
+              <Field error={fieldErrors.flightDate} label="Flight date">
+                <Input name="flightDate" onChange={(event) => update("flightDate", event.target.value)} type="date" value={values.flightDate} />
+              </Field>
+              <Field error={fieldErrors.executedDate} label="Executed date">
+                <Input name="executedDate" onChange={(event) => update("executedDate", event.target.value)} type="date" value={values.executedDate} />
+              </Field>
+              <Field label="Executed place">
+                <Input maxLength={3} name="executedPlace" onChange={(event) => update("executedPlace", event.target.value)} value={values.executedPlace} />
+              </Field>
+              <Field label="Currency">
+                <Input maxLength={3} name="currency" onChange={(event) => update("currency", event.target.value.toUpperCase())} value={values.currency} />
+              </Field>
+              <Field error={fieldErrors.rate} label="Rate">
+                <Input inputMode="decimal" name="rate" onChange={(event) => update("rate", event.target.value)} value={values.rate} />
+              </Field>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-4">
+              <Field label="Routing to 1">
+                <Input maxLength={3} name="routingTo1" onChange={(event) => update("routingTo1", event.target.value)} placeholder={values.destinationIata || "TPE"} value={values.routingTo1} />
+              </Field>
+              <Field label="Routing by 1">
+                <Input name="routingBy1" onChange={(event) => update("routingBy1", event.target.value)} placeholder={values.awbAirlineName ? values.awbAirlineName.slice(0, 2).toUpperCase() : "GA"} value={values.routingBy1} />
+              </Field>
+              <Field label="Routing to 2">
+                <Input maxLength={3} name="routingTo2" onChange={(event) => update("routingTo2", event.target.value)} value={values.routingTo2} />
+              </Field>
+              <Field label="Routing by 2">
+                <Input name="routingBy2" onChange={(event) => update("routingBy2", event.target.value)} value={values.routingBy2} />
+              </Field>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-3">
+              {defaultMawbChargeLines.map((line) => (
+                <div className="grid gap-2 rounded-lg border border-white/5 bg-white/[0.02] p-3" key={line.code}>
+                  <div className="grid grid-cols-[1fr_72px] gap-2">
+                    <Input aria-label={`${line.code} charge code`} defaultValue={line.code} name="chargeCode" />
+                    <Input aria-label={`${line.code} currency`} defaultValue={line.currency} name="chargeCurrency" />
+                  </div>
+                  <Input aria-label={`${line.code} amount`} defaultValue={line.amount} inputMode="decimal" name="chargeAmount" />
+                  <select aria-label={`${line.code} basis`} className={inputClassName} defaultValue={line.basis} name="chargeBasis">
+                    <option value="fixed">Fixed</option>
+                    <option value="per_kg">Per kg</option>
+                  </select>
+                </div>
+              ))}
+            </div>
+            <FieldError error={fieldErrors.chargeCode || fieldErrors.chargeAmount} />
+
+            <div className="grid gap-4 md:grid-cols-3">
+              <Field label="Declared value carriage">
+                <Input name="declaredValueForCarriage" onChange={(event) => update("declaredValueForCarriage", event.target.value)} value={values.declaredValueForCarriage} />
+              </Field>
+              <Field label="Declared value customs">
+                <Input name="declaredValueForCustoms" onChange={(event) => update("declaredValueForCustoms", event.target.value)} value={values.declaredValueForCustoms} />
+              </Field>
+              <Field label="Insurance">
+                <Input name="insuranceAmount" onChange={(event) => update("insuranceAmount", event.target.value)} value={values.insuranceAmount} />
+              </Field>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Handling information">
+                <textarea className={inputClassName} name="handlingInformation" onChange={(event) => update("handlingInformation", event.target.value)} rows={3} value={values.handlingInformation} />
+              </Field>
+              <Field label="Nature and quantity override">
+                <textarea className={inputClassName} name="natureQuantity" onChange={(event) => update("natureQuantity", event.target.value)} rows={3} value={values.natureQuantity} />
+              </Field>
+            </div>
+          </>
+        ) : (
+          <div className="rounded-lg border border-white/5 bg-white/[0.02] px-4 py-3 text-sm text-slate-400">
+            Shipment will store the AWB number but will not create or link a MAWB workbook document.
+          </div>
+        )}
+      </Card>
+
+      <Card className="space-y-6 p-5 sm:p-6">
         <div>
           <h2 className="text-lg font-bold">{doorDelivery ? "Route and receiver" : "Route and consignee"}</h2>
           <p className="mt-1 text-sm text-slate-500">
@@ -437,7 +672,7 @@ export function GuidedShipmentForm({
           <Field
             error={fieldErrors.receiverPhone}
             helper="Indonesian numbers are normalized to +62."
-            label={`${doorDelivery ? "Receiver phone" : "Consignee contact"} *`}
+            label={doorDelivery ? "Receiver phone" : "Consignee contact"}
           >
             <Input
               name="receiverPhone"
@@ -690,6 +925,7 @@ export function GuidedShipmentForm({
             ["AWB", values.mawb || "Missing"],
             ["Service", `${values.serviceType} — ${service?.label ?? ""}`],
             ["Route", `${values.origin || "Missing"} → ${values.destination || "Missing"}`],
+            ["MAWB document", createMawbDocument ? "Create/link enabled" : "Shipment AWB only"],
             [doorDelivery ? "Receiver" : "Consignee", values.receiverName || "Missing"],
             ["Cargo", values.commodity || "Missing"],
             ["Pieces", `${values.pieces || "0"} physical cargo units`],

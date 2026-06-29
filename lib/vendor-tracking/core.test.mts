@@ -111,16 +111,19 @@ SIN,Jakarta,Port Consignee,081230000001,Singapore,General Cargo,5,2,DTP`),
   assert.equal(sharedAwb.summary.warningRows, 0);
 });
 
-test("bulk import rejects unknown destination IATA and allows blank receiver phone", () => {
+test("bulk import requires manual destination airport only for unknown destination IATA", () => {
   const preview = prepareBulkShipmentImport(
-    parseDelimitedText(`awb_number,destination_iata,origin_city,receiver_name,receiver_phone,destination_city,commodity,weight,pieces,service_type
-126-9360193,ZZZ,Jakarta,Consignee One,,Taiwan,General Cargo,5,2,DTP
-126-9360193,DMK,Jakarta,Consignee Two,,Bangkok,General Cargo,6,3,DTP`),
+    parseDelimitedText(`awb_number,destination_iata,destination_airport,origin_city,receiver_name,receiver_phone,destination_city,commodity,weight,pieces,service_type
+126-9360193,ZZZ,,Jakarta,Consignee One,,Taiwan,General Cargo,5,2,DTP
+126-9360193,ZZZ,Manual Destination,Jakarta,Consignee Manual,,Manual City,General Cargo,5,2,DTP
+126-9360193,DMK,,Jakarta,Consignee Two,,Bangkok,General Cargo,6,3,DTP`),
   );
 
-  assert.ok(preview.rows[0]?.errors.includes("invalid destination_iata"));
+  assert.ok(preview.rows[0]?.errors.includes("missing destination_airport for unknown destination_iata"));
   assert.equal(preview.rows[1]?.errors.length, 0);
-  assert.equal(preview.rows[1]?.data.destinationAirport, "Bangkok");
+  assert.equal(preview.rows[1]?.data.destinationAirport, "Manual Destination");
+  assert.equal(preview.rows[2]?.errors.length, 0);
+  assert.equal(preview.rows[2]?.data.destinationAirport, "Bangkok");
 });
 
 test("builds vendor upload rows with required Ambara references", () => {

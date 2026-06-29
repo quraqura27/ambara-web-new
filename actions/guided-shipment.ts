@@ -8,6 +8,8 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import {
   customers,
+  mawbDocuments,
+  mawbShipmentLinks,
   parcels,
   portalAuditLogs,
   portalUxEvents,
@@ -23,6 +25,19 @@ import {
   getShipmentServiceDefinition,
   normalizeShipmentService,
 } from "@/lib/shipments/service-model";
+import {
+  calculateMawbCharges,
+  canUseMawbWorkflow,
+  defaultMawbChargeLines,
+  normalizeMawbNumber,
+  parseMawbChargeLines,
+  type MawbChargeLine,
+} from "@/lib/mawbs/core";
+import {
+  resolveAirportByIata,
+  resolveMawbDepartureAirport,
+  resolveMawbDestinationDisplay,
+} from "@/lib/airports/core";
 import { buildCustomerVisibleTrackingEvent } from "@/lib/tracking/public-events";
 import { resolveAmbaraTrackingNumber } from "@/lib/vendor-tracking/core";
 
@@ -101,7 +116,6 @@ async function shipmentTrackingNumberExists(trackingNumber: string) {
 
 async function findDuplicateWarnings(input: {
   customerReference: string;
-  mawb: string;
   receiverName: string;
   receiverPhone: string;
   trackingNumber: string;
@@ -110,15 +124,6 @@ async function findDuplicateWarnings(input: {
 
   if (input.trackingNumber && (await shipmentTrackingNumberExists(input.trackingNumber))) {
     warnings.push(`Tracking number ${input.trackingNumber} already exists.`);
-  }
-
-  if (input.mawb) {
-    const [match] = await db
-      .select({ trackingNumber: shipments.trackingNumber })
-      .from(shipments)
-      .where(sql`upper(btrim(${shipments.mawb})) = ${input.mawb.toUpperCase()}`)
-      .limit(1);
-    if (match) warnings.push(`AWB ${input.mawb} is already used by ${match.trackingNumber}.`);
   }
 
   if (input.customerReference) {
@@ -163,9 +168,10 @@ async function findDuplicateWarnings(input: {
   return warnings;
 }
 
-async function allocateCreationIds(includeCustomer: boolean) {
+async function allocateCreationIds(includeCustomer: boolean, includeMawb: boolean) {
   const result = await db.execute<{
     customer_id: number | null;
+    mawb_id: number | null;
     parcel_id: number;
     shipment_id: number;
   }>(sql`
@@ -175,12 +181,182 @@ async function allocateCreationIds(includeCustomer: boolean) {
         then nextval(pg_get_serial_sequence('customers', 'id'))::int
         else null
       end as customer_id,
+      case
+        when ${includeMawb}
+        then nextval(pg_get_serial_sequence('mawb_documents', 'id'))::int
+        else null
+      end as mawb_id,
       nextval(pg_get_serial_sequence('parcels', 'id'))::int as parcel_id,
       nextval(pg_get_serial_sequence('shipments', 'id'))::int as shipment_id
   `);
   const ids = result.rows[0];
   if (!ids) throw new Error("Unable to allocate shipment identifiers.");
   return ids;
+}
+
+function optionalDate(value: string, field: string, label: string, fieldErrors: Record<string, string>) {
+  if (!value) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    fieldErrors[field] = `${label} must be a valid date.`;
+    return null;
+  }
+  const parsed = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) {
+    fieldErrors[field] = `${label} must be a valid date.`;
+    return null;
+  }
+  return value;
+}
+
+function parseStoredChargeLines(value: string | null | undefined): MawbChargeLine[] {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((line): line is MawbChargeLine => {
+      return (
+        line &&
+        typeof line === "object" &&
+        typeof line.code === "string" &&
+        typeof line.currency === "string" &&
+        typeof line.amount === "string" &&
+        (line.basis === "fixed" || line.basis === "per_kg")
+      );
+    });
+  } catch {
+    return [];
+  }
+}
+
+type GuidedMawbInput = {
+  agentName: string;
+  awbPrefix: string;
+  awbSerial: string;
+  carrierCode: string;
+  carrierName: string;
+  chargeLines: MawbChargeLine[];
+  consigneeAddress: string;
+  consigneeName: string;
+  currency: string;
+  declaredValueForCarriage: string;
+  declaredValueForCustoms: string;
+  departureAirport: string;
+  destinationAirport: string;
+  destinationIata: string;
+  executedDate: string | null;
+  executedPlace: string;
+  flightDate: string | null;
+  flightNumber: string;
+  handlingInformation: string | null;
+  insuranceAmount: string;
+  mawbNumber: string;
+  natureQuantity: string | null;
+  originIata: string;
+  rate: string;
+  routingBy1: string | null;
+  routingBy2: string | null;
+  routingTo1: string | null;
+  routingTo2: string | null;
+  shipperAddress: string;
+  shipperName: string;
+};
+
+function optionalUpper(formData: FormData, field: string) {
+  return text(formData, field).toUpperCase() || null;
+}
+
+function parseGuidedMawbInput(
+  formData: FormData,
+  fallback: {
+    chargeableWeight: number;
+    commodity: string;
+    customerName: string;
+    destinationAirportFallback: string;
+    goodsDescription: string;
+    receiverAddress: string;
+    receiverName: string;
+    shipperAddress: string;
+    shipperName: string;
+    weightKg: number;
+  },
+  fieldErrors: Record<string, string>,
+): GuidedMawbInput | null {
+  const normalizedMawb = normalizeMawbNumber(text(formData, "mawb"));
+  if (!normalizedMawb) {
+    fieldErrors.mawb = "Enter a MAWB number with a recognized airline prefix before creating a MAWB document.";
+    return null;
+  }
+
+  const originIata = (text(formData, "originIata") || "CGK").toUpperCase();
+  const destinationIata = text(formData, "destinationIata").toUpperCase();
+  const departureAirport = resolveMawbDepartureAirport(originIata);
+  const destinationAirport = resolveMawbDestinationDisplay(
+    destinationIata,
+    text(formData, "destinationAirport"),
+  );
+  if (!/^[A-Z]{3}$/.test(originIata) || !resolveAirportByIata(originIata)) {
+    fieldErrors.originIata = "Departure IATA must be a known 3-letter airport code.";
+  }
+  if (!/^[A-Z]{3}$/.test(destinationIata)) {
+    fieldErrors.destinationIata = "Destination IATA must be a 3-letter airport code.";
+  }
+  if (!destinationAirport) {
+    fieldErrors.destinationAirport =
+      "Enter the destination airport/display name when the destination IATA is not in the airport reference.";
+  }
+
+  const rate = nonNegativeNumber(text(formData, "rate") || "0", "rate", "Rate", fieldErrors);
+  const chargeLines = parseMawbChargeLines(formData, fieldErrors);
+  const flightDate = optionalDate(text(formData, "flightDate"), "flightDate", "Flight date", fieldErrors);
+  const executedDate = optionalDate(
+    text(formData, "executedDate"),
+    "executedDate",
+    "Execution date",
+    fieldErrors,
+  );
+
+  if (!departureAirport || !destinationAirport || rate === null) return null;
+
+  return {
+    agentName: text(formData, "agentName") || "PT PLI",
+    awbPrefix: normalizedMawb.prefix,
+    awbSerial: normalizedMawb.awbSerial,
+    carrierCode: normalizedMawb.code,
+    carrierName: normalizedMawb.name,
+    chargeLines: chargeLines.length > 0 ? chargeLines : defaultMawbChargeLines,
+    consigneeAddress:
+      text(formData, "mawbConsigneeAddress") ||
+      fallback.receiverAddress ||
+      fallback.destinationAirportFallback ||
+      "-",
+    consigneeName: text(formData, "mawbConsigneeName") || fallback.receiverName,
+    currency: text(formData, "currency").toUpperCase() || "IDR",
+    declaredValueForCarriage: text(formData, "declaredValueForCarriage").toUpperCase() || "NVD",
+    declaredValueForCustoms: text(formData, "declaredValueForCustoms").toUpperCase() || "NCV",
+    departureAirport,
+    destinationAirport,
+    destinationIata,
+    executedDate,
+    executedPlace: text(formData, "executedPlace").toUpperCase() || originIata,
+    flightDate,
+    flightNumber: text(formData, "flightNumber").toUpperCase() || "TBA",
+    handlingInformation: text(formData, "handlingInformation") || null,
+    insuranceAmount: text(formData, "insuranceAmount").toUpperCase() || "NIL",
+    mawbNumber: normalizedMawb.mawbNumber,
+    natureQuantity: text(formData, "natureQuantity") || null,
+    originIata,
+    rate: String(rate),
+    routingBy1: optionalUpper(formData, "routingBy1"),
+    routingBy2: optionalUpper(formData, "routingBy2"),
+    routingTo1: optionalUpper(formData, "routingTo1"),
+    routingTo2: optionalUpper(formData, "routingTo2"),
+    shipperAddress:
+      text(formData, "mawbShipperAddress") ||
+      fallback.shipperAddress ||
+      fallback.destinationAirportFallback ||
+      "-",
+    shipperName: text(formData, "mawbShipperName") || fallback.shipperName || fallback.customerName || "-",
+  };
 }
 
 function isUniqueViolation(error: unknown) {
@@ -209,13 +385,7 @@ export async function createGuidedShipment(
     service?.doorDelivery ? "Receiver name" : "Consignee name",
     fieldErrors,
   );
-  const receiverPhoneRaw = required(
-    formData,
-    "receiverPhone",
-    service?.doorDelivery ? "Receiver phone" : "Consignee contact",
-    fieldErrors,
-  );
-  const receiverPhone = normalizePhone(receiverPhoneRaw);
+  const receiverPhone = normalizePhone(text(formData, "receiverPhone"));
   const destinationCity = service?.doorDelivery
     ? required(formData, "destinationCity", "Final delivery city", fieldErrors) || destination
     : destination;
@@ -347,6 +517,31 @@ export async function createGuidedShipment(
     fieldErrors.customerMode = "Select how this shipment should be linked to a customer.";
   }
 
+  const createMawbDocument = text(formData, "createMawbDocument") === "yes";
+  let guidedMawb: GuidedMawbInput | null = null;
+  if (createMawbDocument) {
+    if (!canUseMawbWorkflow(user)) {
+      fieldErrors.createMawbDocument = "Your role cannot create or link MAWB documents.";
+    } else {
+      guidedMawb = parseGuidedMawbInput(
+        formData,
+        {
+          chargeableWeight: chargeableWeight ?? weightKg ?? 0,
+          commodity,
+          customerName,
+          destinationAirportFallback: destinationCity || destination,
+          goodsDescription: text(formData, "goodsDescription") || commodity,
+          receiverAddress,
+          receiverName,
+          shipperAddress: text(formData, "shipperAddress") || quickCustomer?.address || "",
+          shipperName: text(formData, "shipperName"),
+          weightKg: weightKg ?? 0,
+        },
+        fieldErrors,
+      );
+    }
+  }
+
   if (Object.keys(fieldErrors).length > 0) {
     return { fieldErrors, values };
   }
@@ -396,7 +591,6 @@ export async function createGuidedShipment(
   const manualTracking = text(formData, "trackingNumber").toUpperCase();
   const duplicateWarnings = await findDuplicateWarnings({
     customerReference: text(formData, "customerReference"),
-    mawb: resolvedAwb!.canonicalNumber,
     receiverName,
     receiverPhone,
     trackingNumber: manualTracking,
@@ -425,7 +619,18 @@ export async function createGuidedShipment(
     };
   }
 
-  const ids = await allocateCreationIds(Boolean(quickCustomer));
+  const [existingMawb] = guidedMawb
+    ? await db
+        .select({
+          id: mawbDocuments.id,
+          otherChargesJson: mawbDocuments.otherChargesJson,
+          rate: mawbDocuments.rate,
+        })
+        .from(mawbDocuments)
+        .where(eq(mawbDocuments.mawbNumber, guidedMawb.mawbNumber))
+        .limit(1)
+    : [];
+  const ids = await allocateCreationIds(Boolean(quickCustomer), Boolean(guidedMawb && !existingMawb));
   if (quickCustomer) {
     if (!ids.customer_id) {
       return { formError: "Unable to allocate a customer identifier.", values };
@@ -438,6 +643,7 @@ export async function createGuidedShipment(
   const parcelAddress = service!.doorDelivery
     ? receiverAddress
     : `Destination port: ${destination}`;
+  const storedReceiverPhone = receiverPhone || "-";
   const publicEvent = buildCustomerVisibleTrackingEvent("received", serviceType);
   const shipmentInsert = db.insert(shipments).values({
     id: ids.shipment_id,
@@ -446,7 +652,7 @@ export async function createGuidedShipment(
     commodity,
     consigneeAddress: service!.doorDelivery ? receiverAddress : null,
     consigneeName: receiverName,
-    consigneePhone: receiverPhone,
+    consigneePhone: storedReceiverPhone,
     createdAt: now,
     createdBy: user.email,
     createdByStaff: user.id,
@@ -454,6 +660,7 @@ export async function createGuidedShipment(
     customerName,
     customerReference: text(formData, "customerReference") || null,
     destination,
+    destinationIata: guidedMawb?.destinationIata ?? null,
     goodsDescription: text(formData, "goodsDescription") || null,
     idempotencyKey,
     internalTrackingNo: trackingNumber,
@@ -462,6 +669,7 @@ export async function createGuidedShipment(
     awbAirlinePrefix: resolvedAwb!.prefix,
     awbAirlineUnresolved: resolvedAwb!.airlineUnresolved,
     origin,
+    originIata: guidedMawb?.originIata ?? null,
     serviceType,
     shipperAddress: text(formData, "shipperAddress") || null,
     shipperName: text(formData, "shipperName") || null,
@@ -491,7 +699,7 @@ export async function createGuidedShipment(
     postalCode: postalCode || null,
     receiverAddress: parcelAddress,
     receiverName,
-    receiverPhone,
+    receiverPhone: storedReceiverPhone,
     serviceType,
     shipmentId: ids.shipment_id,
     updatedAt: now,
@@ -584,6 +792,158 @@ export async function createGuidedShipment(
       });
       queries.unshift(customerInsert);
     }
+    if (guidedMawb) {
+      const currentShipmentLine = {
+        chargeableWeight: chargeableWeight ?? weightKg ?? 0,
+        commodity,
+        goodsDescription: text(formData, "goodsDescription") || commodity,
+        pieces: pieces ?? 0,
+        weightKg: weightKg ?? 0,
+      };
+      const chargeLines = existingMawb
+        ? parseStoredChargeLines(existingMawb.otherChargesJson)
+        : guidedMawb.chargeLines;
+      const effectiveChargeLines = chargeLines.length > 0 ? chargeLines : defaultMawbChargeLines;
+      const rate = existingMawb ? String(existingMawb.rate) : guidedMawb.rate;
+      let mawbDocumentId = ids.mawb_id;
+      let totals = {
+        chargeableWeight: currentShipmentLine.chargeableWeight,
+        pieces: currentShipmentLine.pieces,
+        weightKg: currentShipmentLine.weightKg,
+      };
+      let commodityText = currentShipmentLine.commodity;
+      let goodsDescriptionText = currentShipmentLine.goodsDescription;
+
+      if (existingMawb) {
+        mawbDocumentId = existingMawb.id;
+        const linkedShipments = await db
+          .select({
+            chargeableWeight: shipments.chargeableWeight,
+            commodity: shipments.commodity,
+            goodsDescription: shipments.goodsDescription,
+            pieces: shipments.totalPcs,
+            weightKg: shipments.weightKg,
+          })
+          .from(mawbShipmentLinks)
+          .innerJoin(shipments, eq(shipments.id, mawbShipmentLinks.shipmentId))
+          .where(eq(mawbShipmentLinks.mawbDocumentId, existingMawb.id));
+        const linkedLines = [
+          ...linkedShipments.map((shipment) => ({
+            chargeableWeight: Number(shipment.chargeableWeight ?? shipment.weightKg ?? 0),
+            commodity: shipment.commodity ?? "",
+            goodsDescription: shipment.goodsDescription ?? shipment.commodity ?? "",
+            pieces: Number(shipment.pieces ?? 0),
+            weightKg: Number(shipment.weightKg ?? 0),
+          })),
+          currentShipmentLine,
+        ];
+        totals = linkedLines.reduce(
+          (sum, line) => ({
+            chargeableWeight: sum.chargeableWeight + line.chargeableWeight,
+            pieces: sum.pieces + line.pieces,
+            weightKg: sum.weightKg + line.weightKg,
+          }),
+          { chargeableWeight: 0, pieces: 0, weightKg: 0 },
+        );
+        commodityText = Array.from(new Set(linkedLines.map((line) => line.commodity).filter(Boolean))).join(", ");
+        goodsDescriptionText = Array.from(new Set(linkedLines.map((line) => line.goodsDescription).filter(Boolean))).join("; ");
+      }
+
+      const chargeSummary = calculateMawbCharges({
+        chargeableWeight: totals.chargeableWeight,
+        grossWeight: totals.weightKg,
+        otherChargeLines: effectiveChargeLines,
+        rate,
+      });
+
+      if (existingMawb) {
+        queries.push(
+          db
+            .update(mawbDocuments)
+            .set({
+              chargeableWeight: String(totals.chargeableWeight),
+              commodity: commodityText || null,
+              goodsDescription: goodsDescriptionText || null,
+              grossWeight: String(totals.weightKg),
+              otherChargesTotal: String(chargeSummary.otherChargesTotal),
+              pieces: totals.pieces,
+              totalPrepaid: String(chargeSummary.totalPrepaid),
+              updatedAt: now,
+              updatedByStaff: user.id,
+              weightCharge: String(chargeSummary.weightCharge),
+            })
+            .where(eq(mawbDocuments.id, existingMawb.id)),
+        );
+      } else {
+        if (!mawbDocumentId) {
+          return { formError: "Unable to allocate a MAWB document identifier.", values };
+        }
+        queries.unshift(
+          db.insert(mawbDocuments).values({
+            id: mawbDocumentId,
+            actionMode: "create_shipment",
+            agentName: guidedMawb.agentName,
+            awbPrefix: guidedMawb.awbPrefix,
+            awbSerial: guidedMawb.awbSerial,
+            carrierCode: guidedMawb.carrierCode,
+            carrierName: guidedMawb.carrierName,
+            chargeableWeight: String(totals.chargeableWeight),
+            commodity: commodityText || null,
+            consigneeAddress: guidedMawb.consigneeAddress,
+            consigneeName: guidedMawb.consigneeName,
+            createdAt: now,
+            createdByStaff: user.id,
+            currency: guidedMawb.currency,
+            declaredValueForCarriage: guidedMawb.declaredValueForCarriage,
+            declaredValueForCustoms: guidedMawb.declaredValueForCustoms,
+            departureAirport: guidedMawb.departureAirport,
+            destinationAirport: guidedMawb.destinationAirport,
+            destinationIata: guidedMawb.destinationIata,
+            executedDate: guidedMawb.executedDate,
+            executedPlace: guidedMawb.executedPlace,
+            flightDate: guidedMawb.flightDate,
+            flightNumber: guidedMawb.flightNumber,
+            goodsDescription: goodsDescriptionText || null,
+            grossWeight: String(totals.weightKg),
+            handlingInformation: guidedMawb.handlingInformation,
+            idempotencyKey: `${idempotencyKey}:mawb`,
+            insuranceAmount: guidedMawb.insuranceAmount,
+            mawbNumber: guidedMawb.mawbNumber,
+            natureQuantity: guidedMawb.natureQuantity,
+            originIata: guidedMawb.originIata,
+            otherChargesJson: JSON.stringify(effectiveChargeLines),
+            otherChargesTotal: String(chargeSummary.otherChargesTotal),
+            pieces: totals.pieces,
+            rate,
+            routingBy1: guidedMawb.routingBy1,
+            routingBy2: guidedMawb.routingBy2,
+            routingTo1: guidedMawb.routingTo1,
+            routingTo2: guidedMawb.routingTo2,
+            serviceType: serviceType!,
+            shipmentContactPhone: storedReceiverPhone,
+            shipmentCustomerId: customerId,
+            shipmentCustomerName: customerName || null,
+            shipperAddress: guidedMawb.shipperAddress,
+            shipperName: guidedMawb.shipperName,
+            totalPrepaid: String(chargeSummary.totalPrepaid),
+            updatedAt: now,
+            updatedByStaff: user.id,
+            weightCharge: String(chargeSummary.weightCharge),
+          }),
+        );
+      }
+
+      queries.push(
+        db.insert(mawbShipmentLinks).values({
+          mawbDocumentId: mawbDocumentId!,
+          shipmentId: ids.shipment_id,
+          linkMode: existingMawb ? "link_shipment" : "create_shipment",
+          copiedFieldsJson: JSON.stringify({ createdShipment: true, trackingNumber }),
+          createdByStaff: user.id,
+          createdAt: now,
+        }),
+      );
+    }
     await db.batch(queries as [BatchItem<"pg">, ...BatchItem<"pg">[]]);
   } catch (error) {
     if (isUniqueViolation(error)) {
@@ -611,6 +971,7 @@ export async function createGuidedShipment(
 
   revalidatePath("/dashboard");
   revalidatePath("/shipments");
+  revalidatePath("/mawbs");
   if (customerId) revalidatePath(`/customers/${customerId}`);
   redirect(`/shipments/${encodeURIComponent(trackingNumber)}/created`);
 }

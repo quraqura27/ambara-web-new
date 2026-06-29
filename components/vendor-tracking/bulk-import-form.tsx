@@ -52,7 +52,8 @@ export function BulkImportForm() {
             </Button>
             <p className="text-xs leading-relaxed text-slate-500">
               Every accepted row creates one shipment, tracking number, and CN. Rows with the same
-              MAWB number are grouped into one MAWB document. Destination IATA is mandatory.
+              MAWB number are grouped into one MAWB document. Unknown destination IATA requires
+              destination_airport.
             </p>
           </div>
 
@@ -63,7 +64,7 @@ export function BulkImportForm() {
             <textarea
               className="min-h-[220px] w-full rounded-lg border border-slate-700 bg-slate-900/50 px-4 py-3 font-mono text-xs text-slate-100 outline-none transition-all placeholder:text-slate-600 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/30"
               name="pastedTable"
-              placeholder="awb_number,origin_iata,destination_iata,customer_name,customer_reference,origin_city,receiver_name,receiver_phone,receiver_address,destination_city,postal_code,commodity,weight,chargeable_weight,pieces,service_type,mawb_shipper_name,mawb_shipper_address,mawb_consignee_name,mawb_consignee_address,flight_1,flight_1_airline_name,flight_2,flight_2_airline_name,flight_3,flight_3_airline_name,flight_4,flight_4_airline_name"
+              placeholder="awb_number,origin_iata,destination_iata,destination_airport,customer_name,customer_reference,origin_city,receiver_name,receiver_phone,receiver_address,destination_city,postal_code,commodity,weight,chargeable_weight,pieces,service_type,mawb_shipper_name,mawb_shipper_address,mawb_consignee_name,mawb_consignee_address,flight_1,flight_1_airline_name,flight_2,flight_2_airline_name,flight_3,flight_3_airline_name,flight_4,flight_4_airline_name"
             />
           </label>
         </form>

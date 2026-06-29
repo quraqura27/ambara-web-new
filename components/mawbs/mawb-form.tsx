@@ -13,6 +13,11 @@ import {
   type MawbActionValue,
   type MawbChargeLine,
 } from "@/lib/mawbs/core";
+import {
+  needsManualDestinationAirport,
+  resolveMawbDepartureAirport,
+  resolveMawbDestinationDisplay,
+} from "@/lib/airports/core";
 import { shipmentServiceDefinitions, shipmentServiceValues } from "@/lib/shipments/service-model";
 
 type MawbFormProps = {
@@ -71,6 +76,7 @@ export function MawbForm({
   const [mawbNumber, setMawbNumber] = useState("");
   const [originIata, setOriginIata] = useState("");
   const [destinationIata, setDestinationIata] = useState("");
+  const [destinationAirport, setDestinationAirport] = useState("");
   const [customerSearch, setCustomerSearch] = useState("");
   const [customerMode, setCustomerMode] = useState<"existing" | "new">("existing");
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
@@ -106,6 +112,9 @@ export function MawbForm({
     customerMode === "existing"
       ? selectedCustomer?.fullName || selectedCustomer?.companyName || (selectedCustomer ? `Customer #${selectedCustomer.id}` : "")
       : "";
+  const departureAirport = resolveMawbDepartureAirport(originIata) ?? "";
+  const resolvedDestinationAirport = resolveMawbDestinationDisplay(destinationIata) ?? "";
+  const destinationNeedsManual = needsManualDestinationAirport(destinationIata);
 
   function updateChargeLine(index: number, patch: Partial<MawbChargeLine>) {
     setChargeLines((current) =>
@@ -130,8 +139,7 @@ export function MawbForm({
     <form action={action} className="space-y-6">
       <input name="idempotencyKey" type="hidden" value={idempotencyKey} />
       <input name="actionMode" type="hidden" value={actionMode} />
-      <input name="departureAirport" type="hidden" value={originIata} />
-      <input name="destinationAirport" type="hidden" value={destinationIata} />
+      <input name="departureAirport" type="hidden" value={departureAirport} />
       <input name="shipmentCustomerName" type="hidden" value={selectedCustomerName} />
 
       {state.formError ? (
@@ -286,7 +294,7 @@ export function MawbForm({
 
       <Card className="space-y-6 p-5 sm:p-6">
         <h2 className="text-lg font-bold">Parties and route</h2>
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-3">
           <Field label="Issuing carrier's agent name and city">
             <textarea className={inputClassName} defaultValue="PT PLI" name="agentName" rows={2} />
           </Field>
@@ -312,14 +320,33 @@ export function MawbForm({
               placeholder="CGK"
               value={originIata}
             />
+            {departureAirport ? <span className="block text-xs text-slate-500">{departureAirport}</span> : null}
           </Field>
           <Field error={fieldErrors.destinationIata} label="Destination IATA *">
             <Input
               maxLength={3}
               name="destinationIata"
-              onChange={(event) => setDestinationIata(event.target.value.toUpperCase())}
+              onChange={(event) => {
+                const next = event.target.value.toUpperCase();
+                setDestinationIata(next);
+                const resolved = resolveMawbDestinationDisplay(next);
+                if (resolved) setDestinationAirport(resolved);
+                else setDestinationAirport("");
+              }}
               placeholder="TPE"
               value={destinationIata}
+            />
+            {resolvedDestinationAirport ? <span className="block text-xs text-slate-500">{resolvedDestinationAirport}</span> : null}
+          </Field>
+          <Field
+            error={fieldErrors.destinationAirport}
+            label={destinationNeedsManual ? "Destination airport/display *" : "Destination airport/display"}
+          >
+            <Input
+              name="destinationAirport"
+              onChange={(event) => setDestinationAirport(event.target.value)}
+              placeholder={destinationNeedsManual ? "Type destination airport or city" : resolvedDestinationAirport}
+              value={destinationAirport || resolvedDestinationAirport}
             />
           </Field>
         </div>

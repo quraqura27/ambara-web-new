@@ -244,6 +244,7 @@ const bulkShipmentColumns = {
   awbAirlineName: ["awb_airline_name", "airline_name"],
   customerName: ["customer_name", "customer", "customer_full_name"],
   customerReference: ["customer_reference", "customer_ref", "reference", "order_id"],
+  destinationAirport: ["destination_airport", "destination_airport_name", "destination_display"],
   destinationIata: ["destination_iata", "destination_airport_iata", "destination_airport_code"],
   shipperName: ["shipper_name", "shipper"],
   mawbAgentName: ["mawb_agent_name", "agent_name"],
@@ -449,8 +450,10 @@ export function prepareBulkShipmentImport(rows: RawTableRow[]): BulkShipmentImpo
     let awbAirlineUnresolved = false;
     const originIata = (getValue(row, bulkShipmentColumns.originIata) || "CGK").toUpperCase();
     const destinationIata = getValue(row, bulkShipmentColumns.destinationIata).toUpperCase();
+    const manualDestinationAirport = getValue(row, bulkShipmentColumns.destinationAirport);
     const departureAirport = resolveMawbDepartureAirport(originIata) ?? "";
-    const destinationAirport = resolveMawbDestinationDisplay(destinationIata) ?? "";
+    const destinationAirport =
+      resolveMawbDestinationDisplay(destinationIata, manualDestinationAirport) ?? "";
 
     if (!awbInput) {
       parseErrors.push("missing awb_number");
@@ -472,8 +475,10 @@ export function prepareBulkShipmentImport(rows: RawTableRow[]): BulkShipmentImpo
     }
     if (!destinationIata) {
       parseErrors.push("missing destination_iata");
-    } else if (!resolveAirportByIata(destinationIata)) {
+    } else if (!/^[A-Z]{3}$/.test(destinationIata)) {
       parseErrors.push("invalid destination_iata");
+    } else if (!resolveAirportByIata(destinationIata) && !manualDestinationAirport) {
+      parseErrors.push("missing destination_airport for unknown destination_iata");
     }
 
     const flightFields = [

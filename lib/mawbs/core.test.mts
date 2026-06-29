@@ -157,13 +157,25 @@ test("defaults airport fields from IATA entries and maps onward routing cells", 
   assert.equal(parsed.departureAirport, "Kuala Lumpur International Airport");
   assert.equal(parsed.destinationAirport, "Taiwan");
   assert.equal(resolveMawbAirportDisplay("DMK", "destination"), "Bangkok");
-  assert.equal(resolveMawbAirportDisplay("XYZ", "destination"), "XYZ");
+  assert.equal(resolveMawbAirportDisplay("XYZ", "destination"), null);
   assert.equal(values.A20, "TPE");
   assert.equal(values.A23, "Taiwan");
   assert.equal(values.V20, "to\n\nMLE");
   assert.equal(values.Y20, "by\n\nAK");
   assert.equal(values.AB20, "to");
   assert.equal(values.AE20, "by");
+});
+
+test("unknown destination IATA requires a manual destination airport display", () => {
+  assert.throws(
+    () => parseMawbForm(validForm({ destinationAirport: "", destinationIata: "ZZZ" })),
+    MawbFormError,
+  );
+
+  const parsed = parseMawbForm(
+    validForm({ destinationAirport: "Manual Destination", destinationIata: "ZZZ" }),
+  );
+  assert.equal(parsed.destinationAirport, "Manual Destination");
 });
 
 test("create-shipment mode requires existing or new customer data", () => {

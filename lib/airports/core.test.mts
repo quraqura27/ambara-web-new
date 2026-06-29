@@ -17,7 +17,13 @@ test("resolves MAWB destination business display values", () => {
   assert.equal(resolveMawbDestinationDisplay("DMK"), "Bangkok");
 });
 
-test("rejects unknown airport IATA codes", () => {
+test("resolves public airport references beyond the Ambara examples", () => {
+  assert.equal(resolveAirportByIata("LHR")?.airportName, "London Heathrow Airport");
+  assert.equal(resolveMawbDestinationDisplay("JFK"), "New York");
+});
+
+test("allows manual destination display for unknown airport IATA codes", () => {
   assert.equal(resolveAirportByIata("ZZZ"), null);
   assert.equal(resolveMawbDestinationDisplay("ZZZ"), null);
+  assert.equal(resolveMawbDestinationDisplay("ZZZ", "Manual Destination"), "Manual Destination");
 });

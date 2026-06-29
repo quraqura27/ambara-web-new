@@ -158,13 +158,12 @@ function optionalUpperText(formData: FormData, key: string) {
 export function resolveMawbAirportDisplay(
   iataCode: string,
   usage: "departure" | "destination",
+  manualDisplayName?: string,
 ) {
   const normalized = iataCode.trim().toUpperCase();
-  return (
-    usage === "departure"
-      ? resolveMawbDepartureAirport(normalized)
-      : resolveMawbDestinationDisplay(normalized)
-  ) ?? normalized;
+  return usage === "departure"
+    ? resolveMawbDepartureAirport(normalized)
+    : resolveMawbDestinationDisplay(normalized, manualDisplayName);
 }
 
 function airportDisplayText(
@@ -176,7 +175,7 @@ function airportDisplayText(
   const normalizedIata = iataCode.trim().toUpperCase();
   const explicitValue = cleanText(formData.get(field));
   if (explicitValue && explicitValue.toUpperCase() !== normalizedIata) return explicitValue;
-  return resolveMawbAirportDisplay(normalizedIata, usage);
+  return resolveMawbAirportDisplay(normalizedIata, usage) ?? "";
 }
 
 function optionalPositiveId(formData: FormData, key: string) {
@@ -377,7 +376,12 @@ export function parseMawbForm(formData: FormData): MawbFormValues {
 
   if (!values.originIata) fieldErrors.originIata = "Origin IATA is required.";
   if (!values.departureAirport) fieldErrors.originIata = "Origin IATA is required.";
-  if (!values.destinationAirport) fieldErrors.destinationIata = "Destination IATA is required.";
+  if (!values.destinationAirport) {
+    fieldErrors.destinationAirport =
+      values.destinationIata && !resolveAirportByIata(values.destinationIata)
+        ? "Enter the destination airport/display name when the destination IATA is not in the airport reference."
+        : "Destination airport is required.";
+  }
   if (values.originIata && values.originIata.length !== 3) {
     fieldErrors.originIata = "Origin IATA must be 3 letters.";
   } else if (values.originIata && !resolveAirportByIata(values.originIata)) {
@@ -386,7 +390,11 @@ export function parseMawbForm(formData: FormData): MawbFormValues {
   if (values.destinationIata.length !== 3) {
     fieldErrors.destinationIata = "Destination IATA must be 3 letters.";
   } else if (values.destinationIata && !resolveAirportByIata(values.destinationIata)) {
-    fieldErrors.destinationIata = "Destination IATA was not found in the airport reference.";
+    const manualDestinationAirport = cleanText(formData.get("destinationAirport"));
+    if (!manualDestinationAirport || manualDestinationAirport.toUpperCase() === values.destinationIata) {
+      fieldErrors.destinationAirport =
+        "Enter the destination airport/display name when the destination IATA is not in the airport reference.";
+    }
   }
   if (actionMode === "create_shipment") {
     const hasNewCustomer = Boolean(values.newCustomerFullName || values.newCustomerCompanyName);

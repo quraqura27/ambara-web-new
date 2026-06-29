@@ -2,12 +2,15 @@ import { randomUUID } from "crypto";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
-import { getCustomersForSelect } from "@/actions/shipments";
-import { MawbShipmentForm } from "@/components/portal/mawb-shipment-form";
+import { getCommonShipmentLocations, getCustomersForSelect } from "@/actions/shipments";
+import { GuidedShipmentForm } from "@/components/portal/guided-shipment-form";
 import { Button } from "@/components/ui/core";
 
 export default async function NewShipmentPage() {
-  const customers = await getCustomersForSelect();
+  const [customers, locations] = await Promise.all([
+    getCustomersForSelect(),
+    getCommonShipmentLocations(),
+  ]);
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">
@@ -18,16 +21,17 @@ export default async function NewShipmentPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Create Shipments + MAWB</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Input One Shipment</h1>
           <p className="mt-1 text-slate-500">
-            Enter one MAWB header, then add one shipment line for each tracking number/CN.
+            Create one Ambara tracking number, CN, and optional MAWB workbook from one shipment input.
           </p>
         </div>
       </div>
 
-      <MawbShipmentForm
+      <GuidedShipmentForm
         customers={customers}
         idempotencyKey={randomUUID()}
+        locations={locations}
       />
     </div>
   );
