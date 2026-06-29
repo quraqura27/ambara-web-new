@@ -1,20 +1,9 @@
-"use client";
-
 import * as React from "react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
-let lastFocusedInputKey: string | null = null;
-
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
-}
-
-function inputRestoreKey(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  const name = typeof props.name === "string" ? props.name : "";
-  const ariaLabel = typeof props["aria-label"] === "string" ? props["aria-label"] : "";
-  if (!name && !ariaLabel) return null;
-  return `${name}::${ariaLabel}`;
 }
 
 export const Button = React.forwardRef<
@@ -51,30 +40,14 @@ export const Card = ({ children, className }: { children: React.ReactNode; class
 export const Input = React.forwardRef<
   HTMLInputElement,
   React.InputHTMLAttributes<HTMLInputElement>
->(({ autoFocus, className, onChange, onFocus, ...props }, ref) => {
-  const restoreKey = inputRestoreKey(props);
-  const shouldAutoFocus = autoFocus ?? Boolean(restoreKey && restoreKey === lastFocusedInputKey);
-
-  return (
-    <input
-      ref={ref}
-      autoFocus={shouldAutoFocus}
-      className={cn(
-        "w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all placeholder:text-slate-500",
-        className
-      )}
-      onChange={(event) => {
-        if (restoreKey && event.currentTarget === document.activeElement) {
-          lastFocusedInputKey = restoreKey;
-        }
-        onChange?.(event);
-      }}
-      onFocus={(event) => {
-        if (restoreKey) lastFocusedInputKey = restoreKey;
-        onFocus?.(event);
-      }}
-      {...props}
-    />
-  );
-});
+>(({ className, ...props }, ref) => (
+  <input
+    ref={ref}
+    className={cn(
+      "w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all placeholder:text-slate-500",
+      className
+    )}
+    {...props}
+  />
+));
 Input.displayName = "Input";

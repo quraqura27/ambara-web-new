@@ -37,6 +37,10 @@ type ShipmentLine = {
   weightKg: string;
 };
 
+type EditableChargeLine = MawbChargeLine & {
+  rowId: string;
+};
+
 type MawbShipmentFormProps = {
   customers: CustomerOption[];
   idempotencyKey: string;
@@ -61,6 +65,17 @@ function newShipmentLine(): ShipmentLine {
     title: "",
     weightKg: "",
   };
+}
+
+let chargeLineRowSequence = 0;
+
+function nextChargeLineRowId() {
+  chargeLineRowSequence += 1;
+  return `mawb-shipment-charge-${chargeLineRowSequence}`;
+}
+
+function editableChargeLine(line: MawbChargeLine = createBlankMawbChargeLine()): EditableChargeLine {
+  return { ...line, rowId: nextChargeLineRowId() };
 }
 
 function numeric(value: string) {
@@ -110,7 +125,7 @@ export function MawbShipmentForm({ customers, idempotencyKey }: MawbShipmentForm
   const [mawbNumber, setMawbNumber] = useState("");
   const [originIata, setOriginIata] = useState("CGK");
   const [destinationIata, setDestinationIata] = useState("");
-  const [chargeLines, setChargeLines] = useState<MawbChargeLine[]>(() => [createBlankMawbChargeLine()]);
+  const [chargeLines, setChargeLines] = useState<EditableChargeLine[]>(() => [editableChargeLine()]);
   const [lines, setLines] = useState<ShipmentLine[]>(() => [newShipmentLine()]);
   const fieldErrors = useMemo(() => state.fieldErrors ?? {}, [state.fieldErrors]);
   const service = getShipmentServiceDefinition(serviceType);
@@ -406,7 +421,7 @@ export function MawbShipmentForm({ customers, idempotencyKey }: MawbShipmentForm
             </div>
             <Button
               className="gap-2"
-              onClick={() => setChargeLines((current) => [...current, createBlankMawbChargeLine()])}
+              onClick={() => setChargeLines((current) => [...current, editableChargeLine()])}
               type="button"
               variant="secondary"
             >
@@ -418,7 +433,7 @@ export function MawbShipmentForm({ customers, idempotencyKey }: MawbShipmentForm
             {chargeLines.map((line, index) => (
               <div
                 className="grid gap-3 rounded-lg border border-white/5 bg-white/[0.02] p-3 md:grid-cols-[1fr_90px_1fr_130px_auto]"
-                key={`${line.code || "charge"}-${index}`}
+                key={line.rowId}
               >
                 <Input
                   aria-label={`Charge code ${index + 1}`}

@@ -111,6 +111,21 @@ const initialActionState: GuidedShipmentActionState = {};
 const inputClassName =
   "w-full rounded-lg border border-slate-700 bg-slate-900/60 px-4 py-3 text-sm text-slate-100 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30";
 
+type EditableChargeLine = MawbChargeLine & {
+  rowId: string;
+};
+
+let chargeLineRowSequence = 0;
+
+function nextChargeLineRowId() {
+  chargeLineRowSequence += 1;
+  return `guided-mawb-charge-${chargeLineRowSequence}`;
+}
+
+function editableChargeLine(line: MawbChargeLine = createBlankMawbChargeLine()): EditableChargeLine {
+  return { ...line, rowId: nextChargeLineRowId() };
+}
+
 function FieldError({ error }: { error?: string }) {
   return error ? (
     <span className="block text-xs font-medium text-rose-300" role="alert">
@@ -152,7 +167,7 @@ export function GuidedShipmentForm({
   });
   const [customerSearch, setCustomerSearch] = useState("");
   const [advancedOpen, setAdvancedOpen] = useState(false);
-  const [chargeLines, setChargeLines] = useState<MawbChargeLine[]>(() => [createBlankMawbChargeLine()]);
+  const [chargeLines, setChargeLines] = useState<EditableChargeLine[]>(() => [editableChargeLine()]);
   const fieldErrors = useMemo(() => state.fieldErrors ?? {}, [state.fieldErrors]);
   const service = getShipmentServiceDefinition(values.serviceType);
   const doorDelivery = service?.doorDelivery === true;
@@ -190,7 +205,11 @@ export function GuidedShipmentForm({
     const nextChargeLines = state.chargeLines;
     if (!nextChargeLines) return;
     const frame = window.requestAnimationFrame(() => {
-      setChargeLines(nextChargeLines.length > 0 ? nextChargeLines : [createBlankMawbChargeLine()]);
+      setChargeLines(
+        nextChargeLines.length > 0
+          ? nextChargeLines.map((line) => editableChargeLine(line))
+          : [editableChargeLine()],
+      );
     });
     return () => window.cancelAnimationFrame(frame);
   }, [state.chargeLines]);
@@ -608,7 +627,7 @@ export function GuidedShipmentForm({
                 </div>
                 <Button
                   className="gap-2"
-                  onClick={() => setChargeLines((current) => [...current, createBlankMawbChargeLine()])}
+                  onClick={() => setChargeLines((current) => [...current, editableChargeLine()])}
                   type="button"
                   variant="secondary"
                 >
@@ -620,7 +639,7 @@ export function GuidedShipmentForm({
                 {chargeLines.map((line, index) => (
                   <div
                     className="grid gap-3 rounded-lg border border-white/5 bg-white/[0.02] p-3 md:grid-cols-[1fr_90px_1fr_130px_auto]"
-                    key={`${line.code || "charge"}-${index}`}
+                    key={line.rowId}
                   >
                     <Input
                       aria-label={`Charge code ${index + 1}`}
