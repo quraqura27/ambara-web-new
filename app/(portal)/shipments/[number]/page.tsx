@@ -5,6 +5,7 @@ import {
   Calendar,
   CheckCircle2,
   Clock,
+  Copy,
   ExternalLink,
   FileText,
   MapPin,
@@ -207,6 +208,14 @@ export default async function TrackingDetailPage({
               <Button className="gap-2" variant="secondary">
                 <Printer className="h-4 w-4" />
                 Print CN
+              </Button>
+            </Link>
+          ) : null}
+          {shipment && canUseMawbs ? (
+            <Link href={`/shipments/new?copyFrom=${encodeURIComponent(shipment.trackingNumber)}`}>
+              <Button className="gap-2" variant="secondary">
+                <Copy className="h-4 w-4" />
+                Copy Shipment
               </Button>
             </Link>
           ) : null}

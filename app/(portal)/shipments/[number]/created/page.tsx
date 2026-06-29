@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CheckCircle2, MapPin, Package, Plus, Printer } from "lucide-react";
+import { CheckCircle2, Copy, MapPin, Package, Plus, Printer } from "lucide-react";
 import { notFound } from "next/navigation";
 
 import { getShipmentByTracking } from "@/actions/shipments";
@@ -58,6 +58,11 @@ export default async function ShipmentCreatedPage({ params }: ShipmentCreatedPag
         <Link href={`/shipments/${encodeURIComponent(shipment.trackingNumber)}`}>
           <Button className="w-full gap-2">
             <Package className="h-4 w-4" /> Open shipment
+          </Button>
+        </Link>
+        <Link href={`/shipments/new?copyFrom=${encodeURIComponent(shipment.trackingNumber)}`}>
+          <Button className="w-full gap-2" variant="secondary">
+            <Copy className="h-4 w-4" /> Copy shipment
           </Button>
         </Link>
         <Link href={`/shipments/${encodeURIComponent(shipment.trackingNumber)}#tracking-update`}>

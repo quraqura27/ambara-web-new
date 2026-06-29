@@ -30,8 +30,10 @@ type CustomerOption = {
 };
 
 type GuidedShipmentFormProps = {
+  copyNotice?: string;
   customers: CustomerOption[];
   idempotencyKey: string;
+  initialValues?: Partial<Record<string, string>>;
   locations: {
     destinations: string[];
     origins: string[];
@@ -47,7 +49,7 @@ const initialValues: Record<string, string> = {
   commodity: "",
   confirmCustomerDuplicate: "",
   confirmDuplicates: "",
-  createMawbDocument: "yes",
+  createMawbDocument: "no",
   customerId: "",
   customerMode: "existing",
   customerName: "",
@@ -58,8 +60,10 @@ const initialValues: Record<string, string> = {
   deliveryInstruction: "",
   destination: "",
   destinationAirport: "",
+  destinationCityDifferent: "",
   destinationCity: "",
   destinationIata: "",
+  departureIataDifferent: "",
   executedDate: "",
   executedPlace: "CGK",
   flightDate: "",
@@ -76,6 +80,7 @@ const initialValues: Record<string, string> = {
   flightLegsJson: "[]",
   mawbConsigneeAddress: "",
   mawbConsigneeName: "",
+  mawbPartyOverride: "",
   mawbShipperAddress: "",
   mawbShipperName: "",
   natureQuantity: "",
@@ -93,6 +98,7 @@ const initialValues: Record<string, string> = {
   receiverName: "",
   receiverPhone: "",
   reviewConfirmed: "",
+  routingOverride: "",
   routingBy1: "",
   routingBy2: "",
   routingTo1: "",
@@ -106,6 +112,8 @@ const initialValues: Record<string, string> = {
   unlinkedReason: "",
   weightKg: "",
 };
+
+export type GuidedShipmentPrefillValues = Partial<Record<keyof typeof initialValues, string>>;
 
 const initialActionState: GuidedShipmentActionState = {};
 const inputClassName =
@@ -156,13 +164,16 @@ function Field({
 }
 
 export function GuidedShipmentForm({
+  copyNotice,
   customers,
   idempotencyKey,
+  initialValues: providedInitialValues,
   locations,
 }: GuidedShipmentFormProps) {
   const [state, action, pending] = useActionState(createGuidedShipment, initialActionState);
   const [values, setValues] = useState<Record<string, string>>({
     ...initialValues,
+    ...providedInitialValues,
     idempotencyKey,
   });
   const [customerSearch, setCustomerSearch] = useState("");
@@ -172,10 +183,37 @@ export function GuidedShipmentForm({
   const service = getShipmentServiceDefinition(values.serviceType);
   const doorDelivery = service?.doorDelivery === true;
   const airportOptions = useMemo(() => airportReferenceOptions(), []);
+  const hasAwb = values.mawb.trim().length > 0;
   const createMawbDocument = values.createMawbDocument === "yes";
   const departureAirport = resolveMawbDepartureAirport(values.originIata) ?? "";
   const resolvedDestinationAirport = resolveMawbDestinationDisplay(values.destinationIata) ?? "";
   const destinationNeedsManual = needsManualDestinationAirport(values.destinationIata);
+  const showDepartureIata = values.departureIataDifferent === "yes" || Boolean(fieldErrors.originIata);
+  const showDestinationCity =
+    doorDelivery &&
+    (values.destinationCityDifferent === "yes" ||
+      Boolean(fieldErrors.destinationCity) ||
+      (values.destinationCity !== "" && values.destinationCity !== values.destination));
+  const showMawbPartyOverride =
+    values.mawbPartyOverride === "yes" ||
+    Boolean(
+      values.mawbShipperName ||
+        values.mawbShipperAddress ||
+        values.mawbConsigneeName ||
+        values.mawbConsigneeAddress ||
+        fieldErrors.mawbShipperName ||
+        fieldErrors.mawbShipperAddress ||
+        fieldErrors.mawbConsigneeName ||
+        fieldErrors.mawbConsigneeAddress,
+    );
+  const showRoutingOverride =
+    values.routingOverride === "yes" ||
+    Boolean(
+      (values.routingTo1 && values.routingTo1 !== values.destinationIata) ||
+        values.routingBy1 ||
+        values.routingTo2 ||
+        values.routingBy2,
+    );
 
   function updateChargeLine(index: number, patch: Partial<MawbChargeLine>) {
     setChargeLines((current) =>
@@ -276,15 +314,44 @@ export function GuidedShipmentForm({
       if (name === "destination" && (!current.destinationCity || current.destinationCity === current.destination)) {
         next.destinationCity = value;
       }
+      if (name === "destinationCityDifferent" && value !== "yes") {
+        next.destinationCity = current.destination;
+      }
+      if (name === "departureIataDifferent" && value !== "yes") {
+        next.originIata = "CGK";
+        next.executedPlace = "CGK";
+      }
+      if (name === "mawbPartyOverride" && value !== "yes") {
+        next.mawbConsigneeAddress = "";
+        next.mawbConsigneeName = "";
+        next.mawbShipperAddress = "";
+        next.mawbShipperName = "";
+      }
+      if (name === "routingOverride" && value !== "yes") {
+        next.routingBy1 = "";
+        next.routingBy2 = "";
+        next.routingTo1 = current.destinationIata;
+        next.routingTo2 = "";
+      }
+      if (name === "mawb") {
+        const hadAwb = current.mawb.trim().length > 0;
+        const hasNextAwb = value.trim().length > 0;
+        if (!hadAwb && hasNextAwb) next.createMawbDocument = "yes";
+        if (!hasNextAwb) next.createMawbDocument = "no";
+      }
       if (name === "destinationIata") {
         const autoDisplay = resolveMawbDestinationDisplay(nextValue);
         if (autoDisplay) next.destinationAirport = autoDisplay;
         else next.destinationAirport = "";
+        if (!current.routingTo1 || current.routingTo1 === current.destinationIata) {
+          next.routingTo1 = nextValue;
+        }
       }
       if (name === "serviceType") {
         const nextService = getShipmentServiceDefinition(value);
         if (!nextService?.doorDelivery) {
           next.destinationCity = current.destination;
+          next.destinationCityDifferent = "";
           next.codAmount = "";
           next.deliveryInstruction = "";
           next.postalCode = "";
@@ -304,6 +371,11 @@ export function GuidedShipmentForm({
           role="alert"
         >
           {state.formError}
+        </div>
+      ) : null}
+      {copyNotice ? (
+        <div className="rounded-lg border border-blue-500/20 bg-blue-500/10 px-4 py-3 text-sm text-blue-100">
+          {copyNotice}
         </div>
       ) : null}
 
@@ -474,7 +546,7 @@ export function GuidedShipmentForm({
         <div className="grid gap-4 border-t border-white/5 pt-6 md:grid-cols-2">
           <div className="space-y-2">
             <span className="block text-xs font-bold uppercase tracking-widest text-slate-400">
-              Airline AWB number *
+              Airline AWB / MAWB number
             </span>
             <AwbInput
               airlineName={values.awbAirlineName}
@@ -484,8 +556,8 @@ export function GuidedShipmentForm({
               value={values.mawb}
             />
             <span className="block text-xs text-slate-500">
-              Required for every shipment. Unknown prefixes require a verified manual airline
-              name.
+              Leave blank when this shipment does not need a MAWB document yet. Unknown prefixes
+              require a verified manual airline name.
             </span>
           </div>
         </div>
@@ -499,31 +571,65 @@ export function GuidedShipmentForm({
               Uses the AWB above to create or link the MAWB workbook from this shipment.
             </p>
           </div>
-          <label className="flex items-center gap-3 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2 text-sm text-slate-200">
+          {hasAwb ? (
+            <label className="flex items-center gap-3 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2 text-sm text-slate-200">
+              <input name="createMawbDocument" type="hidden" value="no" />
+              <input
+                checked={createMawbDocument}
+                name="createMawbDocument"
+                onChange={(event) => update("createMawbDocument", event.target.checked ? "yes" : "no")}
+                type="checkbox"
+                value="yes"
+              />
+              Create/link MAWB
+            </label>
+          ) : (
             <input name="createMawbDocument" type="hidden" value="no" />
-            <input
-              checked={createMawbDocument}
-              name="createMawbDocument"
-              onChange={(event) => update("createMawbDocument", event.target.checked ? "yes" : "no")}
-              type="checkbox"
-              value="yes"
-            />
-            Create/link MAWB
-          </label>
+          )}
         </div>
 
-        {createMawbDocument ? (
+        {!hasAwb ? (
+          <div className="rounded-lg border border-white/5 bg-white/[0.02] px-4 py-3 text-sm text-slate-400">
+            Enter an airline AWB above when this shipment should create or link a MAWB workbook.
+          </div>
+        ) : createMawbDocument ? (
           <>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <Field error={fieldErrors.originIata} helper={departureAirport || "Default: CGK"} label="Departure IATA">
-                <Input
-                  list="airport-iata-options"
-                  maxLength={3}
-                  name="originIata"
-                  onChange={(event) => update("originIata", event.target.value)}
-                  value={values.originIata}
-                />
-              </Field>
+            <div className="space-y-3 rounded-lg border border-white/5 bg-white/[0.02] p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
+                    Airport of departure
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-white">
+                    {values.originIata || "CGK"} - {departureAirport || "Soekarno-Hatta International Airport"}
+                  </p>
+                </div>
+                <label className="flex items-center gap-2 text-sm text-slate-300">
+                  <input
+                    checked={values.departureIataDifferent === "yes"}
+                    name="departureIataDifferent"
+                    onChange={(event) => update("departureIataDifferent", event.target.checked ? "yes" : "")}
+                    type="checkbox"
+                    value="yes"
+                  />
+                  Change departure airport
+                </label>
+              </div>
+              {!showDepartureIata ? <input name="originIata" type="hidden" value={values.originIata || "CGK"} /> : null}
+              {showDepartureIata ? (
+                <Field error={fieldErrors.originIata} helper={departureAirport || "Known 3-letter airport code required."} label="Departure IATA">
+                  <Input
+                    list="airport-iata-options"
+                    maxLength={3}
+                    name="originIata"
+                    onChange={(event) => update("originIata", event.target.value)}
+                    value={values.originIata}
+                  />
+                </Field>
+              ) : null}
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               <Field
                 error={fieldErrors.destinationIata}
                 helper={resolvedDestinationAirport || "Enter a 3-letter destination IATA"}
@@ -537,22 +643,32 @@ export function GuidedShipmentForm({
                   value={values.destinationIata}
                 />
               </Field>
-              <Field
-                error={fieldErrors.destinationAirport}
-                helper={
-                  destinationNeedsManual
-                    ? "Required because this destination IATA is not in the airport reference."
-                    : "Auto-filled from destination IATA."
-                }
-                label="Destination airport/display"
-              >
-                <Input
-                  name="destinationAirport"
-                  onChange={(event) => update("destinationAirport", event.target.value)}
-                  placeholder={destinationNeedsManual ? "Type destination airport or city" : resolvedDestinationAirport}
-                  value={values.destinationAirport || resolvedDestinationAirport}
-                />
-              </Field>
+              {destinationNeedsManual ? (
+                <Field
+                  error={fieldErrors.destinationAirport}
+                  helper="Required because this destination IATA is not in the airport reference."
+                  label="Destination airport/display"
+                >
+                  <Input
+                    name="destinationAirport"
+                    onChange={(event) => update("destinationAirport", event.target.value)}
+                    placeholder="Type destination airport or city"
+                    value={values.destinationAirport}
+                  />
+                </Field>
+              ) : (
+                <div className="space-y-2">
+                  <span className="text-xs font-bold uppercase tracking-widest text-slate-400">
+                    Destination airport/display
+                  </span>
+                  <input name="destinationAirport" type="hidden" value={values.destinationAirport || resolvedDestinationAirport} />
+                  <div className="rounded-lg border border-slate-700 bg-slate-950/50 px-4 py-3 text-sm text-slate-100">
+                    {values.destinationAirport || resolvedDestinationAirport || "Auto-filled after IATA"}
+                  </div>
+                  <span className="block text-xs text-slate-500">Auto-filled from destination IATA.</span>
+                  <FieldError error={fieldErrors.destinationAirport} />
+                </div>
+              )}
               <Field label="Agent name and city">
                 <Input name="agentName" onChange={(event) => update("agentName", event.target.value)} value={values.agentName} />
               </Field>
@@ -566,19 +682,38 @@ export function GuidedShipmentForm({
               ))}
             </datalist>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <Field helper="Blank uses shipment shipper/customer." label="MAWB shipper name">
-                <Input name="mawbShipperName" onChange={(event) => update("mawbShipperName", event.target.value)} value={values.mawbShipperName} />
-              </Field>
-              <Field helper="Blank uses receiver/consignee." label="MAWB consignee name">
-                <Input name="mawbConsigneeName" onChange={(event) => update("mawbConsigneeName", event.target.value)} value={values.mawbConsigneeName} />
-              </Field>
-              <Field helper="Blank uses shipper/pickup address." label="MAWB shipper address">
-                <textarea className={inputClassName} name="mawbShipperAddress" onChange={(event) => update("mawbShipperAddress", event.target.value)} rows={3} value={values.mawbShipperAddress} />
-              </Field>
-              <Field helper="Blank uses receiver address or destination." label="MAWB consignee address">
-                <textarea className={inputClassName} name="mawbConsigneeAddress" onChange={(event) => update("mawbConsigneeAddress", event.target.value)} rows={3} value={values.mawbConsigneeAddress} />
-              </Field>
+            <div className="space-y-3 rounded-lg border border-white/5 bg-white/[0.02] p-4">
+              <label className="flex items-start gap-3 text-sm text-slate-200">
+                <input
+                  checked={showMawbPartyOverride}
+                  name="mawbPartyOverride"
+                  onChange={(event) => update("mawbPartyOverride", event.target.checked ? "yes" : "")}
+                  type="checkbox"
+                  value="yes"
+                />
+                <span>
+                  MAWB shipper or consignee is different from the shipment data.
+                  <span className="mt-1 block text-xs text-slate-500">
+                    Blank MAWB parties use customer/shipper and receiver details.
+                  </span>
+                </span>
+              </label>
+              {showMawbPartyOverride ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field helper="Blank uses shipment shipper/customer." label="MAWB shipper name">
+                    <Input name="mawbShipperName" onChange={(event) => update("mawbShipperName", event.target.value)} value={values.mawbShipperName} />
+                  </Field>
+                  <Field helper="Blank uses receiver/consignee." label="MAWB consignee name">
+                    <Input name="mawbConsigneeName" onChange={(event) => update("mawbConsigneeName", event.target.value)} value={values.mawbConsigneeName} />
+                  </Field>
+                  <Field helper="Blank uses shipper/pickup address." label="MAWB shipper address">
+                    <textarea className={inputClassName} name="mawbShipperAddress" onChange={(event) => update("mawbShipperAddress", event.target.value)} rows={3} value={values.mawbShipperAddress} />
+                  </Field>
+                  <Field helper="Blank uses receiver address or destination." label="MAWB consignee address">
+                    <textarea className={inputClassName} name="mawbConsigneeAddress" onChange={(event) => update("mawbConsigneeAddress", event.target.value)} rows={3} value={values.mawbConsigneeAddress} />
+                  </Field>
+                </div>
+              ) : null}
             </div>
 
             <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
@@ -602,19 +737,43 @@ export function GuidedShipmentForm({
               </Field>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-4">
-              <Field label="Routing to 1">
-                <Input maxLength={3} name="routingTo1" onChange={(event) => update("routingTo1", event.target.value)} placeholder={values.destinationIata || "TPE"} value={values.routingTo1} />
-              </Field>
-              <Field label="Routing by 1">
-                <Input name="routingBy1" onChange={(event) => update("routingBy1", event.target.value)} placeholder={values.awbAirlineName ? values.awbAirlineName.slice(0, 2).toUpperCase() : "GA"} value={values.routingBy1} />
-              </Field>
-              <Field label="Routing to 2">
-                <Input maxLength={3} name="routingTo2" onChange={(event) => update("routingTo2", event.target.value)} value={values.routingTo2} />
-              </Field>
-              <Field label="Routing by 2">
-                <Input name="routingBy2" onChange={(event) => update("routingBy2", event.target.value)} value={values.routingBy2} />
-              </Field>
+            <div className="space-y-3 rounded-lg border border-white/5 bg-white/[0.02] p-4">
+              <label className="flex items-start gap-3 text-sm text-slate-200">
+                <input
+                  checked={showRoutingOverride}
+                  name="routingOverride"
+                  onChange={(event) => update("routingOverride", event.target.checked ? "yes" : "")}
+                  type="checkbox"
+                  value="yes"
+                />
+                <span>
+                  Override MAWB routing cells.
+                  <span className="mt-1 block text-xs text-slate-500">
+                    Defaults use the destination IATA and resolved airline.
+                  </span>
+                </span>
+              </label>
+              {!showRoutingOverride ? (
+                <>
+                  <input name="routingTo1" type="hidden" value={values.routingTo1 || values.destinationIata} />
+                  <input name="routingBy1" type="hidden" value={values.routingBy1} />
+                </>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-4">
+                  <Field label="Routing to 1">
+                    <Input maxLength={3} name="routingTo1" onChange={(event) => update("routingTo1", event.target.value)} placeholder={values.destinationIata || "TPE"} value={values.routingTo1} />
+                  </Field>
+                  <Field label="Routing by 1">
+                    <Input name="routingBy1" onChange={(event) => update("routingBy1", event.target.value)} placeholder="Airline code" value={values.routingBy1} />
+                  </Field>
+                  <Field label="Routing to 2">
+                    <Input maxLength={3} name="routingTo2" onChange={(event) => update("routingTo2", event.target.value)} value={values.routingTo2} />
+                  </Field>
+                  <Field label="Routing by 2">
+                    <Input name="routingBy2" onChange={(event) => update("routingBy2", event.target.value)} value={values.routingBy2} />
+                  </Field>
+                </div>
+              )}
             </div>
 
             <div className="space-y-3">
@@ -715,7 +874,7 @@ export function GuidedShipmentForm({
           </>
         ) : (
           <div className="rounded-lg border border-white/5 bg-white/[0.02] px-4 py-3 text-sm text-slate-400">
-            Shipment will store the AWB number but will not create or link a MAWB workbook document.
+            Shipment will store the AWB number only and will not create or link a MAWB workbook document.
           </div>
         )}
       </Card>
@@ -775,13 +934,9 @@ export function GuidedShipmentForm({
           </Field>
           {doorDelivery ? (
             <>
-              <Field error={fieldErrors.destinationCity} label="Final delivery city *">
-                <Input
-                  name="destinationCity"
-                  onChange={(event) => update("destinationCity", event.target.value)}
-                  value={values.destinationCity}
-                />
-              </Field>
+              {!showDestinationCity ? (
+                <input name="destinationCity" type="hidden" value={values.destination || values.destinationCity} />
+              ) : null}
               <Field error={fieldErrors.postalCode} label="Postal code">
                 <Input
                   inputMode="numeric"
@@ -791,6 +946,32 @@ export function GuidedShipmentForm({
                   value={values.postalCode}
                 />
               </Field>
+              <div className="space-y-3 md:col-span-2">
+                <label className="flex items-start gap-3 text-sm text-slate-200">
+                  <input
+                    checked={showDestinationCity}
+                    name="destinationCityDifferent"
+                    onChange={(event) => update("destinationCityDifferent", event.target.checked ? "yes" : "")}
+                    type="checkbox"
+                    value="yes"
+                  />
+                  <span>
+                    Final delivery city is different from route destination.
+                    <span className="mt-1 block text-xs text-slate-500">
+                      Default: {values.destination || "same as route destination"}.
+                    </span>
+                  </span>
+                </label>
+                {showDestinationCity ? (
+                  <Field error={fieldErrors.destinationCity} label="Final delivery city">
+                    <Input
+                      name="destinationCity"
+                      onChange={(event) => update("destinationCity", event.target.value)}
+                      value={values.destinationCity}
+                    />
+                  </Field>
+                ) : null}
+              </div>
               <Field error={fieldErrors.receiverAddress} label="Delivery address *">
                 <textarea
                   className={inputClassName}
@@ -1014,10 +1195,10 @@ export function GuidedShipmentForm({
         <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {[
             ["Customer", customerDisplay || "Missing"],
-            ["AWB", values.mawb || "Missing"],
+            ["AWB", values.mawb || "Not entered"],
             ["Service", `${values.serviceType} — ${service?.label ?? ""}`],
             ["Route", `${values.origin || "Missing"} → ${values.destination || "Missing"}`],
-            ["MAWB document", createMawbDocument ? "Create/link enabled" : "Shipment AWB only"],
+            ["MAWB document", hasAwb && createMawbDocument ? "Create/link enabled" : "Not created"],
             [doorDelivery ? "Receiver" : "Consignee", values.receiverName || "Missing"],
             ["Cargo", values.commodity || "Missing"],
             ["Pieces", `${values.pieces || "0"} physical cargo units`],

@@ -18,10 +18,10 @@ function formatDate(value: Date | string | null) {
 
 const quickActions = [
   {
-    description: "Create one MAWB with one or more tracking numbers/CNs.",
+    description: "Create one Ambara shipment and optionally create or link a MAWB.",
     href: "/shipments/new",
     icon: PackagePlus,
-    label: "Create Shipments + MAWB",
+    label: "Create Shipment",
   },
   {
     description: "Rows are grouped into MAWBs by MAWB number.",

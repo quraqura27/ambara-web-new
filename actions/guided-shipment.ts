@@ -356,9 +356,9 @@ function parseGuidedMawbInput(
     natureQuantity: text(formData, "natureQuantity") || null,
     originIata,
     rate: String(rate),
-    routingBy1: optionalUpper(formData, "routingBy1"),
+    routingBy1: optionalUpper(formData, "routingBy1") || normalizedMawb.code,
     routingBy2: optionalUpper(formData, "routingBy2"),
-    routingTo1: optionalUpper(formData, "routingTo1"),
+    routingTo1: optionalUpper(formData, "routingTo1") || destinationIata,
     routingTo2: optionalUpper(formData, "routingTo2"),
     shipperAddress:
       text(formData, "mawbShipperAddress") ||
@@ -397,9 +397,7 @@ export async function createGuidedShipment(
     fieldErrors,
   );
   const receiverPhone = normalizePhone(text(formData, "receiverPhone"));
-  const destinationCity = service?.doorDelivery
-    ? required(formData, "destinationCity", "Final delivery city", fieldErrors) || destination
-    : destination;
+  const destinationCity = service?.doorDelivery ? text(formData, "destinationCity") || destination : destination;
   const receiverAddress = service?.doorDelivery
     ? required(formData, "receiverAddress", "Delivery address", fieldErrors)
     : "";
@@ -428,7 +426,7 @@ export async function createGuidedShipment(
     "Submission identifier",
     fieldErrors,
   );
-  const awbInput = required(formData, "mawb", "Airline AWB number", fieldErrors);
+  const awbInput = text(formData, "mawb");
   let resolvedAwb: ReturnType<typeof resolveAirWaybill> | null = null;
   let flightLegs: ReturnType<typeof parseFlightLegsJson> = [];
 
@@ -691,10 +689,10 @@ export async function createGuidedShipment(
     goodsDescription: text(formData, "goodsDescription") || null,
     idempotencyKey,
     internalTrackingNo: trackingNumber,
-    mawb: resolvedAwb!.canonicalNumber,
-    awbAirlineName: resolvedAwb!.airlineName,
-    awbAirlinePrefix: resolvedAwb!.prefix,
-    awbAirlineUnresolved: resolvedAwb!.airlineUnresolved,
+    mawb: resolvedAwb?.canonicalNumber ?? null,
+    awbAirlineName: resolvedAwb?.airlineName ?? null,
+    awbAirlinePrefix: resolvedAwb?.prefix ?? null,
+    awbAirlineUnresolved: resolvedAwb?.airlineUnresolved ?? false,
     origin,
     originIata: guidedMawb?.originIata ?? null,
     serviceType,
