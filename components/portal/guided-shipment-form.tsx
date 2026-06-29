@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, CheckCircle2, ChevronDown, PackageCheck, Plus, Trash2 } from "lucide-react";
 
 import {
@@ -17,6 +17,7 @@ import {
   resolveMawbDestinationDisplay,
 } from "@/lib/airports/core";
 import { createBlankMawbChargeLine, type MawbChargeLine } from "@/lib/mawbs/core";
+import { buildGuidedMawbRouteDefaults } from "@/lib/shipments/guided-mawb-defaults";
 import {
   getShipmentServiceDefinition,
   shipmentServiceDefinitions,
@@ -118,6 +119,7 @@ export type GuidedShipmentPrefillValues = Partial<Record<keyof typeof initialVal
 const initialActionState: GuidedShipmentActionState = {};
 const inputClassName =
   "w-full rounded-lg border border-slate-700 bg-slate-900/60 px-4 py-3 text-sm text-slate-100 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30";
+const mawbDefaultedRouteFields = ["destination", "origin", "receiverAddress", "receiverName"] as const;
 
 type EditableChargeLine = MawbChargeLine & {
   rowId: string;
@@ -179,6 +181,13 @@ export function GuidedShipmentForm({
   const [customerSearch, setCustomerSearch] = useState("");
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [chargeLines, setChargeLines] = useState<EditableChargeLine[]>(() => [editableChargeLine()]);
+  const mawbRouteDefaultsRef = useRef<Record<(typeof mawbDefaultedRouteFields)[number], string>>({
+    destination: "",
+    origin: "",
+    receiverAddress: "",
+    receiverName: "",
+  });
+  const manualRouteEditsRef = useRef<Partial<Record<(typeof mawbDefaultedRouteFields)[number], boolean>>>({});
   const fieldErrors = useMemo(() => state.fieldErrors ?? {}, [state.fieldErrors]);
   const service = getShipmentServiceDefinition(values.serviceType);
   const doorDelivery = service?.doorDelivery === true;
@@ -188,6 +197,32 @@ export function GuidedShipmentForm({
   const departureAirport = resolveMawbDepartureAirport(values.originIata) ?? "";
   const resolvedDestinationAirport = resolveMawbDestinationDisplay(values.destinationIata) ?? "";
   const destinationNeedsManual = needsManualDestinationAirport(values.destinationIata);
+  const mawbRouteDefaults = useMemo(
+    () =>
+      buildGuidedMawbRouteDefaults({
+        createMawbDocument,
+        destinationAirport: values.destinationAirport || resolvedDestinationAirport,
+        destinationIata: values.destinationIata,
+        mawb: values.mawb,
+        mawbConsigneeAddress: values.mawbConsigneeAddress,
+        mawbConsigneeName: values.mawbConsigneeName,
+        originIata: values.originIata,
+      }),
+    [
+      createMawbDocument,
+      resolvedDestinationAirport,
+      values.destinationAirport,
+      values.destinationIata,
+      values.mawb,
+      values.mawbConsigneeAddress,
+      values.mawbConsigneeName,
+      values.originIata,
+    ],
+  );
+  const mawbRouteDefaultsActive =
+    hasAwb &&
+    createMawbDocument &&
+    Boolean(mawbRouteDefaults.origin || mawbRouteDefaults.destination || mawbRouteDefaults.receiverName);
   const showDepartureIata = values.departureIataDifferent === "yes" || Boolean(fieldErrors.originIata);
   const showDestinationCity =
     doorDelivery &&
@@ -299,6 +334,9 @@ export function GuidedShipmentForm({
     Number(values.chargeableWeight) < Number(values.weightKg);
 
   function update(name: string, value: string) {
+    if (mawbDefaultedRouteFields.includes(name as (typeof mawbDefaultedRouteFields)[number])) {
+      manualRouteEditsRef.current[name as (typeof mawbDefaultedRouteFields)[number]] = true;
+    }
     setValues((current) => {
       const nextValue =
         name === "originIata" ||
@@ -360,6 +398,32 @@ export function GuidedShipmentForm({
       return next;
     });
   }
+
+  useEffect(() => {
+    const previousDefaults = mawbRouteDefaultsRef.current;
+    setValues((current) => {
+      let next = current;
+
+      for (const field of mawbDefaultedRouteFields) {
+        const nextDefault = mawbRouteDefaults[field];
+        if (!nextDefault) continue;
+        const wasEdited = manualRouteEditsRef.current[field] === true;
+        const stillUsingPreviousDefault =
+          previousDefaults[field] !== "" && current[field] === previousDefaults[field];
+        if (wasEdited && !stillUsingPreviousDefault) continue;
+        if (current[field] === nextDefault) continue;
+
+        next = next === current ? { ...current } : next;
+        next[field] = nextDefault;
+        if (field === "destination" && (!current.destinationCity || current.destinationCity === current.destination)) {
+          next.destinationCity = nextDefault;
+        }
+      }
+
+      return next;
+    });
+    mawbRouteDefaultsRef.current = mawbRouteDefaults;
+  }, [mawbRouteDefaults]);
 
   return (
     <form action={action} className="space-y-6">
@@ -883,13 +947,19 @@ export function GuidedShipmentForm({
         <div>
           <h2 className="text-lg font-bold">{doorDelivery ? "Route and receiver" : "Route and consignee"}</h2>
           <p className="mt-1 text-sm text-slate-500">
-            {doorDelivery
-              ? "Enter the final delivery details required for last-mile operations."
-              : "No destination delivery address is needed for this port-complete service."}
+            {mawbRouteDefaultsActive
+              ? "Defaults from MAWB. Edit only if this shipment is different."
+              : doorDelivery
+                ? "Enter the final delivery details required for last-mile operations."
+                : "No destination delivery address is needed for this port-complete service."}
           </p>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
-          <Field error={fieldErrors.origin} label="Origin *">
+          <Field
+            error={fieldErrors.origin}
+            helper={mawbRouteDefaults.origin ? `From MAWB departure: ${mawbRouteDefaults.origin}` : undefined}
+            label={`Origin${mawbRouteDefaults.origin ? "" : " *"}`}
+          >
             <Input
               list="common-origin-cities"
               name="origin"
@@ -901,7 +971,11 @@ export function GuidedShipmentForm({
               {locations.origins.map((location) => <option key={location} value={location} />)}
             </datalist>
           </Field>
-          <Field error={fieldErrors.destination} label="Route destination *">
+          <Field
+            error={fieldErrors.destination}
+            helper={mawbRouteDefaults.destination ? `From MAWB destination: ${mawbRouteDefaults.destination}` : undefined}
+            label={`Route destination${mawbRouteDefaults.destination ? "" : " *"}`}
+          >
             <Input
               list="common-destination-cities"
               name="destination"
@@ -913,7 +987,11 @@ export function GuidedShipmentForm({
               {locations.destinations.map((location) => <option key={location} value={location} />)}
             </datalist>
           </Field>
-          <Field error={fieldErrors.receiverName} label={`${doorDelivery ? "Receiver" : "Consignee"} name *`}>
+          <Field
+            error={fieldErrors.receiverName}
+            helper={mawbRouteDefaults.receiverName ? `From MAWB consignee: ${mawbRouteDefaults.receiverName}` : undefined}
+            label={`${doorDelivery ? "Receiver" : "Consignee"} name${mawbRouteDefaults.receiverName && !doorDelivery ? "" : " *"}`}
+          >
             <Input
               name="receiverName"
               onChange={(event) => update("receiverName", event.target.value)}
@@ -972,7 +1050,11 @@ export function GuidedShipmentForm({
                   </Field>
                 ) : null}
               </div>
-              <Field error={fieldErrors.receiverAddress} label="Delivery address *">
+              <Field
+                error={fieldErrors.receiverAddress}
+                helper={mawbRouteDefaults.receiverAddress ? "Defaulted from MAWB consignee address." : undefined}
+                label="Delivery address *"
+              >
                 <textarea
                   className={inputClassName}
                   name="receiverAddress"

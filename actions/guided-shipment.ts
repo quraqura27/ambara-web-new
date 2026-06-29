@@ -21,6 +21,7 @@ import {
 import { parseFlightLegsJson, resolveAirWaybill } from "@/lib/airlines/core";
 import { formValues, type PortalActionState } from "@/lib/forms/action-state";
 import { requirePortalUser } from "@/lib/portal-auth";
+import { buildGuidedMawbRouteDefaults } from "@/lib/shipments/guided-mawb-defaults";
 import {
   getShipmentServiceDefinition,
   normalizeShipmentService,
@@ -262,6 +263,17 @@ type GuidedMawbInput = {
   shipperName: string;
 };
 
+type ExistingGuidedMawb = {
+  consigneeAddress: string;
+  consigneeName: string;
+  destinationAirport: string;
+  destinationIata: string;
+  id: number;
+  originIata: string;
+  otherChargesJson: string;
+  rate: string;
+};
+
 function optionalUpper(formData: FormData, field: string) {
   return text(formData, field).toUpperCase() || null;
 }
@@ -287,7 +299,7 @@ function parseGuidedMawbInput(
     weightKg: number;
   },
   fieldErrors: Record<string, string>,
-  options: { requireChargeLines?: boolean } = {},
+  options: { existingMawb?: ExistingGuidedMawb; requireChargeLines?: boolean } = {},
 ): GuidedMawbInput | null {
   const normalizedMawb = normalizeMawbNumber(text(formData, "mawb"));
   if (!normalizedMawb) {
@@ -295,12 +307,12 @@ function parseGuidedMawbInput(
     return null;
   }
 
-  const originIata = (text(formData, "originIata") || "CGK").toUpperCase();
-  const destinationIata = text(formData, "destinationIata").toUpperCase();
+  const originIata = (text(formData, "originIata") || options.existingMawb?.originIata || "CGK").toUpperCase();
+  const destinationIata = (text(formData, "destinationIata") || options.existingMawb?.destinationIata || "").toUpperCase();
   const departureAirport = resolveMawbDepartureAirport(originIata);
   const destinationAirport = resolveMawbDestinationDisplay(
     destinationIata,
-    text(formData, "destinationAirport"),
+    text(formData, "destinationAirport") || options.existingMawb?.destinationAirport,
   );
   if (!/^[A-Z]{3}$/.test(originIata) || !resolveAirportByIata(originIata)) {
     fieldErrors.originIata = "Departure IATA must be a known 3-letter airport code.";
@@ -336,10 +348,11 @@ function parseGuidedMawbInput(
     chargeLines,
     consigneeAddress:
       text(formData, "mawbConsigneeAddress") ||
+      options.existingMawb?.consigneeAddress ||
       fallback.receiverAddress ||
       fallback.destinationAirportFallback ||
       "-",
-    consigneeName: text(formData, "mawbConsigneeName") || fallback.receiverName,
+    consigneeName: text(formData, "mawbConsigneeName") || options.existingMawb?.consigneeName || fallback.receiverName,
     currency: text(formData, "currency").toUpperCase() || "IDR",
     declaredValueForCarriage: text(formData, "declaredValueForCarriage").toUpperCase() || "NVD",
     declaredValueForCustoms: text(formData, "declaredValueForCustoms").toUpperCase() || "NCV",
@@ -388,20 +401,68 @@ export async function createGuidedShipment(
     required(formData, "serviceType", "Service type", fieldErrors),
   );
   const service = getShipmentServiceDefinition(serviceType);
-  const origin = required(formData, "origin", "Origin city", fieldErrors);
-  const destination = required(formData, "destination", "Route destination", fieldErrors);
-  const receiverName = required(
-    formData,
-    "receiverName",
-    service?.doorDelivery ? "Receiver name" : "Consignee name",
-    fieldErrors,
-  );
+  const createMawbDocument = text(formData, "createMawbDocument") === "yes";
+  const awbInput = text(formData, "mawb");
+  let resolvedAwb: ReturnType<typeof resolveAirWaybill> | null = null;
+  let flightLegs: ReturnType<typeof parseFlightLegsJson> = [];
+  let existingMawb: ExistingGuidedMawb | undefined;
+
+  if (awbInput) {
+    try {
+      resolvedAwb = resolveAirWaybill(awbInput, text(formData, "awbAirlineName"));
+    } catch (error) {
+      fieldErrors.mawb =
+        error instanceof Error ? error.message : "Enter a valid airline AWB number.";
+    }
+  }
+
+  if (createMawbDocument) {
+    if (!canUseMawbWorkflow(user)) {
+      fieldErrors.createMawbDocument = "Your role cannot create or link MAWB documents.";
+    } else {
+      const normalizedGuidedMawb = normalizeMawbNumber(awbInput);
+      if (normalizedGuidedMawb) {
+        [existingMawb] = await db
+          .select({
+            consigneeAddress: mawbDocuments.consigneeAddress,
+            consigneeName: mawbDocuments.consigneeName,
+            destinationAirport: mawbDocuments.destinationAirport,
+            destinationIata: mawbDocuments.destinationIata,
+            id: mawbDocuments.id,
+            originIata: mawbDocuments.originIata,
+            otherChargesJson: mawbDocuments.otherChargesJson,
+            rate: mawbDocuments.rate,
+          })
+          .from(mawbDocuments)
+          .where(eq(mawbDocuments.mawbNumber, normalizedGuidedMawb.mawbNumber))
+          .limit(1);
+      }
+    }
+  }
+
+  const mawbRouteDefaults = buildGuidedMawbRouteDefaults({
+    createMawbDocument,
+    destinationAirport: text(formData, "destinationAirport"),
+    destinationIata: text(formData, "destinationIata"),
+    existingMawb,
+    mawb: awbInput,
+    mawbConsigneeAddress: text(formData, "mawbConsigneeAddress"),
+    mawbConsigneeName: text(formData, "mawbConsigneeName"),
+    originIata: text(formData, "originIata"),
+  });
+  const origin = text(formData, "origin") || mawbRouteDefaults.origin;
+  const destination = text(formData, "destination") || mawbRouteDefaults.destination;
+  const receiverName = text(formData, "receiverName") || mawbRouteDefaults.receiverName;
   const receiverPhone = normalizePhone(text(formData, "receiverPhone"));
   const destinationCity = service?.doorDelivery ? text(formData, "destinationCity") || destination : destination;
   const receiverAddress = service?.doorDelivery
-    ? required(formData, "receiverAddress", "Delivery address", fieldErrors)
+    ? text(formData, "receiverAddress") || mawbRouteDefaults.receiverAddress
     : "";
   const postalCode = service?.doorDelivery ? text(formData, "postalCode") : "";
+  if (!values.origin && origin) values.origin = origin;
+  if (!values.destination && destination) values.destination = destination;
+  if (!values.receiverName && receiverName) values.receiverName = receiverName;
+  if (!values.receiverAddress && receiverAddress) values.receiverAddress = receiverAddress;
   const commodity = required(formData, "commodity", "Commodity", fieldErrors);
   const cargoType = text(formData, "cargoType") || "general";
   const pieces = positiveNumber(text(formData, "pieces"), "pieces", "Pieces", fieldErrors);
@@ -426,18 +487,6 @@ export async function createGuidedShipment(
     "Submission identifier",
     fieldErrors,
   );
-  const awbInput = text(formData, "mawb");
-  let resolvedAwb: ReturnType<typeof resolveAirWaybill> | null = null;
-  let flightLegs: ReturnType<typeof parseFlightLegsJson> = [];
-
-  if (awbInput) {
-    try {
-      resolvedAwb = resolveAirWaybill(awbInput, text(formData, "awbAirlineName"));
-    } catch (error) {
-      fieldErrors.mawb =
-        error instanceof Error ? error.message : "Enter a valid airline AWB number.";
-    }
-  }
 
   try {
     flightLegs = parseFlightLegsJson(text(formData, "flightLegsJson"));
@@ -447,6 +496,24 @@ export async function createGuidedShipment(
   }
 
   if (!serviceType || !service) fieldErrors.serviceType = "Select DTD, DTP, PTD, or PTP.";
+  if (!origin) {
+    fieldErrors.origin = createMawbDocument
+      ? "Origin is required when it is not available from MAWB."
+      : "Origin city is required.";
+  }
+  if (!destination) {
+    fieldErrors.destination = createMawbDocument
+      ? "Route destination is required when it is not available from MAWB."
+      : "Route destination is required.";
+  }
+  if (!receiverName) {
+    fieldErrors.receiverName = createMawbDocument
+      ? `${service?.doorDelivery ? "Receiver" : "Consignee"} name is required when it is not available from MAWB.`
+      : `${service?.doorDelivery ? "Receiver" : "Consignee"} name is required.`;
+  }
+  if (service?.doorDelivery && !receiverAddress) {
+    fieldErrors.receiverAddress = "Delivery address is required.";
+  }
   if (receiverPhone && !/^\+?\d{8,15}$/.test(receiverPhone)) {
     fieldErrors.receiverPhone = "Enter a valid phone number with 8 to 15 digits.";
   }
@@ -526,31 +593,9 @@ export async function createGuidedShipment(
     fieldErrors.customerMode = "Select how this shipment should be linked to a customer.";
   }
 
-  const createMawbDocument = text(formData, "createMawbDocument") === "yes";
   let guidedMawb: GuidedMawbInput | null = null;
-  let existingMawb:
-    | {
-        id: number;
-        otherChargesJson: string;
-        rate: string;
-      }
-    | undefined;
   if (createMawbDocument) {
-    if (!canUseMawbWorkflow(user)) {
-      fieldErrors.createMawbDocument = "Your role cannot create or link MAWB documents.";
-    } else {
-      const normalizedGuidedMawb = normalizeMawbNumber(text(formData, "mawb"));
-      if (normalizedGuidedMawb) {
-        [existingMawb] = await db
-          .select({
-            id: mawbDocuments.id,
-            otherChargesJson: mawbDocuments.otherChargesJson,
-            rate: mawbDocuments.rate,
-          })
-          .from(mawbDocuments)
-          .where(eq(mawbDocuments.mawbNumber, normalizedGuidedMawb.mawbNumber))
-          .limit(1);
-      }
+    if (canUseMawbWorkflow(user)) {
       guidedMawb = parseGuidedMawbInput(
         formData,
         {
@@ -566,7 +611,7 @@ export async function createGuidedShipment(
           weightKg: weightKg ?? 0,
         },
         fieldErrors,
-        { requireChargeLines: !existingMawb },
+        { existingMawb, requireChargeLines: !existingMawb },
       );
     }
   }
