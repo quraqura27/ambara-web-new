@@ -25,7 +25,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   const verificationUrl = detail.invoice.verificationToken
     ? `${baseUrl}/invoice/verify/${detail.invoice.verificationToken}`
     : baseUrl;
-  const pdfBytes = await generateInvoicePdf({ ...detail, verificationUrl });
+  const pdfBytes = await generateInvoicePdf({ ...detail, assetBaseUrl: baseUrl, verificationUrl });
   const filename = buildInvoicePdfDownloadName(detail.invoice);
   const pdfBuffer = new ArrayBuffer(pdfBytes.byteLength);
   new Uint8Array(pdfBuffer).set(pdfBytes);

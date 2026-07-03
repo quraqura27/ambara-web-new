@@ -4,13 +4,13 @@ import path from "path";
 import { PDFDocument, rgb, StandardFonts, type PDFPage, type PDFFont } from "pdf-lib";
 import QRCode from "qrcode";
 
-import { getInvoiceBankAccount } from "@/lib/invoices/bank-accounts";
+import { getInvoiceBankAccount } from "./bank-accounts.ts";
 import {
   buildInvoicePdfFilename,
   formatCurrencyAmount,
   numberValue,
   terbilangRupiah,
-} from "@/lib/invoices/core";
+} from "./core.ts";
 
 type InvoicePdfInvoice = {
   amountDue: number | string | null;
@@ -55,6 +55,7 @@ type InvoicePdfDeduction = {
 };
 
 export type InvoicePdfInput = {
+  assetBaseUrl?: string;
   deductions: InvoicePdfDeduction[];
   invoice: InvoicePdfInvoice;
   lines: InvoicePdfLine[];
@@ -220,12 +221,25 @@ export function buildInvoicePdfDownloadName(invoice: InvoicePdfInvoice) {
   });
 }
 
+async function loadLogoBuffer(assetBaseUrl?: string) {
+  try {
+    return await fs.readFile(path.join(process.cwd(), "public", "logo-thermal.png"));
+  } catch {
+    const baseUrl = assetBaseUrl || process.env.NEXT_PUBLIC_SITE_URL || "https://www.ambaraartha.com";
+    const response = await fetch(new URL("/logo-thermal.png", baseUrl));
+    if (!response.ok) {
+      throw new Error(`Unable to load invoice logo: ${response.status}`);
+    }
+    return Buffer.from(await response.arrayBuffer());
+  }
+}
+
 export async function generateInvoicePdf(input: InvoicePdfInput) {
   const pdfDoc = await PDFDocument.create();
   const regular = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const italic = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
-  const logoBuffer = await fs.readFile(path.join(process.cwd(), "public", "logo-thermal.png"));
+  const logoBuffer = await loadLogoBuffer(input.assetBaseUrl);
   const logoImage = await pdfDoc.embedPng(logoBuffer);
   const qrDataUrl = await QRCode.toDataURL(input.verificationUrl, { margin: 1, width: 220 });
   const qrBuffer = Buffer.from(qrDataUrl.split(",")[1] ?? "", "base64");
@@ -344,7 +358,6 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
             "",
             "",
             line.description || "Service",
-            "",
             "",
             "",
             "",
