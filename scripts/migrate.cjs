@@ -109,6 +109,32 @@ const migration008Indexes = [
   "mawb_shipment_links_shipment_idx",
   "mawb_shipment_links_unique_idx",
 ];
+const migration009Columns = [
+  ["invoice_sequences", "year"],
+  ["invoice_sequences", "last_value"],
+  ["invoice_sequences", "updated_at"],
+  ["invoices", "customer_code"],
+  ["invoices", "customer_name_snapshot"],
+  ["invoices", "customer_address_snapshot"],
+  ["invoices", "customer_npwp_snapshot"],
+  ["invoices", "vat_rate"],
+  ["invoices", "pph_enabled"],
+  ["invoices", "pph_rate"],
+  ["invoices", "pph_base_amount"],
+  ["invoices", "pph_amount"],
+  ["invoices", "net_payable"],
+  ["invoices", "status"],
+  ["invoices", "verification_token"],
+  ["invoices", "verification_checksum"],
+  ["invoices", "withholding_proof_ref"],
+];
+const migration009Tables = ["invoice_sequences"];
+const migration009Indexes = [
+  "invoices_status_idx",
+  "invoices_verification_token_unique_idx",
+  "invoice_line_items_invoice_idx",
+  "invoice_deductions_invoice_idx",
+];
 
 function checksum(contents) {
   return createHash("sha256").update(contents).digest("hex");
@@ -200,11 +226,19 @@ async function migrationMissingObjects(sql, name) {
     });
   }
 
+  if (name.startsWith("009-")) {
+    return missingSchemaObjects(sql, {
+      columns: migration009Columns,
+      tables: migration009Tables,
+      indexes: migration009Indexes,
+    });
+  }
+
   return [];
 }
 
 function hasSchemaObjectCheck(name) {
-  return name.startsWith("006-") || name.startsWith("007-") || name.startsWith("008-");
+  return name.startsWith("006-") || name.startsWith("007-") || name.startsWith("008-") || name.startsWith("009-");
 }
 
 async function ensureHistoryTable(sql) {
