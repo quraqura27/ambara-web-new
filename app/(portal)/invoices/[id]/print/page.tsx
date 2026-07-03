@@ -46,7 +46,7 @@ export default async function InvoicePrintPage({ params }: InvoicePrintPageProps
   return (
     <main className="min-h-screen bg-slate-200 p-6 text-black print:bg-white print:p-0">
       <div className="mx-auto mb-4 flex max-w-[210mm] justify-end print:hidden">
-        <PrintButton />
+        <PrintButton href={`/invoices/${invoice.id}/pdf?disposition=inline`} />
       </div>
 
       <section className="mx-auto min-h-[297mm] w-[210mm] bg-white px-[15mm] py-[14mm] shadow-2xl print:shadow-none">

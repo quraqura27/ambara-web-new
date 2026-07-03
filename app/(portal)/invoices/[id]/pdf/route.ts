@@ -13,7 +13,7 @@ function verificationBaseUrl(host: string | null, protocol: string | null) {
   return process.env.NEXT_PUBLIC_SITE_URL || "https://www.ambaraartha.com";
 }
 
-export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
+export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
   const detail = await getInvoiceDetail(id);
   if (!detail) {
@@ -30,10 +30,11 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
   const pdfBuffer = new ArrayBuffer(pdfBytes.byteLength);
   new Uint8Array(pdfBuffer).set(pdfBytes);
   const pdfBody = new Blob([pdfBuffer], { type: "application/pdf" });
+  const disposition = new URL(request.url).searchParams.get("disposition") === "inline" ? "inline" : "attachment";
 
   return new Response(pdfBody, {
     headers: {
-      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Content-Disposition": `${disposition}; filename="${filename}"`,
       "Content-Type": "application/pdf",
     },
   });

@@ -1,13 +1,14 @@
 "use client";
 
-export function PrintButton() {
+export function PrintButton({ href }: { href: string }) {
   return (
-    <button
-      className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white"
-      onClick={() => window.print()}
-      type="button"
+    <a
+      className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:bg-blue-700"
+      href={href}
+      rel="noreferrer"
+      target="_blank"
     >
-      Print
-    </button>
+      Print / Save PDF
+    </a>
   );
 }

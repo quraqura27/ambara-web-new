@@ -33,12 +33,22 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link href={`/invoices/${invoice.id}/pdf`}>
-            <Button className="gap-2" variant="secondary"><Download className="h-4 w-4" /> Download PDF</Button>
-          </Link>
-          <Link href={`/invoices/${invoice.id}/print`} target="_blank">
-            <Button className="gap-2"><Printer className="h-4 w-4" /> Print</Button>
-          </Link>
+          <a
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 transition-all duration-200 hover:bg-slate-700 active:scale-[0.98]"
+            href={`/invoices/${invoice.id}/pdf`}
+          >
+            <Download className="h-4 w-4" />
+            Download PDF
+          </a>
+          <a
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all duration-200 hover:bg-blue-700 active:scale-[0.98]"
+            href={`/invoices/${invoice.id}/pdf?disposition=inline`}
+            rel="noreferrer"
+            target="_blank"
+          >
+            <Printer className="h-4 w-4" />
+            Print / Save PDF
+          </a>
           <Link href="/invoices"><Button variant="secondary">Back</Button></Link>
         </div>
       </div>
