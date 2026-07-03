@@ -326,8 +326,8 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
     });
     y -= 22;
   }
-  function ensureSpace(required: number, repeatTableHeader = false) {
-    if (y - required > 150) return;
+  function ensureSpace(required: number, repeatTableHeader = false, minBottomY = 150) {
+    if (y - required > minBottomY) return;
     page = pdfDoc.addPage([pageWidth, pageHeight]);
     y = pageHeight - margin;
     if (repeatTableHeader) drawTableHeader();
@@ -442,8 +442,8 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
   const amountWords = currency === "IDR" ? terbilangRupiah(input.invoice.netPayable) : "";
   drawText(page, `# ${amountWords}`, margin, y, { font: italic, size: 9 });
 
-  y -= 72;
-  ensureSpace(135);
+  y -= 44;
+  ensureSpace(190, false, 58);
   const stampWidth = 150;
   const stampCenterX = pageWidth - margin - stampWidth / 2;
   const qrSize = 110;
