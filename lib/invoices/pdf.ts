@@ -66,7 +66,7 @@ const pageWidth = 595.28;
 const pageHeight = 841.89;
 const margin = 42;
 const contentWidth = pageWidth - margin * 2;
-const invoiceTableColumns = [22, 38, 44, 68, 76, 56, 26, 45, 18, 42, 18, 58];
+const invoiceTableColumns = [22, 38, 44, 68, 76, 56, 26, 45, 60, 76];
 
 function safeText(value: unknown) {
   return String(value ?? "")
@@ -187,16 +187,15 @@ function drawSummaryRow(
   currency: string,
   fonts: { bold: PDFFont; regular: PDFFont },
   strong = false,
+  negative = false,
 ) {
-  const labelWidth = tableColumnWidth(0, 10);
-  const currencyWidth = invoiceTableColumns[10]!;
-  const amountWidth = invoiceTableColumns[11]!;
+  const labelWidth = tableColumnWidth(0, 9);
+  const amountWidth = invoiceTableColumns[9]!;
   drawCell(page, label, margin, y, labelWidth, 20, fonts.bold, 9, "right");
-  drawCell(page, currency === "IDR" ? "Rp" : currency, margin + labelWidth, y, currencyWidth, 20, fonts.regular, 9);
   drawCell(
     page,
-    formatCurrencyAmount(value, currency),
-    margin + labelWidth + currencyWidth,
+    formatCurrencyCell(value, currency, negative),
+    margin + labelWidth,
     y,
     amountWidth,
     20,
@@ -210,6 +209,11 @@ function tableColumnWidth(startIndex: number, endIndex: number) {
   return invoiceTableColumns
     .slice(startIndex, endIndex)
     .reduce((sum, width) => sum + width, 0);
+}
+
+function formatCurrencyCell(value: number | string | null, currency: string, negative = false) {
+  const prefix = currency === "IDR" ? "Rp" : currency;
+  return `${negative ? "-" : ""}${prefix} ${formatCurrencyAmount(value, currency)}`;
 }
 
 export function buildInvoicePdfDownloadName(invoice: InvoicePdfInvoice) {
@@ -312,8 +316,8 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
     { span: 1, text: "Flight No" },
     { span: 1, text: "Pcs" },
     { span: 1, text: "CAW" },
-    { span: 2, text: "Price" },
-    { span: 2, text: "Total Amount" },
+    { span: 1, text: "Price" },
+    { span: 1, text: "Total Amount" },
   ];
   function drawTableHeader() {
     let x = margin;
@@ -336,36 +340,29 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
   drawTableHeader();
   input.lines.forEach((line, index) => {
     ensureSpace(22, true);
-    const values =
-      line.lineType === "awb"
-        ? [
-            String(index + 1),
-            line.origin || "-",
-            line.destination || "-",
-            displayDate(line.shipmentDate),
-            line.awbNumber || "-",
-            line.flightNumber || "-",
-            line.pieces ?? "-",
-            line.chargeableWeight ?? "-",
-            currency === "IDR" ? "Rp" : currency,
-            formatCurrencyAmount(line.pricePerKg, currency),
-            currency === "IDR" ? "Rp" : currency,
-            formatCurrencyAmount(line.lineTotal, currency),
-          ]
-        : [
-            String(index + 1),
-            "",
-            "",
-            "",
-            line.description || "Service",
-            "",
-            "",
-            "",
-            "",
-            "",
-            currency === "IDR" ? "Rp" : currency,
-            formatCurrencyAmount(line.lineTotal, currency),
-          ];
+    if (line.lineType !== "awb") {
+      const descriptionX = margin + columns[0]!;
+      const descriptionWidth = tableColumnWidth(1, 9);
+      const amountX = margin + tableColumnWidth(0, 9);
+      drawCell(page, String(index + 1), margin, y, columns[0]!, 22, regular, 8.5, "center");
+      drawCell(page, line.description || "Service", descriptionX, y, descriptionWidth, 22, italic, 8.5);
+      drawCell(page, formatCurrencyCell(line.lineTotal, currency), amountX, y, columns[9]!, 22, regular, 8.5, "right");
+      y -= 22;
+      return;
+    }
+
+    const values = [
+      String(index + 1),
+      line.origin || "-",
+      line.destination || "-",
+      displayDate(line.shipmentDate),
+      line.awbNumber || "-",
+      line.flightNumber || "-",
+      line.pieces ?? "-",
+      line.chargeableWeight ?? "-",
+      formatCurrencyCell(line.pricePerKg, currency),
+      formatCurrencyCell(line.lineTotal, currency),
+    ];
     let x = margin;
     values.forEach((value, colIndex) => {
       drawCell(
@@ -375,9 +372,9 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
         y,
         columns[colIndex]!,
         22,
-        colIndex === 8 || colIndex === 9 ? regular : regular,
+        regular,
         8.5,
-        colIndex === 0 || colIndex === 6 || colIndex === 8 || colIndex === 10
+        colIndex === 0 || colIndex === 5 || colIndex === 6
           ? "center"
           : colIndex >= 7
             ? "right"
@@ -390,35 +387,12 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
 
   for (const deduction of input.deductions) {
     ensureSpace(22, true);
-    let x = margin;
-    const values = [
-      "",
-      "",
-      "",
-      "",
-      deduction.description,
-      "",
-      "",
-      "",
-      "",
-      "",
-      `-${currency === "IDR" ? "Rp" : currency}`,
-      formatCurrencyAmount(deduction.amount, currency),
-    ];
-    values.forEach((value, colIndex) => {
-      drawCell(
-        page,
-        value,
-        x,
-        y,
-        columns[colIndex]!,
-        22,
-        regular,
-        8.5,
-        colIndex === 10 ? "center" : colIndex === 11 ? "right" : "left",
-      );
-      x += columns[colIndex]!;
-    });
+    const descriptionX = margin + columns[0]!;
+    const descriptionWidth = tableColumnWidth(1, 9);
+    const amountX = margin + tableColumnWidth(0, 9);
+    drawCell(page, "", margin, y, columns[0]!, 22, regular, 8.5, "center");
+    drawCell(page, deduction.description, descriptionX, y, descriptionWidth, 22, italic, 8.5);
+    drawCell(page, formatCurrencyCell(deduction.amount, currency, true), amountX, y, columns[9]!, 22, regular, 8.5, "right");
     y -= 22;
   }
 
@@ -432,7 +406,7 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
   drawSummaryRow(page, "Total Due", input.invoice.amountDue, y, currency, fonts, true);
   y -= 20;
   if (numberValue(input.invoice.pphAmount) > 0) {
-    drawSummaryRow(page, "PPh 23 (2%)", input.invoice.pphAmount, y, currency, fonts);
+    drawSummaryRow(page, "PPh 23 (2%)", input.invoice.pphAmount, y, currency, fonts, false, true);
     y -= 20;
     drawSummaryRow(page, "Net Payable", input.invoice.netPayable, y, currency, fonts, true);
     y -= 20;

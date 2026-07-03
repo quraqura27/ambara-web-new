@@ -27,6 +27,10 @@ function verificationBaseUrl(host: string | null, protocol: string | null) {
   return process.env.NEXT_PUBLIC_SITE_URL || "https://www.ambaraartha.com";
 }
 
+function formatCurrencyCell(value: number | string | null, currency: string, negative = false) {
+  return `${negative ? "-" : ""}${currency === "IDR" ? "Rp" : currency} ${formatCurrencyAmount(value, currency)}`;
+}
+
 export default async function InvoicePrintPage({ params }: InvoicePrintPageProps) {
   const { id } = await params;
   const detail = await getInvoiceDetail(id);
@@ -97,8 +101,8 @@ export default async function InvoicePrintPage({ params }: InvoicePrintPageProps
               <th className="border border-black p-1">Flight No</th>
               <th className="border border-black p-1">Pcs</th>
               <th className="border border-black p-1">CAW</th>
-              <th className="border border-black p-1" colSpan={2}>Price</th>
-              <th className="border border-black p-1" colSpan={2}>Total Amount</th>
+              <th className="border border-black p-1">Price</th>
+              <th className="border border-black p-1">Total Amount</th>
             </tr>
           </thead>
           <tbody>
@@ -114,26 +118,22 @@ export default async function InvoicePrintPage({ params }: InvoicePrintPageProps
                     <td className="border border-black p-1 text-center">{line.flightNumber || "-"}</td>
                     <td className="border border-black p-1 text-center">{line.pieces ?? "-"}</td>
                     <td className="border border-black p-1 text-right">{line.chargeableWeight || "-"}</td>
-                    <td className="border border-black border-r-0 p-1">{currency === "IDR" ? "Rp" : currency}</td>
-                    <td className="border border-black border-l-0 p-1 text-right">{formatCurrencyAmount(line.pricePerKg, currency)}</td>
+                    <td className="border border-black p-1 text-right">{formatCurrencyCell(line.pricePerKg, currency)}</td>
+                    <td className="border border-black p-1 text-right">{formatCurrencyCell(line.lineTotal, currency)}</td>
                   </>
                 ) : (
                   <>
-                    <td className="border border-black p-1 italic" colSpan={7}>{line.description || "Service"}</td>
-                    <td className="border border-black p-1" colSpan={2}></td>
+                    <td className="border border-black p-1 italic" colSpan={8}>{line.description || "Service"}</td>
+                    <td className="border border-black p-1 text-right">{formatCurrencyCell(line.lineTotal, currency)}</td>
                   </>
                 )}
-                <td className="border border-black border-r-0 p-1">{currency === "IDR" ? "Rp" : currency}</td>
-                <td className="border border-black border-l-0 p-1 text-right">{formatCurrencyAmount(line.lineTotal, currency)}</td>
               </tr>
             ))}
             {deductions.map((deduction) => (
               <tr key={deduction.id}>
                 <td className="border border-black p-1"></td>
-                <td className="border border-black p-1 italic" colSpan={7}>{deduction.description}</td>
-                <td className="border border-black p-1" colSpan={2}></td>
-                <td className="border border-black border-r-0 p-1">-{currency === "IDR" ? "Rp" : currency}</td>
-                <td className="border border-black border-l-0 p-1 text-right">{formatCurrencyAmount(deduction.amount, currency)}</td>
+                <td className="border border-black p-1 italic" colSpan={8}>{deduction.description}</td>
+                <td className="border border-black p-1 text-right">{formatCurrencyCell(deduction.amount, currency, true)}</td>
               </tr>
             ))}
           </tbody>
@@ -194,9 +194,10 @@ function SummaryPrintRow({
 }) {
   return (
     <tr>
-      <td className="border border-black p-1 text-right font-bold" colSpan={10}>{label}</td>
-      <td className={`border border-black border-r-0 p-1 ${highlight ? "bg-blue-200" : ""}`}>{negative ? "-" : ""}{currency === "IDR" ? "Rp" : currency}</td>
-      <td className={`border border-black border-l-0 p-1 text-right ${strong ? "font-bold" : ""} ${highlight ? "bg-blue-200" : ""}`}>{formatCurrencyAmount(value, currency)}</td>
+      <td className="border border-black p-1 text-right font-bold" colSpan={9}>{label}</td>
+      <td className={`border border-black p-1 text-right ${strong ? "font-bold" : ""} ${highlight ? "bg-blue-200" : ""}`}>
+        {formatCurrencyCell(value, currency, negative)}
+      </td>
     </tr>
   );
 }
