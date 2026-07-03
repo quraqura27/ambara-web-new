@@ -159,15 +159,15 @@ export default async function InvoicePrintPage({ params }: InvoicePrintPageProps
             </div>
             <p className="mt-3">If you have any question regarding this invoice, please contact to finance@ambaraartha.com</p>
           </div>
-          <div className="text-center text-[10pt]">
-            <p>Tangerang, {displayDate(invoice.invoiceDate, true)}</p>
-            <div className="mx-auto mt-3 w-[36mm]">
+          <div className="mx-auto flex w-[48mm] flex-col items-center text-center text-[10pt]">
+            <p className="w-full leading-5">Tangerang, {displayDate(invoice.invoiceDate, true)}</p>
+            <div className="mt-3 h-[36mm] w-[36mm] shrink-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img alt="Invoice verification QR" className="mx-auto h-[36mm] w-[36mm]" src={qrDataUrl} />
             </div>
-            <p className="mt-2 text-[8pt] font-bold">System Generated Invoice</p>
-            <p className="text-[7pt]">Scan to verify - no wet signature required</p>
-            <p className="mt-1 font-bold">FINANCE DEPARTMENT</p>
+            <p className="mt-3 w-full text-[8pt] font-bold leading-4">System Generated Invoice</p>
+            <p className="w-full text-[7pt] leading-4">Scan to verify - no wet signature required</p>
+            <p className="mt-2 w-full font-bold leading-5">FINANCE DEPARTMENT</p>
           </div>
         </section>
 

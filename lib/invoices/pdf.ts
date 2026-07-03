@@ -111,6 +111,16 @@ function drawRightText(page: PDFPage, text: string, rightX: number, y: number, f
   });
 }
 
+function drawCenteredText(page: PDFPage, text: string, centerX: number, y: number, font: PDFFont, size: number) {
+  const value = safeText(text);
+  page.drawText(value, {
+    font,
+    size,
+    x: centerX - font.widthOfTextAtSize(value, size) / 2,
+    y,
+  });
+}
+
 function wrapText(text: string, font: PDFFont, size: number, maxWidth: number) {
   const words = safeText(text).split(" ").filter(Boolean);
   const lines: string[] = [];
@@ -421,7 +431,10 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
 
   y -= 72;
   ensureSpace(135);
-  const qrX = pageWidth - margin - 130;
+  const stampWidth = 150;
+  const stampCenterX = pageWidth - margin - stampWidth / 2;
+  const qrSize = 110;
+  const qrX = stampCenterX - qrSize / 2;
   const labelX = margin;
   const valueX = margin + 96;
   [
@@ -447,11 +460,11 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
       size: 10,
     });
   });
-  drawText(page, `Tangerang, ${displayDate(input.invoice.invoiceDate, true)}`, qrX - 8, y, { font: regular, size: 10 });
-  page.drawImage(qrImage, { height: 110, width: 110, x: qrX, y: y - 120 });
-  drawText(page, "System Generated Invoice", qrX - 4, y - 138, { font: bold, size: 8.5 });
-  drawText(page, "Scan to verify - no wet signature required", qrX - 22, y - 153, { font: regular, size: 7.5 });
-  drawText(page, "FINANCE DEPARTMENT", qrX - 3, y - 172, { font: bold, size: 11 });
+  drawCenteredText(page, `Tangerang, ${displayDate(input.invoice.invoiceDate, true)}`, stampCenterX, y, regular, 10);
+  page.drawImage(qrImage, { height: qrSize, width: qrSize, x: qrX, y: y - 120 });
+  drawCenteredText(page, "System Generated Invoice", stampCenterX, y - 138, bold, 8.5);
+  drawCenteredText(page, "Scan to verify - no wet signature required", stampCenterX, y - 153, regular, 7.5);
+  drawCenteredText(page, "FINANCE DEPARTMENT", stampCenterX, y - 172, bold, 11);
 
   const footerText = `Invoice No ${input.invoice.invoiceNumber}`;
   for (const renderedPage of pdfDoc.getPages()) {
