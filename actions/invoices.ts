@@ -15,6 +15,7 @@ import {
   invoiceDeductions,
   invoiceLineItems,
   invoices,
+  shipments,
 } from "@/lib/db/schema";
 import {
   calculateInvoiceTotals,
@@ -37,6 +38,7 @@ export type InvoiceCustomerOption = {
   companyName: string | null;
   fullName: string | null;
   id: number;
+  invoiceableCount: number;
   npwp: string | null;
 };
 
@@ -50,6 +52,8 @@ export type InvoiceableAwb = {
   origin: string | null;
   pieces: number | null;
   shipmentDate: string | null;
+  sourceId: string;
+  sourceType: "awb" | "shipment";
 };
 
 export type InvoiceActionState = {
@@ -135,6 +139,54 @@ function customerAddress(customer: {
     .join("\n");
 }
 
+function sourceKey(sourceType: "awb" | "shipment", id: number | string) {
+  return `${sourceType}:${id}`;
+}
+
+function parseSourceKey(value: string) {
+  const normalized = value.trim();
+  const match = /^(awb|shipment):(.+)$/.exec(normalized);
+  if (match) {
+    return {
+      sourceId: match[2] ?? "",
+      sourceType: match[1] as "awb" | "shipment",
+    };
+  }
+  return normalized ? { sourceId: normalized, sourceType: "awb" as const } : null;
+}
+
+function dateOnly(value: Date | string | null | undefined) {
+  if (!value) return null;
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  const normalized = value.trim();
+  return /^\d{4}-\d{2}-\d{2}/.test(normalized) ? normalized.slice(0, 10) : null;
+}
+
+function shipmentAwbNumber(shipment: {
+  internalTrackingNo: string | null;
+  mawb: string | null;
+  trackingNumber: string | null;
+}) {
+  return shipment.mawb || shipment.internalTrackingNo || shipment.trackingNumber;
+}
+
+function uninvoicedShipmentWhere() {
+  return sql`
+    not exists (
+      select 1
+      from invoice_line_items ili
+      join invoices inv on inv.id = ili.invoice_id
+      where ili.shipment_id = ${shipments.id}
+        and coalesce(inv.status, 'finalized') <> 'voided'
+    )
+    and not exists (
+      select 1
+      from awbs linked_awbs
+      where linked_awbs.shipment_id = ${shipments.id}
+    )
+  `;
+}
+
 async function requireInvoiceUser() {
   const user = await requirePortalUser();
   if (!canManageInvoices(user)) {
@@ -165,6 +217,7 @@ export async function getInvoiceCustomerOptions(search = ""): Promise<InvoiceCus
     id: number;
     npwp: string | null;
   }>;
+  let invoiceableCounts = new Map<number, number>();
   try {
     rows = await db
       .select({
@@ -177,6 +230,36 @@ export async function getInvoiceCustomerOptions(search = ""): Promise<InvoiceCus
       .where(where)
       .orderBy(customers.companyName, customers.fullName)
       .limit(75);
+
+    const customerIds = rows.map((customer) => customer.id);
+    if (customerIds.length > 0) {
+      const [awbCounts, shipmentCounts] = await Promise.all([
+        db
+          .select({
+            count: sql<number>`count(*)::int`,
+            customerId: awbs.customerId,
+          })
+          .from(awbs)
+          .where(and(inArray(awbs.customerId, customerIds), eq(awbs.invoiced, false)))
+          .groupBy(awbs.customerId),
+        db
+          .select({
+            count: sql<number>`count(*)::int`,
+            customerId: shipments.customerId,
+          })
+          .from(shipments)
+          .where(and(inArray(shipments.customerId, customerIds), uninvoicedShipmentWhere()))
+          .groupBy(shipments.customerId),
+      ]);
+
+      invoiceableCounts = new Map(
+        customerIds.map((customerId) => [
+          customerId,
+          (awbCounts.find((row) => row.customerId === customerId)?.count ?? 0) +
+            (shipmentCounts.find((row) => row.customerId === customerId)?.count ?? 0),
+        ]),
+      );
+    }
   } catch (error) {
     if (!isLocalRecoverableReadError(error)) throw error;
     rows = [];
@@ -185,6 +268,7 @@ export async function getInvoiceCustomerOptions(search = ""): Promise<InvoiceCus
   return rows.map((customer) => ({
     ...customer,
     code: deriveCustomerCode(customerName(customer)),
+    invoiceableCount: invoiceableCounts.get(customer.id) ?? 0,
   }));
 }
 
@@ -203,33 +287,83 @@ export async function getInvoiceableAwbs(customerId: number): Promise<Invoiceabl
     pieces: number | null;
     shipmentDate: string | null;
   }>;
+  let shipmentRows: Array<{
+    awbAirlineName: string | null;
+    chargeableWeight: string | null;
+    createdAt: Date | null;
+    destination: string | null;
+    id: number;
+    internalTrackingNo: string | null;
+    mawb: string | null;
+    origin: string | null;
+    totalPcs: number | null;
+    trackingNumber: string | null;
+  }>;
   try {
-    rows = await db
-      .select({
-        awbNumber: awbs.awbNumber,
-        carrier: awbs.carrier,
-        chargeableWeight: awbs.chargeableWeight,
-        destination: awbs.destination,
-        flightNumber: awbs.flightNumber,
-        id: awbs.id,
-        origin: awbs.origin,
-        pieces: awbs.pieces,
-        shipmentDate: awbs.shipmentDate,
-      })
-      .from(awbs)
-      .where(and(eq(awbs.customerId, customerId), eq(awbs.invoiced, false)))
-      .orderBy(desc(awbs.shipmentDate), desc(awbs.createdAt))
-      .limit(100);
+    [rows, shipmentRows] = await Promise.all([
+      db
+        .select({
+          awbNumber: awbs.awbNumber,
+          carrier: awbs.carrier,
+          chargeableWeight: awbs.chargeableWeight,
+          destination: awbs.destination,
+          flightNumber: awbs.flightNumber,
+          id: awbs.id,
+          origin: awbs.origin,
+          pieces: awbs.pieces,
+          shipmentDate: awbs.shipmentDate,
+        })
+        .from(awbs)
+        .where(and(eq(awbs.customerId, customerId), eq(awbs.invoiced, false)))
+        .orderBy(desc(awbs.shipmentDate), desc(awbs.createdAt))
+        .limit(100),
+      db
+        .select({
+          awbAirlineName: shipments.awbAirlineName,
+          chargeableWeight: shipments.chargeableWeight,
+          createdAt: shipments.createdAt,
+          destination: shipments.destination,
+          id: shipments.id,
+          internalTrackingNo: shipments.internalTrackingNo,
+          mawb: shipments.mawb,
+          origin: shipments.origin,
+          totalPcs: shipments.totalPcs,
+          trackingNumber: shipments.trackingNumber,
+        })
+        .from(shipments)
+        .where(and(eq(shipments.customerId, customerId), uninvoicedShipmentWhere()))
+        .orderBy(desc(shipments.createdAt), desc(shipments.updatedAt))
+        .limit(100),
+    ]);
   } catch (error) {
     if (!isLocalRecoverableReadError(error)) throw error;
     rows = [];
+    shipmentRows = [];
   }
 
-  return rows.map((row) => ({
-    ...row,
-    chargeableWeight: row.chargeableWeight === null ? null : String(row.chargeableWeight),
-    shipmentDate: row.shipmentDate,
-  }));
+  return [
+    ...rows.map((row) => ({
+      ...row,
+      chargeableWeight: row.chargeableWeight === null ? null : String(row.chargeableWeight),
+      id: sourceKey("awb", row.id),
+      shipmentDate: row.shipmentDate,
+      sourceId: row.id,
+      sourceType: "awb" as const,
+    })),
+    ...shipmentRows.map((row) => ({
+      awbNumber: shipmentAwbNumber(row),
+      carrier: row.awbAirlineName,
+      chargeableWeight: row.chargeableWeight === null ? null : String(row.chargeableWeight),
+      destination: row.destination,
+      flightNumber: null,
+      id: sourceKey("shipment", row.id),
+      origin: row.origin,
+      pieces: row.totalPcs,
+      shipmentDate: dateOnly(row.createdAt),
+      sourceId: String(row.id),
+      sourceType: "shipment" as const,
+    })),
+  ];
 }
 
 export async function getInvoicesPage(options: { page?: number; search?: string } = {}) {
@@ -407,27 +541,112 @@ export async function finalizeInvoiceFromForm(
       throw new Error("Select at least one AWB or add one service line.");
     }
 
-    const awbIds = awbInputs.map((line) => line.awbId).filter(Boolean);
-    const persistedAwbs = awbIds.length
-      ? await db.select().from(awbs).where(inArray(awbs.id, awbIds))
-      : [];
-    if (persistedAwbs.length !== awbIds.length) {
-      throw new Error("One or more selected AWBs are no longer available.");
+    const selectedSources = awbInputs.map((line) => parseSourceKey(line.awbId));
+    if (selectedSources.some((source) => !source?.sourceId)) {
+      throw new Error("One or more selected invoice lines are invalid.");
     }
-    const persistedById = new Map(persistedAwbs.map((row) => [row.id, row]));
+    const selectedKeys = selectedSources.map((source) => sourceKey(source!.sourceType, source!.sourceId));
+    if (new Set(selectedKeys).size !== selectedKeys.length) {
+      throw new Error("Remove duplicate AWB or shipment selections before finalizing.");
+    }
+
+    const awbIds = selectedSources
+      .filter((source) => source?.sourceType === "awb")
+      .map((source) => source!.sourceId);
+    const shipmentIds = selectedSources
+      .filter((source) => source?.sourceType === "shipment")
+      .map((source) => Number.parseInt(source!.sourceId, 10));
+    if (shipmentIds.some((id) => !Number.isInteger(id) || id <= 0)) {
+      throw new Error("One or more selected shipment lines are invalid.");
+    }
+
+    const [persistedAwbs, persistedShipments, invoicedShipmentRows] = await Promise.all([
+      awbIds.length ? db.select().from(awbs).where(inArray(awbs.id, awbIds)) : [],
+      shipmentIds.length
+        ? db
+            .select({
+              chargeableWeight: shipments.chargeableWeight,
+              createdAt: shipments.createdAt,
+              customerId: shipments.customerId,
+              destination: shipments.destination,
+              id: shipments.id,
+              internalTrackingNo: shipments.internalTrackingNo,
+              mawb: shipments.mawb,
+              origin: shipments.origin,
+              totalPcs: shipments.totalPcs,
+              trackingNumber: shipments.trackingNumber,
+            })
+            .from(shipments)
+            .where(inArray(shipments.id, shipmentIds))
+        : [],
+      shipmentIds.length
+        ? db
+            .select({ shipmentId: invoiceLineItems.shipmentId })
+            .from(invoiceLineItems)
+            .innerJoin(invoices, eq(invoiceLineItems.invoiceId, invoices.id))
+            .where(
+              and(
+                inArray(invoiceLineItems.shipmentId, shipmentIds),
+                sql`coalesce(${invoices.status}, 'finalized') <> 'voided'`,
+              ),
+            )
+        : [],
+    ]);
+    if (persistedAwbs.length !== awbIds.length || persistedShipments.length !== shipmentIds.length) {
+      throw new Error("One or more selected AWBs or shipments are no longer available.");
+    }
+    const persistedAwbsById = new Map(persistedAwbs.map((row) => [row.id, row]));
+    const persistedShipmentsById = new Map(persistedShipments.map((row) => [row.id, row]));
     const invalidAwb = persistedAwbs.find((row) => row.customerId !== customerId || row.invoiced);
     if (invalidAwb) {
       throw new Error("One or more selected AWBs are already invoiced or belong to another customer.");
     }
+    const invalidShipment = persistedShipments.find((row) => row.customerId !== customerId);
+    if (invalidShipment || invoicedShipmentRows.length > 0) {
+      throw new Error("One or more selected shipments are already invoiced or belong to another customer.");
+    }
 
     const awbLines = awbInputs.map((line, index) => {
-      const awb = persistedById.get(line.awbId);
+      const source = parseSourceKey(line.awbId);
+      if (!source) throw new Error("Selected invoice line is not available.");
+      const pricePerKg = numberValue(line.pricePerKg);
+      if (source.sourceType === "shipment") {
+        const shipmentId = Number.parseInt(source.sourceId, 10);
+        const shipment = persistedShipmentsById.get(shipmentId);
+        if (!shipment) throw new Error("Selected shipment is not available.");
+        const chargeableWeight = numberValue(shipment.chargeableWeight);
+        return {
+          awbId: null,
+          awbNumber: shipmentAwbNumber(shipment),
+          chargeableWeight,
+          destination: shipment.destination,
+          flightNumber: null,
+          lineTotal: chargeableWeight * pricePerKg,
+          origin: shipment.origin,
+          pieces: shipment.totalPcs,
+          pricePerKg,
+          shipmentDate: dateOnly(shipment.createdAt),
+          shipmentId,
+          sortOrder: index + 1,
+          type: "awb" as const,
+        };
+      }
+
+      const awb = persistedAwbsById.get(source.sourceId);
       if (!awb) throw new Error("Selected AWB is not available.");
+      const chargeableWeight = numberValue(awb.chargeableWeight);
       return {
-        awb,
-        chargeableWeight: numberValue(awb.chargeableWeight),
-        lineTotal: numberValue(awb.chargeableWeight) * numberValue(line.pricePerKg),
-        pricePerKg: numberValue(line.pricePerKg),
+        awbId: awb.id,
+        awbNumber: awb.awbNumber,
+        chargeableWeight,
+        destination: awb.destination,
+        flightNumber: awb.flightNumber,
+        lineTotal: chargeableWeight * pricePerKg,
+        origin: awb.origin,
+        pieces: awb.pieces,
+        pricePerKg,
+        shipmentDate: awb.shipmentDate,
+        shipmentId: null,
         sortOrder: index + 1,
         type: "awb" as const,
       };
@@ -521,18 +740,19 @@ export async function finalizeInvoiceFromForm(
       }),
       ...awbLines.map((line) =>
         db.insert(invoiceLineItems).values({
-          awbId: line.awb.id,
-          awbNumber: line.awb.awbNumber,
+          awbId: line.awbId,
+          awbNumber: line.awbNumber,
           chargeableWeight: String(line.chargeableWeight),
-          destination: line.awb.destination,
-          flightNumber: line.awb.flightNumber,
+          destination: line.destination,
+          flightNumber: line.flightNumber,
           invoiceId,
           lineTotal: String(line.lineTotal),
           lineType: "awb",
-          origin: line.awb.origin,
-          pieces: line.awb.pieces,
+          origin: line.origin,
+          pieces: line.pieces,
           pricePerKg: String(line.pricePerKg),
-          shipmentDate: line.awb.shipmentDate,
+          shipmentDate: line.shipmentDate,
+          shipmentId: line.shipmentId,
           sortOrder: line.sortOrder,
         }),
       ),
@@ -559,10 +779,11 @@ export async function finalizeInvoiceFromForm(
         entityId: invoiceId,
         entityType: "invoice",
         metadata: {
-          awbCount: awbLines.length,
+          awbCount: awbIds.length,
           invoiceNumber,
           netPayable: totals.netPayable,
           pphEnabled,
+          shipmentCount: shipmentIds.length,
         },
         performedBy: user.id,
       }),

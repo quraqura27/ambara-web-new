@@ -19,9 +19,10 @@ export default async function NewInvoicePage({ searchParams }: NewInvoicePagePro
   const dbCustomers = forceMockData ? [] : await getInvoiceCustomerOptions();
   const usingMockData = forceMockData || (localDevAccess && dbCustomers.length === 0);
   const customers = usingMockData ? mockInvoiceCustomers : dbCustomers;
+  const initialCustomer = customers.find((customer) => customer.invoiceableCount > 0) ?? customers[0];
   const initialAwbs = usingMockData
-    ? mockInvoiceAwbsByCustomerId[customers[0]?.id ?? 0] ?? []
-    : customers[0]?.id ? await getInvoiceableAwbs(customers[0].id) : [];
+    ? mockInvoiceAwbsByCustomerId[initialCustomer?.id ?? 0] ?? []
+    : initialCustomer?.id ? await getInvoiceableAwbs(initialCustomer.id) : [];
 
   return (
     <div className="space-y-8">

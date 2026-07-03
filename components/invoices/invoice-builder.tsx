@@ -67,9 +67,10 @@ export function InvoiceBuilder({
   mockAwbsByCustomerId = {},
   mockData = false,
 }: InvoiceBuilderProps) {
+  const initialCustomer = customers.find((customer) => customer.invoiceableCount > 0) ?? customers[0] ?? null;
   const [state, formAction, pending] = useActionState(finalizeInvoiceFromForm, initialState);
-  const [selectedCustomerId, setSelectedCustomerId] = useState(customers[0]?.id ? String(customers[0].id) : "");
-  const [customerCode, setCustomerCode] = useState(customers[0]?.code ?? "");
+  const [selectedCustomerId, setSelectedCustomerId] = useState(initialCustomer?.id ? String(initialCustomer.id) : "");
+  const [customerCode, setCustomerCode] = useState(initialCustomer?.code ?? "");
   const [awbs, setAwbs] = useState<InvoiceableAwb[]>(initialAwbs);
   const [awbLoading, setAwbLoading] = useState(false);
   const [awbLines, setAwbLines] = useState<AwbLine[]>([]);
@@ -210,7 +211,7 @@ export function InvoiceBuilder({
                 ) : null}
                 {customers.map((customer) => (
                   <option key={customer.id} value={customer.id}>
-                    {customerLabel(customer)}
+                    {customerLabel(customer)} - {customer.invoiceableCount} invoiceable
                   </option>
                 ))}
               </select>
@@ -262,8 +263,8 @@ export function InvoiceBuilder({
         <Card className="p-0">
           <div className="flex items-center justify-between border-b border-white/5 p-5">
             <div>
-              <h2 className="text-lg font-semibold">Uninvoiced AWBs</h2>
-              <p className="text-sm text-slate-500">Select AWBs and enter price per kg.</p>
+              <h2 className="text-lg font-semibold">Uninvoiced AWBs / shipments</h2>
+              <p className="text-sm text-slate-500">Select rows and enter price per kg.</p>
             </div>
             {awbLoading ? <Loader2 className="h-5 w-5 animate-spin text-slate-500" /> : null}
           </div>
@@ -308,7 +309,7 @@ export function InvoiceBuilder({
                   );
                 })}
                 {awbs.length === 0 ? (
-                  <tr><td className="px-5 py-10 text-center text-slate-500" colSpan={7}>No uninvoiced AWBs found for this customer.</td></tr>
+                  <tr><td className="px-5 py-10 text-center text-slate-500" colSpan={7}>No uninvoiced AWBs or shipments found for this customer.</td></tr>
                 ) : null}
               </tbody>
             </table>
