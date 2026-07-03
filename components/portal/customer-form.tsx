@@ -57,7 +57,22 @@ export function CustomerForm({
             </label>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid gap-6 md:grid-cols-[140px_1fr_1fr]">
+            <label className="space-y-2">
+              <span className="text-xs font-bold uppercase tracking-widest text-slate-500">
+                Invoice Code
+              </span>
+              <Input
+                defaultValue={values?.invoiceCode ?? ""}
+                maxLength={3}
+                name="invoiceCode"
+                pattern="[A-Za-z]{3}"
+                placeholder="SNB"
+                required
+                title="Use exactly 3 letters."
+              />
+            </label>
+
             <label className="space-y-2">
               <span className="text-xs font-bold uppercase tracking-widest text-slate-500">
                 Email

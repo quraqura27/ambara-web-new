@@ -4,33 +4,11 @@ import { notFound } from "next/navigation";
 
 import { getInvoiceDetail } from "@/actions/invoices";
 import { PrintButton } from "@/components/invoices/print-button";
+import { getInvoiceBankAccount } from "@/lib/invoices/bank-accounts";
 import { formatCurrencyAmount, numberValue, terbilangRupiah } from "@/lib/invoices/core";
 
 type InvoicePrintPageProps = {
   params: Promise<{ id: string }>;
-};
-
-const bankAccounts: Record<string, {
-  accountNo: string;
-  branch: string;
-  name: string;
-  swift: string;
-  title: string;
-}> = {
-  MANDIRI: {
-    accountNo: "124-00-1124-1735",
-    branch: "KCP Tebet - Jakarta Selatan",
-    name: "Quraisy Abdurrahman",
-    swift: "BMRIIDJAXXX",
-    title: "BANK MANDIRI",
-  },
-  OCBC: {
-    accountNo: "5458-0012-2586",
-    branch: "OCBC Tower",
-    name: "PT AMBARA ARTHA GLOBALTRANS",
-    swift: "NISPIDJAXXX",
-    title: "Bank OCBC",
-  },
 };
 
 export const dynamic = "force-dynamic";
@@ -63,7 +41,7 @@ export default async function InvoicePrintPage({ params }: InvoicePrintPageProps
   const QRCode = await import("qrcode");
   const qrDataUrl = await QRCode.toDataURL(verificationUrl, { margin: 1, width: 180 });
   const currency = invoice.currency || "IDR";
-  const bank = bankAccounts[invoice.bankAccount || "OCBC"] ?? bankAccounts.OCBC;
+  const bank = getInvoiceBankAccount(invoice.bankAccount);
 
   return (
     <main className="min-h-screen bg-slate-200 p-6 text-black print:bg-white print:p-0">
@@ -73,13 +51,19 @@ export default async function InvoicePrintPage({ params }: InvoicePrintPageProps
 
       <section className="mx-auto min-h-[297mm] w-[210mm] bg-white px-[15mm] py-[14mm] shadow-2xl print:shadow-none">
         <header className="flex items-start justify-between">
-          <Image src="/logo.png" alt="PT Ambara Artha Globaltrans" className="h-auto w-[82mm]" width={4000} height={622} priority />
+          <Image src="/logo-thermal.png" alt="PT Ambara Artha Globaltrans" className="h-auto w-[82mm]" width={4000} height={622} priority />
           <div className="text-right text-[10pt] leading-6">
             <p>Jl. Cengkareng Golf Club, RT 001/010</p>
             <p>Pajang, Benda, Kota Tangerang</p>
             <p>Banten</p>
           </div>
         </header>
+
+        {invoice.status === "voided" ? (
+          <div className="mt-6 border-2 border-red-600 py-2 text-center text-[18pt] font-bold tracking-widest text-red-600">
+            VOIDED
+          </div>
+        ) : null}
 
         <h1 className="mt-10 text-center text-[15pt] font-bold underline">INVOICE</h1>
 
@@ -166,11 +150,13 @@ export default async function InvoicePrintPage({ params }: InvoicePrintPageProps
 
         <section className="mt-11 grid grid-cols-[1fr_65mm] gap-8">
           <div className="text-[10pt] leading-6">
-            <p className="font-bold">Bank Name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: {bank.title}</p>
-            <p className="font-bold">SWIFT&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: {bank.swift}</p>
-            <p className="font-bold">Branch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: {bank.branch}</p>
-            <p className="font-bold">Name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: {bank.name}</p>
-            <p className="font-bold">Account No&nbsp;&nbsp;&nbsp;&nbsp;: {bank.accountNo}</p>
+            <div className="grid grid-cols-[28mm_4mm_1fr] gap-y-1 font-bold">
+              <span>Bank Name</span><span>:</span><span>{bank.title}</span>
+              <span>SWIFT</span><span>:</span><span>{bank.swift}</span>
+              <span>Branch</span><span>:</span><span>{bank.branch}</span>
+              <span>Name</span><span>:</span><span>{bank.name}</span>
+              <span>Account No</span><span>:</span><span>{bank.accountNo}</span>
+            </div>
             <p className="mt-3">If you have any question regarding this invoice, please contact to finance@ambaraartha.com</p>
           </div>
           <div className="text-center text-[10pt]">

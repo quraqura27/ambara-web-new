@@ -27,6 +27,7 @@ export default async function EditCustomerPage({ params }: EditCustomerPageProps
         companyName: customer.companyName ?? "",
         email: customer.email ?? "",
         fullName: customer.fullName ?? "",
+        invoiceCode: customer.invoiceCode ?? "",
         phone: customer.phone ?? "",
         type: customer.type === "retail" ? "retail" : "b2b",
       }}

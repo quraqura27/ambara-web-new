@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
 import { customers, shipments } from "@/lib/db/schema";
+import { normalizeCustomerCode } from "@/lib/invoices/core";
 import { requirePortalUser } from "@/lib/portal-auth";
 
 const customerTypeValues = ["b2b", "retail"] as const;
@@ -18,6 +19,7 @@ export type CustomerFormValues = {
   email: string;
   phone: string;
   address: string;
+  invoiceCode: string;
   type: CustomerType;
 };
 
@@ -34,9 +36,13 @@ function parseCustomerType(value: string): CustomerType {
 function readCustomerForm(formData: FormData): CustomerFormValues {
   const fullName = normalizeText(formData.get("fullName"));
   const companyName = normalizeText(formData.get("companyName"));
+  const invoiceCode = normalizeCustomerCode(normalizeText(formData.get("invoiceCode")));
 
   if (!fullName && !companyName) {
     throw new Error("Customer name is required");
+  }
+  if (!invoiceCode) {
+    throw new Error("Invoice code must be exactly 3 letters.");
   }
 
   return {
@@ -45,6 +51,7 @@ function readCustomerForm(formData: FormData): CustomerFormValues {
     email: normalizeText(formData.get("email")),
     phone: normalizeText(formData.get("phone")),
     address: normalizeText(formData.get("address")),
+    invoiceCode,
     type: parseCustomerType(normalizeText(formData.get("type"))),
   };
 }
@@ -67,6 +74,18 @@ async function generateCustomerId() {
   }
 
   return `ID-${Date.now().toString().slice(-8)}`;
+}
+
+async function assertInvoiceCodeAvailable(invoiceCode: string, currentCustomerId?: number) {
+  const [existingCustomer] = await db
+    .select({ id: customers.id })
+    .from(customers)
+    .where(eq(customers.invoiceCode, invoiceCode))
+    .limit(1);
+
+  if (existingCustomer && existingCustomer.id !== currentCustomerId) {
+    throw new Error(`Invoice code ${invoiceCode} is already used by another customer.`);
+  }
 }
 
 export async function getCustomers(search?: string) {
@@ -96,6 +115,7 @@ export async function getCustomers(search?: string) {
     ilike(customers.email, `%${trimmedSearch}%`),
     ilike(customers.phone, `%${trimmedSearch}%`),
     ilike(customers.companyName, `%${trimmedSearch}%`),
+    ilike(customers.invoiceCode, `%${trimmedSearch}%`),
   ];
 
   if (matchedCustomerIds.length > 0) {
@@ -132,6 +152,7 @@ export async function getCustomerById(id: number) {
 
 export async function createCustomer(values: CustomerFormValues) {
   await requireUser();
+  await assertInvoiceCodeAvailable(values.invoiceCode);
 
   const [newCustomer] = await db
     .insert(customers)
@@ -152,6 +173,7 @@ export async function createCustomer(values: CustomerFormValues) {
 
 export async function updateCustomer(id: number, values: CustomerFormValues) {
   await requireUser();
+  await assertInvoiceCodeAvailable(values.invoiceCode, id);
 
   const [updatedCustomer] = await db
     .update(customers)

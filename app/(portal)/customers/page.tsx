@@ -19,7 +19,7 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Customer Directory</h2>
           <p className="mt-1 text-slate-500">
-            Search by customer name, contact details, or tracking number.
+            Search by customer name, invoice code, contact details, or tracking number.
           </p>
         </div>
         <Link href="/customers/new">
@@ -37,7 +37,7 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
               className="pl-10"
               defaultValue={search}
               name="search"
-              placeholder="Search name, email, phone, or tracking number..."
+              placeholder="Search name, invoice code, email, phone, or tracking number..."
             />
           </form>
 
@@ -51,6 +51,7 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
             <thead>
               <tr className="bg-white/5 text-[10px] font-bold uppercase tracking-widest text-slate-500">
                 <th className="px-6 py-4">Customer Info</th>
+                <th className="px-6 py-4">Code</th>
                 <th className="px-6 py-4">Contact</th>
                 <th className="px-6 py-4">Type</th>
                 <th className="px-6 py-4">Created</th>
@@ -76,6 +77,11 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
                         </p>
                       </div>
                     </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="font-mono text-sm font-semibold text-blue-200">
+                      {customer.invoiceCode || "SET"}
+                    </span>
                   </td>
                   <td className="px-6 py-4">
                     <div className="space-y-1">
@@ -109,7 +115,7 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
 
               {customers.length === 0 && (
                 <tr>
-                  <td className="px-6 py-12 text-center text-slate-500" colSpan={5}>
+                  <td className="px-6 py-12 text-center text-slate-500" colSpan={6}>
                     <div className="flex flex-col items-center">
                       <Users className="mb-4 h-12 w-12 text-slate-800" />
                       <p className="text-lg font-medium">No customers found</p>

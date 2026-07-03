@@ -3,8 +3,10 @@ import test from "node:test";
 
 import {
   calculateInvoiceTotals,
+  buildInvoicePdfFilename,
   deriveCustomerCode,
   formatInvoiceNumber,
+  invoiceSequenceFromNumber,
   normalizeCustomerCode,
   terbilangRupiah,
 } from "./core.ts";
@@ -39,8 +41,22 @@ test("formats yearly global invoice numbers", () => {
 });
 
 test("derives and normalizes customer codes", () => {
-  assert.equal(deriveCustomerCode("PT Nur Infinit Indoalea Global"), "NIIG");
-  assert.equal(normalizeCustomerCode(" snb-01 "), "SNB01");
+  assert.equal(deriveCustomerCode("PT Nur Infinit Indoalea Global"), "NII");
+  assert.equal(normalizeCustomerCode(" snb-01 "), "SNB");
+  assert.equal(normalizeCustomerCode("AB"), "");
+});
+
+test("builds invoice PDF filenames from date, customer code, and sequence", () => {
+  assert.equal(invoiceSequenceFromNumber("AAG/002/NII/26"), "002");
+  assert.equal(
+    buildInvoicePdfFilename({
+      customerCode: "NII",
+      customerName: "PT Nur Infinit Indoalea Global",
+      invoiceDate: "2026-07-03",
+      invoiceNumber: "AAG/002/NII/26",
+    }),
+    "20260703_NII_002.pdf",
+  );
 });
 
 test("formats terbilang rupiah", () => {

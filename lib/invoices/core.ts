@@ -109,9 +109,9 @@ export function calculateInvoiceTotals(input: InvoiceCalculationInput): InvoiceT
 export function normalizeCustomerCode(value: string) {
   const normalized = value
     .toUpperCase()
-    .replace(/[^A-Z0-9]/g, "")
-    .slice(0, 5);
-  return normalized.length >= 2 ? normalized : "";
+    .replace(/[^A-Z]/g, "")
+    .slice(0, 3);
+  return normalized.length === 3 ? normalized : "";
 }
 
 export function deriveCustomerCode(name: string | null | undefined) {
@@ -124,7 +124,7 @@ export function deriveCustomerCode(name: string | null | undefined) {
 
   const initials = words.map((word) => word[0]).join("");
   const compact = words.join("");
-  return normalizeCustomerCode(initials.length >= 2 ? initials : compact);
+  return normalizeCustomerCode(initials.length >= 3 ? initials : compact);
 }
 
 export function formatInvoiceNumber(input: {
@@ -133,9 +133,31 @@ export function formatInvoiceNumber(input: {
   year: number;
 }) {
   const customerCode = normalizeCustomerCode(input.customerCode);
-  if (!customerCode) throw new Error("Customer code must be 2 to 5 letters or numbers.");
+  if (!customerCode) throw new Error("Customer code must be exactly 3 letters.");
   const yearSuffix = String(input.year).slice(-2);
   return `AAG/${String(input.sequence).padStart(3, "0")}/${customerCode}/${yearSuffix}`;
+}
+
+export function invoiceSequenceFromNumber(invoiceNumber: string | null | undefined) {
+  const match = (invoiceNumber ?? "").match(/^AAG\/(\d{1,})\//i);
+  return match?.[1] ? match[1].padStart(3, "0") : "000";
+}
+
+export function buildInvoicePdfFilename(input: {
+  customerCode?: string | null;
+  customerName?: string | null;
+  invoiceDate?: string | null;
+  invoiceNumber?: string | null;
+}) {
+  const datePart = /^\d{4}-\d{2}-\d{2}$/.test(input.invoiceDate ?? "")
+    ? (input.invoiceDate ?? "").replace(/-/g, "")
+    : "00000000";
+  const customerCode =
+    normalizeCustomerCode(input.customerCode ?? "") ||
+    deriveCustomerCode(input.customerName) ||
+    "CUS";
+  const sequence = invoiceSequenceFromNumber(input.invoiceNumber);
+  return `${datePart}_${customerCode}_${sequence}.pdf`;
 }
 
 export function formatCurrencyAmount(value: number | string | null | undefined, currency = "IDR") {

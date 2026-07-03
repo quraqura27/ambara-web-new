@@ -380,6 +380,7 @@ export const mawbShipmentLinks = pgTable('mawb_shipment_links', {
 export const customers = pgTable('customers', {
   id: serial('id').primaryKey(),
   customerId: text('customer_id'),
+  invoiceCode: text('invoice_code'),
   type: text('type'), // b2b, shipper, consignee
   fullName: text('full_name'),
   companyName: text('company_name'),
@@ -396,7 +397,11 @@ export const customers = pgTable('customers', {
   passwordHash: text('password_hash'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
-});
+}, (table) => [
+  uniqueIndex('customers_invoice_code_unique_idx')
+    .on(table.invoiceCode)
+    .where(sql`${table.invoiceCode} is not null and btrim(${table.invoiceCode}) <> ''`),
+]);
 
 export const portalAuditLogs = pgTable('portal_audit_logs', {
   id: serial('id').primaryKey(),

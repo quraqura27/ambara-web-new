@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   ArrowLeft,
+  BadgeCheck,
   ExternalLink,
   Mail,
   MapPin,
@@ -78,6 +79,17 @@ export default async function CustomerDetailPage({ params }: CustomerDetailPageP
               Profile Information
             </h3>
             <div className="space-y-6">
+              <div className="flex gap-4">
+                <div className="rounded-xl border border-white/5 bg-slate-900 p-3 text-slate-400">
+                  <BadgeCheck className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-slate-500">Invoice Code</p>
+                  <p className="font-mono text-sm font-semibold">
+                    {customer.invoiceCode || "Missing"}
+                  </p>
+                </div>
+              </div>
               <div className="flex gap-4">
                 <div className="rounded-xl border border-white/5 bg-slate-900 p-3 text-slate-400">
                   <Mail className="h-5 w-5" />

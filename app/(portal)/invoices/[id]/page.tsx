@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Archive, Printer, QrCode } from "lucide-react";
+import { Archive, Download, Printer, QrCode, XCircle } from "lucide-react";
 
-import { archiveInvoiceFromForm, getInvoiceDetail } from "@/actions/invoices";
+import { archiveInvoiceFromForm, getInvoiceDetail, voidInvoiceFromForm } from "@/actions/invoices";
 import { Button, Card } from "@/components/ui/core";
 import { formatCurrencyAmount } from "@/lib/invoices/core";
 
@@ -19,6 +19,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
 
   const { deductions, invoice, lines } = detail;
   const archiveAction = archiveInvoiceFromForm.bind(null, invoice.id);
+  const voidAction = voidInvoiceFromForm.bind(null, invoice.id);
   const currency = invoice.currency || "IDR";
 
   return (
@@ -27,11 +28,16 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
         <div>
           <p className="font-mono text-sm text-blue-300">{invoice.invoiceNumber}</p>
           <h1 className="mt-1 text-3xl font-bold tracking-tight">{invoice.customerNameSnapshot || "Invoice"}</h1>
-          <p className="mt-1 text-slate-500">Finalized invoice snapshot. Later shipment edits do not recalculate these totals.</p>
+          <p className="mt-1 text-slate-500">
+            {invoice.status || "finalized"} invoice snapshot. Later shipment edits do not recalculate these totals.
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Link href={`/invoices/${invoice.id}/pdf`}>
+            <Button className="gap-2" variant="secondary"><Download className="h-4 w-4" /> Download PDF</Button>
+          </Link>
           <Link href={`/invoices/${invoice.id}/print`} target="_blank">
-            <Button className="gap-2"><Printer className="h-4 w-4" /> Print / PDF</Button>
+            <Button className="gap-2"><Printer className="h-4 w-4" /> Print</Button>
           </Link>
           <Link href="/invoices"><Button variant="secondary">Back</Button></Link>
         </div>
@@ -117,7 +123,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
             </div>
           </Card>
 
-          {invoice.status !== "archived" ? (
+          {invoice.status !== "archived" && invoice.status !== "voided" ? (
             <Card className="p-5">
               <h2 className="mb-3 text-sm font-semibold text-amber-200">Archive invoice</h2>
               <form action={archiveAction} className="space-y-3">
@@ -126,6 +132,25 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
                 <Button className="gap-2" type="submit" variant="secondary">
                   <Archive className="h-4 w-4" />
                   Archive
+                </Button>
+              </form>
+            </Card>
+          ) : null}
+
+          {invoice.status !== "voided" ? (
+            <Card className="border-red-500/20 p-5">
+              <h2 className="mb-3 text-sm font-semibold text-red-200">Void invoice</h2>
+              <form action={voidAction} className="space-y-3">
+                <input name="confirmed" type="hidden" value="void" />
+                <input
+                  className="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-4 py-2 text-sm"
+                  name="reason"
+                  placeholder="Reason"
+                  required
+                />
+                <Button className="gap-2" type="submit" variant="danger">
+                  <XCircle className="h-4 w-4" />
+                  Void and release lines
                 </Button>
               </form>
             </Card>

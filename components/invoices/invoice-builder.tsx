@@ -70,7 +70,6 @@ export function InvoiceBuilder({
   const initialCustomer = customers.find((customer) => customer.invoiceableCount > 0) ?? customers[0] ?? null;
   const [state, formAction, pending] = useActionState(finalizeInvoiceFromForm, initialState);
   const [selectedCustomerId, setSelectedCustomerId] = useState(initialCustomer?.id ? String(initialCustomer.id) : "");
-  const [customerCode, setCustomerCode] = useState(initialCustomer?.code ?? "");
   const [awbs, setAwbs] = useState<InvoiceableAwb[]>(initialAwbs);
   const [awbLoading, setAwbLoading] = useState(false);
   const [awbLines, setAwbLines] = useState<AwbLine[]>([]);
@@ -86,6 +85,7 @@ export function InvoiceBuilder({
   const [depositAmount, setDepositAmount] = useState("0");
 
   const selectedCustomer = customers.find((customer) => String(customer.id) === selectedCustomerId) ?? null;
+  const selectedCustomerCode = selectedCustomer?.code ?? "";
   const awbById = useMemo(() => new Map(awbs.map((awb) => [awb.id, awb])), [awbs]);
 
   const lineInputs = [
@@ -111,9 +111,7 @@ export function InvoiceBuilder({
   });
 
   function selectCustomer(value: string) {
-    const customer = customers.find((item) => String(item.id) === value);
     setSelectedCustomerId(value);
-    setCustomerCode(customer?.code ?? "");
     setAwbLines([]);
     const customerId = Number.parseInt(value, 10);
     if (!Number.isInteger(customerId) || customerId <= 0) {
@@ -169,7 +167,6 @@ export function InvoiceBuilder({
       }}
     >
       <input name="customerId" type="hidden" value={selectedCustomerId} />
-      <input name="customerCode" type="hidden" value={customerCode} />
       <input name="awbLines" type="hidden" value={JSON.stringify(awbLines)} />
       <input name="serviceLines" type="hidden" value={JSON.stringify(serviceLines)} />
       <input name="deductions" type="hidden" value={JSON.stringify(deductions)} />
@@ -218,9 +215,16 @@ export function InvoiceBuilder({
             </label>
             <label>
               <span className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Customer code</span>
-              <Input maxLength={5} onChange={(event) => setCustomerCode(event.target.value.toUpperCase())} value={customerCode} />
+              <div className="rounded-lg border border-slate-700 bg-slate-950/60 px-4 py-2 font-mono text-sm text-blue-100">
+                {selectedCustomerCode || "Set in Directory"}
+              </div>
             </label>
           </div>
+          {selectedCustomer && !selectedCustomerCode ? (
+            <div className="mt-4 rounded-lg border border-amber-400/20 bg-amber-400/10 p-3 text-sm text-amber-100">
+              Set this customer&apos;s 3-letter invoice code in Customer Directory before finalizing invoices.
+            </div>
+          ) : null}
         </Card>
 
         <Card className="p-5">
@@ -374,7 +378,7 @@ export function InvoiceBuilder({
             # {currency === "IDR" ? terbilangRupiah(totals.netPayable) : "Amount in words is shown for IDR only."}
           </div>
 
-          <Button className="mt-5 w-full gap-2" disabled={pending || !selectedCustomer || mockData} type="submit">
+          <Button className="mt-5 w-full gap-2" disabled={pending || !selectedCustomer || !selectedCustomerCode || mockData} type="submit">
             {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCheck2 className="h-4 w-4" />}
             {mockData ? "Finalize disabled in mock mode" : "Finalize invoice"}
           </Button>
