@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { normalizePortalRole } from "@/lib/portal-roles";
 
 const COOKIE_NAME = "ambara_portal_token";
+const LOCAL_DEV_USER_ID = -1;
 
 export type PortalUser = {
   email: string;
@@ -18,6 +19,19 @@ type TokenPayload = PortalUser & {
   exp: number;
   iat: number;
 };
+
+export function isLocalPortalDevAccessEnabled() {
+  return process.env.NODE_ENV !== "production" && process.env.LOCAL_PORTAL_DEV_ACCESS === "true";
+}
+
+export function getLocalPortalDevUser(): PortalUser {
+  return {
+    email: (process.env.LOCAL_PORTAL_DEV_EMAIL || "local@ambara.test").trim().toLowerCase(),
+    id: LOCAL_DEV_USER_ID,
+    name: process.env.LOCAL_PORTAL_DEV_NAME || "Local Portal Tester",
+    role: normalizePortalRole(process.env.LOCAL_PORTAL_DEV_ROLE || "superadmin"),
+  };
+}
 
 function getJwtSecret() {
   return (
@@ -125,7 +139,17 @@ export async function getPortalUser() {
 export async function requirePortalUser() {
   const user = await getPortalUser();
   if (!user) {
+    if (isLocalPortalDevAccessEnabled()) {
+      return getLocalPortalDevUser();
+    }
     redirect("/sign-in");
+  }
+
+  if (isLocalPortalDevAccessEnabled()) {
+    const localDevUser = getLocalPortalDevUser();
+    if (user.id === localDevUser.id && user.email === localDevUser.email) {
+      return localDevUser;
+    }
   }
 
   return user;

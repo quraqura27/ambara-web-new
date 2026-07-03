@@ -28,6 +28,7 @@ import { normalizePortalRole, portalRoleLabels } from "@/lib/portal-roles";
 type PortalShellProps = {
   canExportShipments: boolean;
   canManageAccounts: boolean;
+  canManageInvoices: boolean;
   canUseMawbs: boolean;
   children: React.ReactNode;
   user: {
@@ -100,6 +101,7 @@ function Breadcrumbs({ pathname }: { pathname: string }) {
     "delivery-batches": "Delivery",
     edit: "Edit",
     export: "Export",
+    invoices: "Invoices",
     mawbs: "MAWB",
     new: "New",
     search: "Search",
@@ -130,6 +132,7 @@ function Breadcrumbs({ pathname }: { pathname: string }) {
 export function PortalShell({
   canExportShipments,
   canManageAccounts,
+  canManageInvoices,
   canUseMawbs,
   children,
   user,
@@ -159,6 +162,9 @@ export function PortalShell({
           : []),
         ...(canExportShipments
           ? [{ href: "/shipments/export", icon: FileSpreadsheet, label: "Export", secondary: true }]
+          : []),
+        ...(canManageInvoices
+          ? [{ href: "/invoices", icon: FileText, label: "Invoices", mobileSafe: true }]
           : []),
         { href: "/customers", icon: Users, label: "Customers", mobileSafe: true },
         { href: "/delivery-batches", icon: ClipboardList, label: "Delivery Batches", mobileSafe: true },

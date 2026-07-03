@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { pgTable, text, serial, timestamp, uuid, integer, numeric, date, boolean, bigint, char, index, uniqueIndex } from 'drizzle-orm/pg-core';
+import { pgTable, text, serial, timestamp, uuid, integer, numeric, date, boolean, bigint, bigserial, char, index, uniqueIndex, jsonb } from 'drizzle-orm/pg-core';
 
 export const shipments = pgTable('shipments', {
   id: serial('id').primaryKey(),
@@ -428,14 +428,24 @@ export const invoices = pgTable('invoices', {
   id: uuid('id').defaultRandom().primaryKey(),
   invoiceNumber: text('invoice_number').unique().notNull(),
   customerId: bigint('customer_id', { mode: 'number' }),
+  customerCode: text('customer_code'),
+  customerNameSnapshot: text('customer_name_snapshot'),
+  customerAddressSnapshot: text('customer_address_snapshot'),
+  customerNpwpSnapshot: text('customer_npwp_snapshot'),
   subtotal: numeric('subtotal'),
   totalPengurangan: numeric('total_pengurangan'),
   netAmount: numeric('net_amount'),
   vatEnabled: boolean('vat_enabled'),
+  vatRate: numeric('vat_rate'),
   vatAmount: numeric('vat_amount'),
   total: numeric('total'),
+  pphEnabled: boolean('pph_enabled'),
+  pphRate: numeric('pph_rate'),
+  pphBaseAmount: numeric('pph_base_amount'),
+  pphAmount: numeric('pph_amount'),
   depositAmount: numeric('deposit_amount'),
   amountDue: numeric('amount_due'),
+  netPayable: numeric('net_payable'),
   invoiceDate: date('invoice_date'),
   dueDate: date('due_date'),
   paymentTerms: text('payment_terms'),
@@ -443,13 +453,73 @@ export const invoices = pgTable('invoices', {
   city: text('city'),
   bankAccount: text('bank_account'),
   period: text('period'),
+  status: text('status').default('finalized'),
+  verificationToken: text('verification_token'),
+  verificationChecksum: text('verification_checksum'),
+  withholdingProofRef: text('withholding_proof_ref'),
   archived: boolean('archived').default(false),
   showPeriod: boolean('show_period'),
   showPaymentTerms: boolean('show_payment_terms'),
   generatedBy: bigint('generated_by', { mode: 'number' }),
   generatedAt: timestamp('generated_at'),
   retainUntil: date('retain_until'),
+}, (table) => [
+  index('invoices_customer_idx').on(table.customerId),
+  index('invoices_status_idx').on(table.status),
+  uniqueIndex('invoices_verification_token_unique_idx')
+    .on(table.verificationToken)
+    .where(sql`${table.verificationToken} is not null and btrim(${table.verificationToken}) <> ''`),
+]);
+
+export const invoiceSequences = pgTable('invoice_sequences', {
+  year: integer('year').primaryKey(),
+  lastValue: integer('last_value').notNull().default(0),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
+
+export const invoiceLineItems = pgTable('invoice_line_items', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  invoiceId: uuid('invoice_id').notNull().references(() => invoices.id),
+  awbId: uuid('awb_id').references(() => awbs.id),
+  lineType: text('line_type').notNull(),
+  sortOrder: integer('sort_order').notNull().default(0),
+  origin: char('origin', { length: 3 }),
+  destination: char('destination', { length: 3 }),
+  shipmentDate: date('shipment_date'),
+  awbNumber: text('awb_number'),
+  flightNumber: text('flight_number'),
+  pieces: integer('pieces'),
+  chargeableWeight: numeric('chargeable_weight'),
+  description: text('description'),
+  pricePerKg: numeric('price_per_kg'),
+  flatAmount: numeric('flat_amount'),
+  lineTotal: numeric('line_total').notNull(),
+}, (table) => [
+  index('invoice_line_items_invoice_idx').on(table.invoiceId, table.sortOrder),
+]);
+
+export const invoiceDeductions = pgTable('invoice_deductions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  invoiceId: uuid('invoice_id').notNull().references(() => invoices.id),
+  description: text('description').notNull(),
+  amount: numeric('amount').notNull(),
+  sortOrder: integer('sort_order').notNull().default(0),
+}, (table) => [
+  index('invoice_deductions_invoice_idx').on(table.invoiceId, table.sortOrder),
+]);
+
+export const invoiceAuditLog = pgTable('invoice_audit_log', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  action: text('action').notNull(),
+  entityType: text('entity_type').notNull(),
+  entityId: text('entity_id').notNull(),
+  performedBy: bigint('performed_by', { mode: 'number' }).notNull(),
+  performedAt: timestamp('performed_at').defaultNow().notNull(),
+  metadata: jsonb('metadata'),
+}, (table) => [
+  index('invoice_audit_entity_idx').on(table.entityType, table.entityId),
+  index('invoice_audit_user_idx').on(table.performedBy, table.performedAt),
+]);
 
 export const trackingUpdates = pgTable('tracking_updates', {
   id: serial('id').primaryKey(),
