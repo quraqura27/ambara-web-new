@@ -5,7 +5,13 @@ import { notFound } from "next/navigation";
 import { getInvoiceDetail } from "@/actions/invoices";
 import { PrintButton } from "@/components/invoices/print-button";
 import { getInvoiceBankAccount } from "@/lib/invoices/bank-accounts";
-import { formatCurrencyAmount, numberValue, terbilangRupiah } from "@/lib/invoices/core";
+import {
+  formatCurrencyAmount,
+  FULL_PAYMENT_TERMS_TEXT,
+  numberValue,
+  shouldPrintTermsOfPayment,
+  terbilangRupiah,
+} from "@/lib/invoices/core";
 
 type InvoicePrintPageProps = {
   params: Promise<{ id: string }>;
@@ -46,6 +52,7 @@ export default async function InvoicePrintPage({ params }: InvoicePrintPageProps
   const qrDataUrl = await QRCode.toDataURL(verificationUrl, { margin: 1, width: 180 });
   const currency = invoice.currency || "IDR";
   const bank = getInvoiceBankAccount(invoice.bankAccount);
+  const showPaymentTerms = shouldPrintTermsOfPayment(invoice);
 
   return (
     <main className="min-h-screen bg-slate-200 p-6 text-black print:bg-white print:p-0">
@@ -148,7 +155,14 @@ export default async function InvoicePrintPage({ params }: InvoicePrintPageProps
 
         <p className="mt-6 text-[8.5pt] italic"># {currency === "IDR" ? terbilangRupiah(invoice.netPayable) : ""}</p>
 
-        <section className="mt-11 grid grid-cols-[1fr_65mm] gap-8">
+        {showPaymentTerms ? (
+          <section className="mt-8 max-w-[165mm] text-[8pt] italic leading-4">
+            <p className="font-bold">Terms of Payment:</p>
+            <p>{FULL_PAYMENT_TERMS_TEXT}</p>
+          </section>
+        ) : null}
+
+        <section className={`${showPaymentTerms ? "mt-8" : "mt-11"} grid grid-cols-[1fr_65mm] gap-8`}>
           <div className="text-[10pt] leading-6">
             <div className="grid grid-cols-[28mm_4mm_1fr] gap-y-1 font-bold">
               <span>Bank Name</span><span>:</span><span>{bank.title}</span>

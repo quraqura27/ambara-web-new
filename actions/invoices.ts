@@ -747,6 +747,7 @@ export async function finalizeInvoiceFromForm(
     });
 
     const invoiceDate = dateText(formData.get("invoiceDate")) ?? new Date().toISOString().slice(0, 10);
+    const showPaymentTerms = !pphEnabled && booleanField(formData.get("showPaymentTerms"));
     const invoiceYear = Number.parseInt(invoiceDate.slice(0, 4), 10);
     const customerCode = normalizeCustomerCode(customer.invoiceCode ?? "");
     if (!customerCode) {
@@ -795,7 +796,7 @@ export async function finalizeInvoiceFromForm(
         pphEnabled,
         pphRate: String(totals.pphRate),
         retainUntil: retainUntil.toISOString().slice(0, 10),
-        showPaymentTerms: true,
+        showPaymentTerms,
         showPeriod: Boolean(text(formData.get("period"))),
         status: "finalized",
         subtotal: String(totals.subtotal),

@@ -7,8 +7,10 @@ import QRCode from "qrcode";
 import { getInvoiceBankAccount } from "./bank-accounts.ts";
 import {
   buildInvoicePdfFilename,
+  FULL_PAYMENT_TERMS_TEXT,
   formatCurrencyAmount,
   numberValue,
+  shouldPrintTermsOfPayment,
   terbilangRupiah,
 } from "./core.ts";
 
@@ -29,6 +31,7 @@ type InvoicePdfInvoice = {
   pphAmount: number | string | null;
   status: string | null;
   subtotal: number | string | null;
+  showPaymentTerms?: boolean | null;
   total: number | string | null;
   vatAmount: number | string | null;
 };
@@ -243,6 +246,7 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
   const regular = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const italic = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
+  const boldItalic = await pdfDoc.embedFont(StandardFonts.HelveticaBoldOblique);
   const logoBuffer = await loadLogoBuffer(input.assetBaseUrl);
   const logoImage = await pdfDoc.embedPng(logoBuffer);
   const qrDataUrl = await QRCode.toDataURL(input.verificationUrl, { margin: 1, width: 220 });
@@ -251,6 +255,7 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
   const fonts = { bold, regular };
   const currency = input.invoice.currency || "IDR";
   const bank = getInvoiceBankAccount(input.invoice.bankAccount);
+  const showPaymentTerms = shouldPrintTermsOfPayment(input.invoice);
 
   let page = pdfDoc.addPage([pageWidth, pageHeight]);
   let y = pageHeight - margin;
@@ -416,7 +421,19 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
   const amountWords = currency === "IDR" ? terbilangRupiah(input.invoice.netPayable) : "";
   drawText(page, `# ${amountWords}`, margin, y, { font: italic, size: 9 });
 
-  y -= 44;
+  y -= 28;
+  if (showPaymentTerms) {
+    const termsLines = wrapText(FULL_PAYMENT_TERMS_TEXT, italic, 8, contentWidth);
+    const termsHeight = 16 + termsLines.length * 11;
+    ensureSpace(termsHeight + 190, false, 58);
+    drawText(page, "Terms of Payment:", margin, y, { font: boldItalic, size: 8.5 });
+    termsLines.forEach((line, index) => {
+      drawText(page, line, margin, y - 15 - index * 11, { font: italic, size: 8 });
+    });
+    y -= termsHeight;
+  }
+
+  y -= 16;
   ensureSpace(190, false, 58);
   const stampWidth = 150;
   const stampCenterX = pageWidth - margin - stampWidth / 2;

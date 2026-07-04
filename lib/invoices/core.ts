@@ -2,6 +2,9 @@ export const invoiceCurrencies = ["IDR", "USD", "JPY"] as const;
 
 export type InvoiceCurrency = (typeof invoiceCurrencies)[number];
 
+export const FULL_PAYMENT_TERMS_TEXT =
+  "Payment should be made in full amount as stated in the invoice. Any bank charges or withholding tax shall be borne by the customer unless agreed otherwise.";
+
 export type InvoiceLineInput = {
   chargeableWeight?: number | string | null;
   flatAmount?: number | string | null;
@@ -60,6 +63,13 @@ export function numberValue(value: number | string | null | undefined) {
   if (!normalized) return 0;
   const parsed = Number(normalized);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+export function shouldPrintTermsOfPayment(input: {
+  pphAmount?: number | string | null;
+  showPaymentTerms?: boolean | null;
+}) {
+  return input.showPaymentTerms === true && numberValue(input.pphAmount) <= 0;
 }
 
 export function money(value: number) {

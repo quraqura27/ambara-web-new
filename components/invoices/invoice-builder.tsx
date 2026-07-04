@@ -13,6 +13,7 @@ import {
 import { Button, Card, Input, cn } from "@/components/ui/core";
 import {
   calculateInvoiceTotals,
+  FULL_PAYMENT_TERMS_TEXT,
   formatCurrencyAmount,
   numberValue,
   terbilangRupiah,
@@ -82,6 +83,7 @@ export function InvoiceBuilder({
   const [bankAccount, setBankAccount] = useState("OCBC");
   const [vatEnabled, setVatEnabled] = useState(false);
   const [pphEnabled, setPphEnabled] = useState(false);
+  const [showPaymentTerms, setShowPaymentTerms] = useState(true);
   const [depositAmount, setDepositAmount] = useState("0");
 
   const selectedCustomer = customers.find((customer) => String(customer.id) === selectedCustomerId) ?? null;
@@ -172,6 +174,7 @@ export function InvoiceBuilder({
       <input name="deductions" type="hidden" value={JSON.stringify(deductions)} />
       <input name="vatEnabled" type="hidden" value={vatEnabled ? "true" : "false"} />
       <input name="pphEnabled" type="hidden" value={pphEnabled ? "true" : "false"} />
+      <input name="showPaymentTerms" type="hidden" value={!pphEnabled && showPaymentTerms ? "true" : "false"} />
 
       <div className="space-y-6">
         {state.formError ? (
@@ -363,10 +366,34 @@ export function InvoiceBuilder({
               <Input name="depositAmount" onChange={(event) => setDepositAmount(event.target.value)} type="number" value={depositAmount} />
             </label>
             <SummaryRow currency={currency} label="Total due" value={totals.amountDue} />
-            <label className="flex items-center justify-between gap-4 rounded-lg border border-white/5 bg-white/[0.02] p-3">
-              <span>PPh 23 2% withheld</span>
-              <input checked={pphEnabled} onChange={(event) => setPphEnabled(event.target.checked)} type="checkbox" />
-            </label>
+            <div className="rounded-lg border border-white/5 bg-white/[0.02] p-3">
+              <div className="mb-3 flex items-center justify-between gap-4">
+                <span className="font-medium">Payment treatment</span>
+                <span className="text-xs uppercase tracking-widest text-slate-500">
+                  {pphEnabled ? "PPh withheld" : "Full amount"}
+                </span>
+              </div>
+              <div className="space-y-3">
+                <label className="flex items-center justify-between gap-4">
+                  <span>PPh 23 2% withheld</span>
+                  <input checked={pphEnabled} onChange={(event) => setPphEnabled(event.target.checked)} type="checkbox" />
+                </label>
+                <label className={cn("flex items-center justify-between gap-4", pphEnabled && "opacity-50")}>
+                  <span>Print Terms of Payment</span>
+                  <input
+                    checked={!pphEnabled && showPaymentTerms}
+                    disabled={pphEnabled}
+                    onChange={(event) => setShowPaymentTerms(event.target.checked)}
+                    type="checkbox"
+                  />
+                </label>
+                {!pphEnabled && showPaymentTerms ? (
+                  <p className="rounded-md border border-white/5 bg-slate-950/50 p-2 text-xs italic leading-5 text-slate-400">
+                    {FULL_PAYMENT_TERMS_TEXT}
+                  </p>
+                ) : null}
+              </div>
+            </div>
             {pphEnabled ? <SummaryRow currency={currency} label="PPh 23 withholding" negative value={totals.pphAmount} /> : null}
             <div className="flex items-center justify-between rounded-lg bg-blue-500/15 p-4 font-bold text-blue-100">
               <span>{grossOrNetLabel}</span>

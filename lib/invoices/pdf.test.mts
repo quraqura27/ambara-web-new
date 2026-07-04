@@ -109,3 +109,50 @@ test("keeps short VAT and PPh invoices on one page", async () => {
 
   assert.equal(document.getPageCount(), 1);
 });
+
+test("keeps short full-payment invoices with terms on one page", async () => {
+  const pdf = await generateInvoicePdf({
+    deductions: [],
+    invoice: {
+      amountDue: 6_350_000,
+      bankAccount: "ocbc",
+      currency: "IDR",
+      customerAddressSnapshot: "TEST ONLY ADDRESS LINE 1\nTEST ONLY ADDRESS LINE 2\nTEST ONLY ADDRESS LINE 3",
+      customerCode: "TST",
+      customerNameSnapshot: "TEST ONLY CUSTOMER",
+      customerNpwpSnapshot: null,
+      dueDate: "2026-05-26",
+      invoiceDate: "2026-05-26",
+      invoiceNumber: "AAG/008/TST/26",
+      netPayable: 6_350_000,
+      paymentTerms: "CASH",
+      period: null,
+      pphAmount: 0,
+      showPaymentTerms: true,
+      status: "finalized",
+      subtotal: 6_350_000,
+      total: 6_350_000,
+      vatAmount: 0,
+    },
+    lines: [
+      {
+        awbNumber: "126-92180340",
+        chargeableWeight: 1000,
+        description: null,
+        destination: "SIN",
+        flightNumber: "GA824",
+        id: "awb-1",
+        lineTotal: 6_350_000,
+        lineType: "awb",
+        origin: "CGK",
+        pieces: 49,
+        pricePerKg: 6350,
+        shipmentDate: "2026-05-26",
+      },
+    ],
+    verificationUrl: "https://www.ambaraartha.com/invoice/verify/test-token",
+  });
+  const document = await PDFDocument.load(pdf);
+
+  assert.equal(document.getPageCount(), 1);
+});

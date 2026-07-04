@@ -8,6 +8,7 @@ import {
   formatInvoiceNumber,
   invoiceSequenceFromNumber,
   normalizeCustomerCode,
+  shouldPrintTermsOfPayment,
   terbilangRupiah,
 } from "./core.ts";
 
@@ -34,6 +35,12 @@ test("calculates PPh 23 withholding from net amount excluding VAT by default", (
   assert.equal(totals.pphBaseAmount, 744_600);
   assert.equal(totals.pphAmount, 14_892);
   assert.equal(totals.netPayable, 737_898.6);
+});
+
+test("prints terms of payment only for full-payment invoices when enabled", () => {
+  assert.equal(shouldPrintTermsOfPayment({ pphAmount: 0, showPaymentTerms: true }), true);
+  assert.equal(shouldPrintTermsOfPayment({ pphAmount: 14_892, showPaymentTerms: true }), false);
+  assert.equal(shouldPrintTermsOfPayment({ pphAmount: 0, showPaymentTerms: false }), false);
 });
 
 test("formats yearly global invoice numbers", () => {
