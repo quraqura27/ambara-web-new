@@ -17,6 +17,7 @@ export const INVOICE_QR_STAMP_TITLE = "System-Generated Commercial Invoice";
 export const INVOICE_QR_STAMP_VERIFY_TEXT = "Scan QR code to verify invoice authenticity";
 export const INVOICE_QR_STAMP_VALIDITY_TEXT =
   "This commercial invoice is system-generated and valid without wet signature.";
+export const INVOICE_QR_STAMP_ISSUER_TEXT = "Issued by Finance Department";
 
 export type InvoiceLineInput = {
   chargeableWeight?: number | string | null;

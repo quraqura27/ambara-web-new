@@ -8,6 +8,7 @@ import {
   formatInvoiceNumber,
   invoiceBlocksLineReuse,
   invoiceEffectiveStatus,
+  INVOICE_QR_STAMP_ISSUER_TEXT,
   INVOICE_QR_STAMP_TITLE,
   INVOICE_QR_STAMP_VALIDITY_TEXT,
   INVOICE_QR_STAMP_VERIFY_TEXT,
@@ -57,6 +58,7 @@ test("uses formal QR stamp wording", () => {
     INVOICE_QR_STAMP_VALIDITY_TEXT,
     "This commercial invoice is system-generated and valid without wet signature.",
   );
+  assert.equal(INVOICE_QR_STAMP_ISSUER_TEXT, "Issued by Finance Department");
 });
 
 test("formats yearly global invoice numbers", () => {

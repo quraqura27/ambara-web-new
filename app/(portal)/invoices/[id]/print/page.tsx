@@ -8,6 +8,7 @@ import { getInvoiceBankAccount } from "@/lib/invoices/bank-accounts";
 import {
   formatCurrencyAmount,
   FULL_PAYMENT_TERMS_TEXT,
+  INVOICE_QR_STAMP_ISSUER_TEXT,
   INVOICE_QR_STAMP_TITLE,
   INVOICE_QR_STAMP_VALIDITY_TEXT,
   INVOICE_QR_STAMP_VERIFY_TEXT,
@@ -198,7 +199,10 @@ export default async function InvoicePrintPage({ params }: InvoicePrintPageProps
               {storedStatus === "draft" ? "No public verification until sent" : INVOICE_QR_STAMP_VERIFY_TEXT}
             </p>
             {storedStatus === "draft" ? null : (
-              <p className="w-full text-[7pt] leading-4">{INVOICE_QR_STAMP_VALIDITY_TEXT}</p>
+              <>
+                <p className="w-full text-[7pt] leading-4">{INVOICE_QR_STAMP_VALIDITY_TEXT}</p>
+                <p className="mt-1 w-full text-[7pt] font-bold leading-4">{INVOICE_QR_STAMP_ISSUER_TEXT}</p>
+              </>
             )}
           </div>
         </section>

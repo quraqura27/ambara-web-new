@@ -9,6 +9,7 @@ import {
   buildInvoicePdfFilename,
   FULL_PAYMENT_TERMS_TEXT,
   formatCurrencyAmount,
+  INVOICE_QR_STAMP_ISSUER_TEXT,
   INVOICE_QR_STAMP_TITLE,
   INVOICE_QR_STAMP_VALIDITY_TEXT,
   INVOICE_QR_STAMP_VERIFY_TEXT,
@@ -471,9 +472,18 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
   page.drawImage(qrImage, { height: qrSize, width: qrSize, x: qrX, y: y - 120 });
   drawCenteredText(page, INVOICE_QR_STAMP_TITLE, stampCenterX, y - 138, bold, 8);
   drawCenteredText(page, INVOICE_QR_STAMP_VERIFY_TEXT, stampCenterX, y - 151, regular, 7.2);
-  wrapText(INVOICE_QR_STAMP_VALIDITY_TEXT, regular, 7, stampWidth).forEach((line, index) => {
+  const validityLines = wrapText(INVOICE_QR_STAMP_VALIDITY_TEXT, regular, 7, stampWidth);
+  validityLines.forEach((line, index) => {
     drawCenteredText(page, line, stampCenterX, y - 164 - index * 11, regular, 7);
   });
+  drawCenteredText(
+    page,
+    INVOICE_QR_STAMP_ISSUER_TEXT,
+    stampCenterX,
+    y - 164 - validityLines.length * 11 - 1,
+    bold,
+    7.4,
+  );
 
   const footerText = `Invoice No ${input.invoice.invoiceNumber || "DRAFT"}`;
   for (const renderedPage of pdfDoc.getPages()) {
