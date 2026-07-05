@@ -7,6 +7,13 @@ export type InvoiceBankAccount = {
 };
 
 export const invoiceBankAccounts: Record<string, InvoiceBankAccount> = {
+  BCA: {
+    accountNo: "7642412356",
+    branch: "KCP Citra Raya",
+    name: "QURAISY ADBURRAHMAN",
+    swift: "CENAIDJAXXX",
+    title: "Bank BCA",
+  },
   MANDIRI: {
     accountNo: "124-00-1124-1735",
     branch: "KCP Tebet - Jakarta Selatan",
@@ -23,6 +30,11 @@ export const invoiceBankAccounts: Record<string, InvoiceBankAccount> = {
   },
 };
 
+export function normalizeInvoiceBankAccountCode(code: string | null | undefined) {
+  const normalized = (code || "OCBC").trim().toUpperCase();
+  return invoiceBankAccounts[normalized] ? normalized : "OCBC";
+}
+
 export function getInvoiceBankAccount(code: string | null | undefined) {
-  return invoiceBankAccounts[code || "OCBC"] ?? invoiceBankAccounts.OCBC;
+  return invoiceBankAccounts[normalizeInvoiceBankAccountCode(code)];
 }

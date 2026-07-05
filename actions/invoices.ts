@@ -35,6 +35,7 @@ import {
   createInvoiceVerificationChecksum,
   createInvoiceVerificationToken,
 } from "@/lib/invoices/verification";
+import { normalizeInvoiceBankAccountCode } from "@/lib/invoices/bank-accounts";
 import { isLocalPortalDevAccessEnabled, requirePortalUser } from "@/lib/portal-auth";
 import { canManageInvoices } from "@/lib/portal-roles";
 
@@ -785,7 +786,7 @@ export async function finalizeInvoiceFromForm(
         id: invoiceId,
         amountDue: String(totals.amountDue),
         archived: false,
-        bankAccount: text(formData.get("bankAccount")) || "OCBC",
+        bankAccount: normalizeInvoiceBankAccountCode(text(formData.get("bankAccount"))),
         city: text(formData.get("city")) || "Tangerang",
         currency: (invoiceCurrencies.includes(text(formData.get("currency")) as InvoiceCurrency)
           ? text(formData.get("currency"))
