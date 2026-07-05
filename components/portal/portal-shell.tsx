@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
   ChevronRight,
+  CircleDollarSign,
   ClipboardList,
   FileSpreadsheet,
   FileText,
@@ -66,7 +67,7 @@ function NavLink({
       : item.href === "/invoices"
         ? pathname === "/invoices" ||
           (pathname.startsWith("/invoices/") &&
-            !["/invoices/new", "/invoices/export"].some((href) => pathname.startsWith(href)))
+            !["/invoices/new", "/invoices/export", "/invoices/collections"].some((href) => pathname.startsWith(href)))
       : pathname === item.href || pathname.startsWith(`${item.href}/`);
   const Icon = item.icon;
 
@@ -105,6 +106,7 @@ function Breadcrumbs({ pathname }: { pathname: string }) {
     "delivery-batches": "Delivery",
     edit: "Edit",
     export: "Export",
+    collections: "Collections",
     invoices: "Invoices",
     mawbs: "MAWB",
     new: "New",
@@ -170,6 +172,7 @@ export function PortalShell({
         ...(canManageInvoices
           ? [
               { href: "/invoices", icon: FileText, label: "Invoices", mobileSafe: true },
+              { href: "/invoices/collections", icon: CircleDollarSign, label: "Collections", secondary: true },
               { href: "/invoices/export", icon: FileSpreadsheet, label: "Invoice Export", secondary: true },
             ]
           : []),

@@ -32,6 +32,11 @@ import {
 } from "@/lib/invoices/core";
 import { formatInvoiceFlightNumber } from "@/lib/invoices/flight";
 import {
+  buildInvoiceCollectionsDashboard,
+  type InvoiceCollectionFilters,
+  type InvoiceCollectionSourceRow,
+} from "@/lib/invoices/collections";
+import {
   createInvoiceVerificationChecksum,
   createInvoiceVerificationToken,
 } from "@/lib/invoices/verification";
@@ -515,6 +520,65 @@ export async function getInvoicesPage(options: { page?: number; search?: string 
   };
 }
 
+export async function getInvoiceCollectionsDashboard(filters: InvoiceCollectionFilters) {
+  await requireInvoiceUser();
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const conditions = [
+    sql`(
+      (coalesce(${invoices.status}, 'sent') = 'sent' and ${invoices.paidAt} is null)
+      or (${invoices.paidAt} >= ${monthStart} and ${invoices.paidAt} < ${nextMonthStart})
+    )`,
+  ];
+
+  if (filters.currency !== "all") {
+    conditions.push(eq(invoices.currency, filters.currency));
+  }
+
+  if (filters.customer) {
+    conditions.push(
+      or(
+        ilike(invoices.invoiceNumber, `%${filters.customer}%`),
+        ilike(invoices.customerCode, `%${filters.customer}%`),
+        ilike(invoices.customerNameSnapshot, `%${filters.customer}%`),
+      )!,
+    );
+  }
+
+  let rows: InvoiceCollectionSourceRow[];
+  try {
+    rows = await db
+      .select({
+        currency: invoices.currency,
+        customerCode: invoices.customerCode,
+        customerName: invoices.customerNameSnapshot,
+        dueDate: invoices.dueDate,
+        id: invoices.id,
+        invoiceDate: invoices.invoiceDate,
+        invoiceNumber: invoices.invoiceNumber,
+        netPayable: invoices.netPayable,
+        paidAt: invoices.paidAt,
+        paymentTerms: invoices.paymentTerms,
+        sentAt: invoices.sentAt,
+        status: invoices.status,
+      })
+      .from(invoices)
+      .where(and(...conditions))
+      .orderBy(
+        sql`case when ${invoices.dueDate} is null then 1 else 0 end`,
+        asc(invoices.dueDate),
+        desc(invoices.generatedAt),
+      )
+      .limit(5_000);
+  } catch (error) {
+    if (!isLocalRecoverableReadError(error)) throw error;
+    rows = [];
+  }
+
+  return buildInvoiceCollectionsDashboard(rows, filters, now);
+}
+
 export async function getInvoiceDetail(id: string) {
   const user = await requirePortalUser();
   if (!canManageInvoices(user)) return null;
@@ -888,6 +952,7 @@ export async function finalizeInvoiceFromForm(
 
     await db.batch(queries as [BatchItem<"pg">, ...BatchItem<"pg">[]]);
     revalidatePath("/invoices");
+    revalidatePath("/invoices/collections");
     revalidatePath("/dashboard");
   } catch (error) {
     return {
@@ -960,6 +1025,7 @@ export async function sendDraftInvoiceFromForm(id: string, formData: FormData) {
   ]);
 
   revalidatePath("/invoices");
+  revalidatePath("/invoices/collections");
   revalidatePath(`/invoices/${id}`);
 }
 
@@ -999,6 +1065,7 @@ export async function markInvoicePaidFromForm(id: string, formData: FormData) {
   ]);
 
   revalidatePath("/invoices");
+  revalidatePath("/invoices/collections");
   revalidatePath(`/invoices/${id}`);
 }
 
@@ -1021,6 +1088,7 @@ export async function archiveInvoiceFromForm(id: string, formData: FormData) {
     }),
   ]);
   revalidatePath("/invoices");
+  revalidatePath("/invoices/collections");
   revalidatePath(`/invoices/${id}`);
 }
 
@@ -1076,6 +1144,7 @@ export async function voidInvoiceFromForm(id: string, formData: FormData) {
 
   await db.batch(queries as [BatchItem<"pg">, ...BatchItem<"pg">[]]);
   revalidatePath("/invoices");
+  revalidatePath("/invoices/collections");
   revalidatePath(`/invoices/${id}`);
   revalidatePath("/dashboard");
 }

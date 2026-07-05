@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FileSpreadsheet, Plus, ReceiptText, Search } from "lucide-react";
+import { CircleDollarSign, FileSpreadsheet, Plus, ReceiptText, Search } from "lucide-react";
 
 import { getInvoicesPage } from "@/actions/invoices";
 import { Button, Card, Input } from "@/components/ui/core";
@@ -32,6 +32,9 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
           <p className="mt-1 text-slate-500">Finance invoices generated from portal shipment and AWB data.</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Link href="/invoices/collections">
+            <Button className="gap-2" variant="secondary"><CircleDollarSign className="h-4 w-4" /> Collections</Button>
+          </Link>
           <Link href="/invoices/export">
             <Button className="gap-2" variant="secondary"><FileSpreadsheet className="h-4 w-4" /> Export</Button>
           </Link>
