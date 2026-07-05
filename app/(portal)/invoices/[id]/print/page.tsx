@@ -8,6 +8,9 @@ import { getInvoiceBankAccount } from "@/lib/invoices/bank-accounts";
 import {
   formatCurrencyAmount,
   FULL_PAYMENT_TERMS_TEXT,
+  INVOICE_QR_STAMP_TITLE,
+  INVOICE_QR_STAMP_VALIDITY_TEXT,
+  INVOICE_QR_STAMP_VERIFY_TEXT,
   numberValue,
   normalizeInvoiceStatus,
   shouldPrintTermsOfPayment,
@@ -176,7 +179,7 @@ export default async function InvoicePrintPage({ params }: InvoicePrintPageProps
             </div>
             <p className="mt-3">If you have any question regarding this invoice, please contact to finance@ambaraartha.com</p>
           </div>
-          <div className="mx-auto flex w-[48mm] flex-col items-center text-center text-[10pt]">
+          <div className="mx-auto flex w-[62mm] max-w-full flex-col items-center text-center text-[10pt]">
             <p className="w-full leading-5">Tangerang, {displayDate(invoice.invoiceDate, true)}</p>
             {qrDataUrl ? (
               <div className="mt-3 h-[36mm] w-[36mm] shrink-0">
@@ -189,12 +192,14 @@ export default async function InvoicePrintPage({ params }: InvoicePrintPageProps
               </div>
             )}
             <p className="mt-3 w-full text-[8pt] font-bold leading-4">
-              {storedStatus === "draft" ? "Draft Invoice" : "System Generated Invoice"}
+              {storedStatus === "draft" ? "Draft Invoice" : INVOICE_QR_STAMP_TITLE}
             </p>
             <p className="w-full text-[7pt] leading-4">
-              {storedStatus === "draft" ? "No public verification until sent" : "Scan to verify - no wet signature required"}
+              {storedStatus === "draft" ? "No public verification until sent" : INVOICE_QR_STAMP_VERIFY_TEXT}
             </p>
-            <p className="mt-2 w-full font-bold leading-5">FINANCE DEPARTMENT</p>
+            {storedStatus === "draft" ? null : (
+              <p className="w-full text-[7pt] leading-4">{INVOICE_QR_STAMP_VALIDITY_TEXT}</p>
+            )}
           </div>
         </section>
 

@@ -8,6 +8,9 @@ import {
   formatInvoiceNumber,
   invoiceBlocksLineReuse,
   invoiceEffectiveStatus,
+  INVOICE_QR_STAMP_TITLE,
+  INVOICE_QR_STAMP_VALIDITY_TEXT,
+  INVOICE_QR_STAMP_VERIFY_TEXT,
   invoiceSequenceFromNumber,
   invoiceStatusLabel,
   normalizeCustomerCode,
@@ -45,6 +48,15 @@ test("prints terms of payment only for full-payment invoices when enabled", () =
   assert.equal(shouldPrintTermsOfPayment({ pphAmount: 0, showPaymentTerms: true }), true);
   assert.equal(shouldPrintTermsOfPayment({ pphAmount: 14_892, showPaymentTerms: true }), false);
   assert.equal(shouldPrintTermsOfPayment({ pphAmount: 0, showPaymentTerms: false }), false);
+});
+
+test("uses formal QR stamp wording", () => {
+  assert.equal(INVOICE_QR_STAMP_TITLE, "System-Generated Commercial Invoice");
+  assert.equal(INVOICE_QR_STAMP_VERIFY_TEXT, "Scan QR code to verify invoice authenticity");
+  assert.equal(
+    INVOICE_QR_STAMP_VALIDITY_TEXT,
+    "This commercial invoice is system-generated and valid without wet signature.",
+  );
 });
 
 test("formats yearly global invoice numbers", () => {

@@ -13,6 +13,11 @@ export type InvoiceEffectiveStatus = (typeof invoiceEffectiveStatuses)[number];
 export const FULL_PAYMENT_TERMS_TEXT =
   "Payment should be made in full amount as stated in the invoice. Any bank charges or withholding tax shall be borne by the customer unless agreed otherwise.";
 
+export const INVOICE_QR_STAMP_TITLE = "System-Generated Commercial Invoice";
+export const INVOICE_QR_STAMP_VERIFY_TEXT = "Scan QR code to verify invoice authenticity";
+export const INVOICE_QR_STAMP_VALIDITY_TEXT =
+  "This commercial invoice is system-generated and valid without wet signature.";
+
 export type InvoiceLineInput = {
   chargeableWeight?: number | string | null;
   flatAmount?: number | string | null;
