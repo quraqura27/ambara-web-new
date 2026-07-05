@@ -448,7 +448,7 @@ export async function updateShipmentDetails(trackingNumber: string, formData: Fo
   const user = await requireUser();
 
   if (!canEditShipmentDetails(user)) {
-    throw new Error("Superadmin access is required to edit shipment details.");
+    throw new Error("Operations or superadmin access is required to edit shipment details.");
   }
 
   const normalizedTrackingNumber = normalizeTrackingNumber(trackingNumber);

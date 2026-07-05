@@ -15,10 +15,13 @@ test("normalizes portal roles", () => {
   assert.equal(normalizePortalRole("unknown"), "viewer");
 });
 
-test("shipment detail editing is superadmin-only", () => {
+test("shipment detail editing allows operations and superadmin only", () => {
   assert.equal(canEditShipmentDetails({ role: "superadmin" }), true);
+  assert.equal(canEditShipmentDetails({ role: "operations" }), true);
   assert.equal(canEditShipmentDetails({ role: "admin" }), false);
-  assert.equal(canEditShipmentDetails({ role: "operations" }), false);
+  assert.equal(canEditShipmentDetails({ role: "finance" }), false);
+  assert.equal(canEditShipmentDetails({ role: "viewer" }), false);
+  assert.equal(canEditShipmentDetails({ role: "unknown" }), false);
   assert.equal(canEditShipmentDetails(null), false);
 });
 

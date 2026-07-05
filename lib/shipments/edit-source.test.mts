@@ -6,12 +6,12 @@ function read(path: string) {
   return readFileSync(new URL(`../../${path}`, import.meta.url), "utf8");
 }
 
-test("shipment edit action is server-side superadmin gated", () => {
+test("shipment edit action is server-side role gated", () => {
   const actions = read("actions/shipments.ts");
 
   assert.match(actions, /export async function updateShipmentDetails/);
   assert.match(actions, /canEditShipmentDetails\(user\)/);
-  assert.match(actions, /Superadmin access is required to edit shipment details/);
+  assert.match(actions, /Operations or superadmin access is required to edit shipment details/);
 });
 
 test("shipment edit action does not mutate tracking history or immutable identifiers", () => {
@@ -24,7 +24,7 @@ test("shipment edit action does not mutate tracking history or immutable identif
   assert.equal(beforeNextAction.includes("createCustomerVisibleTrackingEvent"), false);
 });
 
-test("shipment edit route blocks non-superadmin before loading editable data", () => {
+test("shipment edit route blocks disallowed roles before loading editable data", () => {
   const editPage = read("app/(portal)/shipments/[number]/edit/page.tsx");
 
   assert.match(editPage, /requirePortalUser\(\)/);

@@ -73,7 +73,8 @@ export function canManageStaffAccounts(user: PortalRoleUser | null | undefined) 
 }
 
 export function canEditShipmentDetails(user: PortalRoleUser | null | undefined) {
-  return isSuperadmin(user);
+  const role = normalizePortalRole(user?.role);
+  return role === "operations" || role === "superadmin";
 }
 
 export function canManageInvoices(user: PortalRoleUser | null | undefined) {
