@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { Plus, ReceiptText, Search } from "lucide-react";
+import { FileSpreadsheet, Plus, ReceiptText, Search } from "lucide-react";
 
 import { getInvoicesPage } from "@/actions/invoices";
 import { Button, Card, Input } from "@/components/ui/core";
-import { formatCurrencyAmount } from "@/lib/invoices/core";
+import { formatCurrencyAmount, invoiceStatusLabel } from "@/lib/invoices/core";
 
 type InvoicesPageProps = {
   searchParams: Promise<{ page?: string; search?: string }>;
@@ -31,7 +31,12 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
           <h1 className="text-3xl font-bold tracking-tight">Invoices</h1>
           <p className="mt-1 text-slate-500">Finance invoices generated from portal shipment and AWB data.</p>
         </div>
-        <Link href="/invoices/new"><Button className="gap-2"><Plus className="h-4 w-4" /> New Invoice</Button></Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/invoices/export">
+            <Button className="gap-2" variant="secondary"><FileSpreadsheet className="h-4 w-4" /> Export</Button>
+          </Link>
+          <Link href="/invoices/new"><Button className="gap-2"><Plus className="h-4 w-4" /> New Invoice</Button></Link>
+        </div>
       </div>
 
       <Card className="p-0">
@@ -61,10 +66,10 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
             <tbody className="divide-y divide-white/5">
               {result.rows.map((invoice) => (
                 <tr className="transition hover:bg-white/[0.02]" key={invoice.id}>
-                  <td className="px-5 py-4 font-mono text-sm text-blue-200">{invoice.invoiceNumber}</td>
+                  <td className="px-5 py-4 font-mono text-sm text-blue-200">{invoice.invoiceNumber || "DRAFT"}</td>
                   <td className="px-5 py-4 text-sm">{invoice.customerName || "Customer snapshot unavailable"}</td>
                   <td className="px-5 py-4 text-xs text-slate-500">{invoice.invoiceDate || "N/A"}</td>
-                  <td className="px-5 py-4 text-xs font-semibold uppercase text-emerald-300">{invoice.status || "finalized"}</td>
+                  <td className="px-5 py-4 text-xs font-semibold uppercase text-emerald-300">{invoiceStatusLabel(invoice.effectiveStatus)}</td>
                   <td className="px-5 py-4 text-right text-sm font-semibold">
                     {invoice.currency || "IDR"} {formatCurrencyAmount(invoice.netPayable, invoice.currency || "IDR")}
                   </td>

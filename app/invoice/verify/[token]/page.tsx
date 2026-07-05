@@ -2,7 +2,7 @@ import { ShieldCheck, ShieldX } from "lucide-react";
 
 import { getPublicInvoiceVerification } from "@/actions/invoices";
 import { Card } from "@/components/ui/core";
-import { formatCurrencyAmount } from "@/lib/invoices/core";
+import { formatCurrencyAmount, invoiceStatusLabel } from "@/lib/invoices/core";
 
 type InvoiceVerifyPageProps = {
   params: Promise<{ token: string }>;
@@ -29,13 +29,13 @@ export default async function InvoiceVerifyPage({ params }: InvoiceVerifyPagePro
               </div>
             </div>
             <dl className="space-y-3 text-sm">
-              <VerifyRow label="Invoice number" value={invoice.invoiceNumber} />
+              <VerifyRow label="Invoice number" value={invoice.invoiceNumber || "-"} />
               <VerifyRow label="Issuer" value="PT Ambara Artha Globaltrans" />
               <VerifyRow label="Invoice date" value={invoice.invoiceDate || "-"} />
               <VerifyRow label="Customer" value={invoice.customerName || "-"} />
               <VerifyRow label="Gross total" value={`${invoice.currency || "IDR"} ${formatCurrencyAmount(invoice.total, invoice.currency || "IDR")}`} />
               <VerifyRow label="Net payable" value={`${invoice.currency || "IDR"} ${formatCurrencyAmount(invoice.netPayable, invoice.currency || "IDR")}`} />
-              <VerifyRow label="Status" value={invoice.status || "finalized"} />
+              <VerifyRow label="Status" value={invoiceStatusLabel(invoice.effectiveStatus)} />
               <VerifyRow label="Checksum" value={invoice.checksum || "-"} />
             </dl>
             <p className="mt-6 rounded-lg border border-white/5 bg-white/[0.03] p-4 text-xs text-slate-500">

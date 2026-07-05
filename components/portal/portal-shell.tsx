@@ -63,6 +63,10 @@ function NavLink({
             !["/shipments/new", "/shipments/bulk-import", "/shipments/export"].some(
               (href) => pathname.startsWith(href),
             ))
+      : item.href === "/invoices"
+        ? pathname === "/invoices" ||
+          (pathname.startsWith("/invoices/") &&
+            !["/invoices/new", "/invoices/export"].some((href) => pathname.startsWith(href)))
       : pathname === item.href || pathname.startsWith(`${item.href}/`);
   const Icon = item.icon;
 
@@ -164,7 +168,10 @@ export function PortalShell({
           ? [{ href: "/shipments/export", icon: FileSpreadsheet, label: "Export", secondary: true }]
           : []),
         ...(canManageInvoices
-          ? [{ href: "/invoices", icon: FileText, label: "Invoices", mobileSafe: true }]
+          ? [
+              { href: "/invoices", icon: FileText, label: "Invoices", mobileSafe: true },
+              { href: "/invoices/export", icon: FileSpreadsheet, label: "Invoice Export", secondary: true },
+            ]
           : []),
         { href: "/customers", icon: Users, label: "Customers", mobileSafe: true },
         { href: "/delivery-batches", icon: ClipboardList, label: "Delivery Batches", mobileSafe: true },

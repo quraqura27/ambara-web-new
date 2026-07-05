@@ -5,6 +5,7 @@ import {
   buildInvoicePdfDownloadName,
   generateInvoicePdf,
 } from "@/lib/invoices/pdf";
+import { normalizeInvoiceStatus } from "@/lib/invoices/core";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,9 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   const detail = await getInvoiceDetail(id);
   if (!detail) {
     return new Response("Invoice not found", { status: 404 });
+  }
+  if (normalizeInvoiceStatus(detail.invoice.status) === "draft") {
+    return new Response("Draft invoice PDF is not available until the invoice is sent.", { status: 409 });
   }
 
   const hdrs = await headers();

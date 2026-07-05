@@ -6,8 +6,12 @@ import {
   buildInvoicePdfFilename,
   deriveCustomerCode,
   formatInvoiceNumber,
+  invoiceBlocksLineReuse,
+  invoiceEffectiveStatus,
   invoiceSequenceFromNumber,
+  invoiceStatusLabel,
   normalizeCustomerCode,
+  normalizeInvoiceStatus,
   shouldPrintTermsOfPayment,
   terbilangRupiah,
 } from "./core.ts";
@@ -45,6 +49,32 @@ test("prints terms of payment only for full-payment invoices when enabled", () =
 
 test("formats yearly global invoice numbers", () => {
   assert.equal(formatInvoiceNumber({ customerCode: "snb", sequence: 5, year: 2026 }), "AAG/005/SNB/26");
+});
+
+test("normalizes stored invoice statuses and computes overdue display status", () => {
+  assert.equal(normalizeInvoiceStatus("finalized"), "sent");
+  assert.equal(normalizeInvoiceStatus("paid"), "paid");
+  assert.equal(normalizeInvoiceStatus("unexpected"), "sent");
+  assert.equal(
+    invoiceEffectiveStatus({ dueDate: "2026-07-03", paidAt: null, status: "sent" }, "2026-07-04"),
+    "overdue",
+  );
+  assert.equal(
+    invoiceEffectiveStatus({ dueDate: "2026-07-03", paidAt: new Date("2026-07-04T00:00:00Z"), status: "paid" }, "2026-07-05"),
+    "paid",
+  );
+  assert.equal(
+    invoiceEffectiveStatus({ dueDate: "2026-07-03", paidAt: null, status: "draft" }, "2026-07-04"),
+    "draft",
+  );
+  assert.equal(invoiceStatusLabel("overdue"), "Overdue");
+});
+
+test("only voided invoices release line reuse", () => {
+  assert.equal(invoiceBlocksLineReuse("draft"), true);
+  assert.equal(invoiceBlocksLineReuse("sent"), true);
+  assert.equal(invoiceBlocksLineReuse("archived"), true);
+  assert.equal(invoiceBlocksLineReuse("voided"), false);
 });
 
 test("derives and normalizes customer codes", () => {

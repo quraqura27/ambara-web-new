@@ -24,7 +24,7 @@ type InvoicePdfInvoice = {
   customerNpwpSnapshot: string | null;
   dueDate: string | null;
   invoiceDate: string | null;
-  invoiceNumber: string;
+  invoiceNumber: string | null;
   netPayable: number | string | null;
   paymentTerms: string | null;
   period: string | null;
@@ -303,7 +303,7 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
   const metaX = pageWidth - margin - 210;
   drawCell(page, "Invoice No", metaX, y - 8, 105, 22, bold, 10);
   drawCell(page, "Date", metaX + 105, y - 8, 105, 22, bold, 10);
-  drawCell(page, input.invoice.invoiceNumber, metaX, y - 30, 105, 22, regular, 10);
+  drawCell(page, input.invoice.invoiceNumber || "DRAFT", metaX, y - 30, 105, 22, regular, 10);
   drawCell(page, displayDate(input.invoice.invoiceDate), metaX + 105, y - 30, 105, 22, regular, 10);
   drawCell(page, input.invoice.period ? "Period" : "Payment Terms", metaX, y - 52, 105, 22, bold, 10);
   drawCell(page, "Due Date", metaX + 105, y - 52, 105, 22, bold, 10);
@@ -470,7 +470,7 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
   drawCenteredText(page, "Scan to verify - no wet signature required", stampCenterX, y - 153, regular, 7.5);
   drawCenteredText(page, "FINANCE DEPARTMENT", stampCenterX, y - 172, bold, 11);
 
-  const footerText = `Invoice No ${input.invoice.invoiceNumber}`;
+  const footerText = `Invoice No ${input.invoice.invoiceNumber || "DRAFT"}`;
   for (const renderedPage of pdfDoc.getPages()) {
     drawText(renderedPage, footerText, margin, 28, { color: rgb(0.45, 0.45, 0.45), font: regular, size: 8 });
   }

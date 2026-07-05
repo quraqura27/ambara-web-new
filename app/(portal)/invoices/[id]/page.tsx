@@ -1,10 +1,21 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Archive, Download, Printer, QrCode, XCircle } from "lucide-react";
+import { Archive, CheckCircle2, Download, Printer, QrCode, Send, XCircle } from "lucide-react";
 
-import { archiveInvoiceFromForm, getInvoiceDetail, voidInvoiceFromForm } from "@/actions/invoices";
+import {
+  archiveInvoiceFromForm,
+  getInvoiceDetail,
+  markInvoicePaidFromForm,
+  sendDraftInvoiceFromForm,
+  voidInvoiceFromForm,
+} from "@/actions/invoices";
 import { Button, Card } from "@/components/ui/core";
-import { formatCurrencyAmount } from "@/lib/invoices/core";
+import {
+  formatCurrencyAmount,
+  invoiceEffectiveStatus,
+  invoiceStatusLabel,
+  normalizeInvoiceStatus,
+} from "@/lib/invoices/core";
 
 type InvoiceDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -19,36 +30,45 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
 
   const { deductions, invoice, lines } = detail;
   const archiveAction = archiveInvoiceFromForm.bind(null, invoice.id);
+  const paidAction = markInvoicePaidFromForm.bind(null, invoice.id);
+  const sendAction = sendDraftInvoiceFromForm.bind(null, invoice.id);
   const voidAction = voidInvoiceFromForm.bind(null, invoice.id);
   const currency = invoice.currency || "IDR";
+  const storedStatus = normalizeInvoiceStatus(invoice.status);
+  const effectiveStatus = invoiceEffectiveStatus(invoice);
+  const invoiceDisplayNumber = invoice.invoiceNumber || "DRAFT";
 
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="font-mono text-sm text-blue-300">{invoice.invoiceNumber}</p>
+          <p className="font-mono text-sm text-blue-300">{invoiceDisplayNumber}</p>
           <h1 className="mt-1 text-3xl font-bold tracking-tight">{invoice.customerNameSnapshot || "Invoice"}</h1>
           <p className="mt-1 text-slate-500">
-            {invoice.status || "finalized"} invoice snapshot. Later shipment edits do not recalculate these totals.
+            {invoiceStatusLabel(effectiveStatus)} invoice snapshot. Later shipment edits do not recalculate these totals.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <a
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 transition-all duration-200 hover:bg-slate-700 active:scale-[0.98]"
-            href={`/invoices/${invoice.id}/pdf`}
-          >
-            <Download className="h-4 w-4" />
-            Download PDF
-          </a>
-          <a
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all duration-200 hover:bg-blue-700 active:scale-[0.98]"
-            href={`/invoices/${invoice.id}/pdf?disposition=inline`}
-            rel="noreferrer"
-            target="_blank"
-          >
-            <Printer className="h-4 w-4" />
-            Print / Save PDF
-          </a>
+          {storedStatus !== "draft" ? (
+            <>
+              <a
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 transition-all duration-200 hover:bg-slate-700 active:scale-[0.98]"
+                href={`/invoices/${invoice.id}/pdf`}
+              >
+                <Download className="h-4 w-4" />
+                Download PDF
+              </a>
+              <a
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all duration-200 hover:bg-blue-700 active:scale-[0.98]"
+                href={`/invoices/${invoice.id}/pdf?disposition=inline`}
+                rel="noreferrer"
+                target="_blank"
+              >
+                <Printer className="h-4 w-4" />
+                Print / Save PDF
+              </a>
+            </>
+          ) : null}
           <Link href="/invoices"><Button variant="secondary">Back</Button></Link>
         </div>
       </div>
@@ -128,12 +148,53 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
               <QrCode className="mt-1 h-5 w-5 text-blue-300" />
               <div>
                 <h2 className="font-semibold">System verification</h2>
-                <p className="mt-1 text-sm text-slate-500">Checksum {invoice.verificationChecksum || "not available"}</p>
+                <p className="mt-1 text-sm text-slate-500">
+                  {storedStatus === "draft"
+                    ? "Draft invoices do not have public QR verification yet."
+                    : `Checksum ${invoice.verificationChecksum || "not available"}`}
+                </p>
               </div>
             </div>
           </Card>
 
-          {invoice.status !== "archived" && invoice.status !== "voided" ? (
+          {storedStatus === "draft" ? (
+            <Card className="p-5">
+              <h2 className="mb-3 text-sm font-semibold text-blue-200">Send invoice</h2>
+              <form action={sendAction} className="space-y-3">
+                <input name="confirmed" type="hidden" value="send" />
+                <Button className="gap-2" type="submit">
+                  <Send className="h-4 w-4" />
+                  Assign number and send
+                </Button>
+              </form>
+            </Card>
+          ) : null}
+
+          {storedStatus === "sent" ? (
+            <Card className="p-5">
+              <h2 className="mb-3 text-sm font-semibold text-emerald-200">Mark paid</h2>
+              <form action={paidAction} className="space-y-3">
+                <input name="confirmed" type="hidden" value="paid" />
+                <input
+                  className="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-4 py-2 text-sm"
+                  defaultValue={new Date().toISOString().slice(0, 10)}
+                  name="paidAt"
+                  type="date"
+                />
+                <input
+                  className="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-4 py-2 text-sm"
+                  name="paymentReference"
+                  placeholder="Payment reference"
+                />
+                <Button className="gap-2" type="submit" variant="secondary">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Mark paid
+                </Button>
+              </form>
+            </Card>
+          ) : null}
+
+          {storedStatus !== "archived" && storedStatus !== "voided" ? (
             <Card className="p-5">
               <h2 className="mb-3 text-sm font-semibold text-amber-200">Archive invoice</h2>
               <form action={archiveAction} className="space-y-3">
@@ -147,7 +208,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
             </Card>
           ) : null}
 
-          {invoice.status !== "voided" ? (
+          {storedStatus !== "voided" ? (
             <Card className="border-red-500/20 p-5">
               <h2 className="mb-3 text-sm font-semibold text-red-200">Void invoice</h2>
               <form action={voidAction} className="space-y-3">

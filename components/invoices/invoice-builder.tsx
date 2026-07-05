@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
-import { AlertCircle, Calculator, FileCheck2, Loader2, Plus, Trash2 } from "lucide-react";
+import { AlertCircle, Calculator, FileCheck2, Loader2, Plus, Save, Send, Trash2 } from "lucide-react";
 
 import {
   finalizeInvoiceFromForm,
@@ -195,7 +195,7 @@ export function InvoiceBuilder({
             <FileCheck2 className="h-5 w-5 text-blue-300" />
             <div>
               <h2 className="text-lg font-semibold">Customer and numbering</h2>
-              <p className="text-sm text-slate-500">Invoice number is assigned when finance finalizes.</p>
+              <p className="text-sm text-slate-500">Drafts reserve lines. Invoice number is assigned when finance sends.</p>
             </div>
           </div>
           <div className="grid gap-4 md:grid-cols-[1fr_140px]">
@@ -225,7 +225,7 @@ export function InvoiceBuilder({
           </div>
           {selectedCustomer && !selectedCustomerCode ? (
             <div className="mt-4 rounded-lg border border-amber-400/20 bg-amber-400/10 p-3 text-sm text-amber-100">
-              Set this customer&apos;s 3-letter invoice code in Customer Directory before finalizing invoices.
+              Set this customer&apos;s 3-letter invoice code in Customer Directory before sending invoices.
             </div>
           ) : null}
         </Card>
@@ -405,10 +405,29 @@ export function InvoiceBuilder({
             # {currency === "IDR" ? terbilangRupiah(totals.netPayable) : "Amount in words is shown for IDR only."}
           </div>
 
-          <Button className="mt-5 w-full gap-2" disabled={pending || !selectedCustomer || !selectedCustomerCode || mockData} type="submit">
-            {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCheck2 className="h-4 w-4" />}
-            {mockData ? "Finalize disabled in mock mode" : "Finalize invoice"}
-          </Button>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <Button
+              className="gap-2"
+              disabled={pending || !selectedCustomer || mockData}
+              name="invoiceIntent"
+              type="submit"
+              value="draft"
+              variant="secondary"
+            >
+              {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              {mockData ? "Draft disabled" : "Save draft"}
+            </Button>
+            <Button
+              className="gap-2"
+              disabled={pending || !selectedCustomer || !selectedCustomerCode || mockData}
+              name="invoiceIntent"
+              type="submit"
+              value="send"
+            >
+              {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              {mockData ? "Send disabled" : "Send invoice"}
+            </Button>
+          </div>
         </Card>
 
         <Card className="p-5 text-sm text-slate-400">

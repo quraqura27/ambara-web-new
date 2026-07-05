@@ -2,6 +2,14 @@ export const invoiceCurrencies = ["IDR", "USD", "JPY"] as const;
 
 export type InvoiceCurrency = (typeof invoiceCurrencies)[number];
 
+export const invoiceStoredStatuses = ["draft", "sent", "paid", "archived", "voided"] as const;
+
+export type InvoiceStoredStatus = (typeof invoiceStoredStatuses)[number];
+
+export const invoiceEffectiveStatuses = [...invoiceStoredStatuses, "overdue"] as const;
+
+export type InvoiceEffectiveStatus = (typeof invoiceEffectiveStatuses)[number];
+
 export const FULL_PAYMENT_TERMS_TEXT =
   "Payment should be made in full amount as stated in the invoice. Any bank charges or withholding tax shall be borne by the customer unless agreed otherwise.";
 
@@ -70,6 +78,59 @@ export function shouldPrintTermsOfPayment(input: {
   showPaymentTerms?: boolean | null;
 }) {
   return input.showPaymentTerms === true && numberValue(input.pphAmount) <= 0;
+}
+
+function isOneOf<T extends readonly string[]>(values: T, value: string): value is T[number] {
+  return (values as readonly string[]).includes(value);
+}
+
+export function normalizeInvoiceStatus(value: unknown): InvoiceStoredStatus {
+  if (typeof value !== "string") return "sent";
+  const normalized = value.trim().toLowerCase().replace(/[\s-]+/g, "_");
+  if (normalized === "finalized") return "sent";
+  return isOneOf(invoiceStoredStatuses, normalized) ? normalized : "sent";
+}
+
+export function isInvoiceEffectiveStatus(value: string): value is InvoiceEffectiveStatus {
+  return isOneOf(invoiceEffectiveStatuses, value);
+}
+
+export function isInvoiceStoredStatus(value: string): value is InvoiceStoredStatus {
+  return isOneOf(invoiceStoredStatuses, value);
+}
+
+export function dateInputFromDate(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+export function invoiceEffectiveStatus(
+  input: {
+    dueDate?: string | null;
+    paidAt?: Date | string | null;
+    status?: string | null;
+  },
+  today = dateInputFromDate(new Date()),
+): InvoiceEffectiveStatus {
+  const status = normalizeInvoiceStatus(input.status);
+  if (status === "sent" && !input.paidAt && input.dueDate && input.dueDate < today) {
+    return "overdue";
+  }
+  return status;
+}
+
+export function invoiceStatusLabel(status: InvoiceEffectiveStatus | InvoiceStoredStatus | string) {
+  const normalized = isInvoiceEffectiveStatus(status) ? status : invoiceEffectiveStatus({ status });
+  return normalized
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+export function invoiceBlocksLineReuse(status: unknown) {
+  return normalizeInvoiceStatus(status) !== "voided";
 }
 
 export function money(value: number) {

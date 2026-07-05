@@ -23,7 +23,9 @@ import {
 import {
   calculateInvoiceTotals,
   formatInvoiceNumber,
+  invoiceEffectiveStatus,
   normalizeCustomerCode,
+  normalizeInvoiceStatus,
   numberValue,
   type InvoiceCurrency,
   invoiceCurrencies,
@@ -233,7 +235,7 @@ function uninvoicedShipmentWhere() {
       from invoice_line_items ili
       join invoices inv on inv.id = ili.invoice_id
       where ili.shipment_id = ${shipments.id}
-        and coalesce(inv.status, 'finalized') <> 'voided'
+        and coalesce(inv.status, 'sent') <> 'voided'
     )
     and not exists (
       select 1
@@ -454,11 +456,13 @@ export async function getInvoicesPage(options: { page?: number; search?: string 
     amountDue: string | null;
     currency: string | null;
     customerName: string | null;
+    dueDate: string | null;
     generatedAt: Date | null;
     id: string;
     invoiceDate: string | null;
-    invoiceNumber: string;
+    invoiceNumber: string | null;
     netPayable: string | null;
+    paidAt: Date | null;
     status: string | null;
   }>;
   let countRows: Array<{ count: number }>;
@@ -470,11 +474,13 @@ export async function getInvoicesPage(options: { page?: number; search?: string 
           amountDue: invoices.amountDue,
           currency: invoices.currency,
           customerName: invoices.customerNameSnapshot,
+          dueDate: invoices.dueDate,
           generatedAt: invoices.generatedAt,
           id: invoices.id,
           invoiceDate: invoices.invoiceDate,
           invoiceNumber: invoices.invoiceNumber,
           netPayable: invoices.netPayable,
+          paidAt: invoices.paidAt,
           status: invoices.status,
         })
         .from(invoices)
@@ -499,7 +505,10 @@ export async function getInvoicesPage(options: { page?: number; search?: string 
   return {
     page,
     pageSize,
-    rows,
+    rows: rows.map((row) => ({
+      ...row,
+      effectiveStatus: invoiceEffectiveStatus(row),
+    })),
     total,
     totalPages: Math.max(1, Math.ceil(total / pageSize)),
   };
@@ -539,18 +548,19 @@ export async function getPublicInvoiceVerification(token: string) {
         invoiceDate: invoices.invoiceDate,
         invoiceNumber: invoices.invoiceNumber,
         netPayable: invoices.netPayable,
+        paidAt: invoices.paidAt,
         status: invoices.status,
         total: invoices.total,
       })
       .from(invoices)
-      .where(eq(invoices.verificationToken, token))
+      .where(and(eq(invoices.verificationToken, token), sql`${invoices.status} <> 'draft'`))
       .limit(1);
   } catch (error) {
     if (!isLocalRecoverableReadError(error)) throw error;
     return null;
   }
 
-  return invoice ?? null;
+  return invoice ? { ...invoice, effectiveStatus: invoiceEffectiveStatus(invoice) } : null;
 }
 
 async function allocateInvoiceSequence(year: number) {
@@ -574,11 +584,13 @@ export async function finalizeInvoiceFromForm(
 ): Promise<InvoiceActionState> {
   const user = await requireInvoiceUser();
   let invoiceId = "";
+  const intent = text(formData.get("invoiceIntent")) === "draft" ? "draft" : "send";
+  const isDraft = intent === "draft";
 
   try {
     const customerId = Number.parseInt(text(formData.get("customerId")), 10);
     if (!Number.isInteger(customerId) || customerId <= 0) {
-      throw new Error("Select a customer before finalizing the invoice.");
+      throw new Error("Select a customer before saving the invoice.");
     }
 
     const [customer] = await db
@@ -654,7 +666,7 @@ export async function finalizeInvoiceFromForm(
             .where(
               and(
                 inArray(invoiceLineItems.shipmentId, shipmentIds),
-                sql`coalesce(${invoices.status}, 'finalized') <> 'voided'`,
+                sql`coalesce(${invoices.status}, 'sent') <> 'voided'`,
               ),
             )
         : [],
@@ -750,19 +762,21 @@ export async function finalizeInvoiceFromForm(
     const showPaymentTerms = !pphEnabled && booleanField(formData.get("showPaymentTerms"));
     const invoiceYear = Number.parseInt(invoiceDate.slice(0, 4), 10);
     const customerCode = normalizeCustomerCode(customer.invoiceCode ?? "");
-    if (!customerCode) {
-      throw new Error("Set this customer's 3-letter invoice code in Customer Directory before finalizing.");
+    if (!customerCode && !isDraft) {
+      throw new Error("Set this customer's 3-letter invoice code in Customer Directory before sending.");
     }
-    const sequence = await allocateInvoiceSequence(invoiceYear);
-    const invoiceNumber = formatInvoiceNumber({ customerCode, sequence, year: invoiceYear });
-    const verificationToken = createInvoiceVerificationToken();
-    const verificationChecksum = createInvoiceVerificationChecksum({
-      amount: totals.netPayable,
-      invoiceNumber,
-      token: verificationToken,
-    });
     invoiceId = randomUUID();
     const now = new Date();
+    const sequence = isDraft ? null : await allocateInvoiceSequence(invoiceYear);
+    const invoiceNumber = sequence ? formatInvoiceNumber({ customerCode, sequence, year: invoiceYear }) : null;
+    const verificationToken = invoiceNumber ? createInvoiceVerificationToken() : null;
+    const verificationChecksum = invoiceNumber && verificationToken
+      ? createInvoiceVerificationChecksum({
+          amount: totals.netPayable,
+          invoiceNumber,
+          token: verificationToken,
+        })
+      : null;
     const retainUntil = new Date(now);
     retainUntil.setFullYear(retainUntil.getFullYear() + 5);
 
@@ -798,7 +812,8 @@ export async function finalizeInvoiceFromForm(
         retainUntil: retainUntil.toISOString().slice(0, 10),
         showPaymentTerms,
         showPeriod: Boolean(text(formData.get("period"))),
-        status: "finalized",
+        sentAt: isDraft ? null : now,
+        status: isDraft ? "draft" : "sent",
         subtotal: String(totals.subtotal),
         total: String(totals.total),
         totalPengurangan: String(totals.totalPengurangan),
@@ -846,7 +861,7 @@ export async function finalizeInvoiceFromForm(
         }),
       ),
       db.insert(invoiceAuditLog).values({
-        action: "invoice.finalized",
+        action: isDraft ? "invoice.draft_saved" : "invoice.sent",
         entityId: invoiceId,
         entityType: "invoice",
         metadata: {
@@ -855,6 +870,7 @@ export async function finalizeInvoiceFromForm(
           netPayable: totals.netPayable,
           pphEnabled,
           shipmentCount: shipmentIds.length,
+          status: isDraft ? "draft" : "sent",
         },
         performedBy: user.id,
       }),
@@ -874,11 +890,115 @@ export async function finalizeInvoiceFromForm(
     revalidatePath("/dashboard");
   } catch (error) {
     return {
-      formError: error instanceof Error ? error.message : "Invoice could not be finalized.",
+      formError: error instanceof Error ? error.message : "Invoice could not be saved.",
     };
   }
 
   redirect(`/invoices/${invoiceId}`);
+}
+
+export async function sendDraftInvoiceFromForm(id: string, formData: FormData) {
+  const user = await requireInvoiceUser();
+  const confirmed = text(formData.get("confirmed"));
+  if (confirmed !== "send") throw new Error("Send confirmation is required.");
+
+  const [invoice] = await db
+    .select({
+      customerCode: invoices.customerCode,
+      invoiceDate: invoices.invoiceDate,
+      netPayable: invoices.netPayable,
+      status: invoices.status,
+    })
+    .from(invoices)
+    .where(eq(invoices.id, id))
+    .limit(1);
+
+  if (!invoice) throw new Error("Invoice not found.");
+  if (normalizeInvoiceStatus(invoice.status) !== "draft") throw new Error("Only draft invoices can be sent.");
+  const invoiceDate = invoice.invoiceDate ?? new Date().toISOString().slice(0, 10);
+  const invoiceYear = Number.parseInt(invoiceDate.slice(0, 4), 10);
+  const customerCode = normalizeCustomerCode(invoice.customerCode ?? "");
+  if (!customerCode) {
+    throw new Error("Set this customer's 3-letter invoice code in Customer Directory before sending.");
+  }
+
+  const sequence = await allocateInvoiceSequence(invoiceYear);
+  const invoiceNumber = formatInvoiceNumber({ customerCode, sequence, year: invoiceYear });
+  const verificationToken = createInvoiceVerificationToken();
+  const verificationChecksum = createInvoiceVerificationChecksum({
+    amount: numberValue(invoice.netPayable),
+    invoiceNumber,
+    token: verificationToken,
+  });
+  const now = new Date();
+
+  const [updatedInvoice] = await db
+    .update(invoices)
+    .set({
+      invoiceNumber,
+      sentAt: now,
+      status: "sent",
+      verificationChecksum,
+      verificationToken,
+    })
+    .where(and(eq(invoices.id, id), eq(invoices.status, "draft"), sql`${invoices.invoiceNumber} is null`))
+    .returning({ id: invoices.id });
+
+  if (!updatedInvoice) {
+    throw new Error("Only draft invoices can be sent.");
+  }
+
+  await db.batch([
+    db.insert(invoiceAuditLog).values({
+      action: "invoice.sent",
+      entityId: id,
+      entityType: "invoice",
+      metadata: { invoiceNumber },
+      performedBy: user.id,
+    }),
+  ]);
+
+  revalidatePath("/invoices");
+  revalidatePath(`/invoices/${id}`);
+}
+
+export async function markInvoicePaidFromForm(id: string, formData: FormData) {
+  const user = await requireInvoiceUser();
+  const confirmed = text(formData.get("confirmed"));
+  if (confirmed !== "paid") throw new Error("Paid confirmation is required.");
+
+  const [invoice] = await db
+    .select({ status: invoices.status })
+    .from(invoices)
+    .where(eq(invoices.id, id))
+    .limit(1);
+
+  if (!invoice) throw new Error("Invoice not found.");
+  const status = normalizeInvoiceStatus(invoice.status);
+  if (status === "draft") throw new Error("Send the invoice before marking it paid.");
+  if (status === "voided") throw new Error("Voided invoices cannot be marked paid.");
+  if (status === "archived") throw new Error("Archived invoices cannot be marked paid.");
+
+  const paidDate = dateText(formData.get("paidAt"));
+  const paidAt = paidDate ? new Date(`${paidDate}T00:00:00`) : new Date();
+  const paymentReference = text(formData.get("paymentReference")) || null;
+
+  await db.batch([
+    db
+      .update(invoices)
+      .set({ paidAt, paymentReference, status: "paid" })
+      .where(eq(invoices.id, id)),
+    db.insert(invoiceAuditLog).values({
+      action: "invoice.paid",
+      entityId: id,
+      entityType: "invoice",
+      metadata: { paidAt: paidAt.toISOString(), paymentReference },
+      performedBy: user.id,
+    }),
+  ]);
+
+  revalidatePath("/invoices");
+  revalidatePath(`/invoices/${id}`);
 }
 
 export async function archiveInvoiceFromForm(id: string, formData: FormData) {
@@ -917,7 +1037,7 @@ export async function voidInvoiceFromForm(id: string, formData: FormData) {
     .limit(1);
 
   if (!invoice) throw new Error("Invoice not found.");
-  if (invoice.status === "voided") throw new Error("Invoice is already voided.");
+  if (normalizeInvoiceStatus(invoice.status) === "voided") throw new Error("Invoice is already voided.");
 
   const lineRows = await db
     .select({ awbId: invoiceLineItems.awbId, shipmentId: invoiceLineItems.shipmentId })

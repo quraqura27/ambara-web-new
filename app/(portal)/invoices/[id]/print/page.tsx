@@ -9,6 +9,7 @@ import {
   formatCurrencyAmount,
   FULL_PAYMENT_TERMS_TEXT,
   numberValue,
+  normalizeInvoiceStatus,
   shouldPrintTermsOfPayment,
   terbilangRupiah,
 } from "@/lib/invoices/core";
@@ -45,11 +46,13 @@ export default async function InvoicePrintPage({ params }: InvoicePrintPageProps
   const { deductions, invoice, lines } = detail;
   const hdrs = await headers();
   const baseUrl = verificationBaseUrl(hdrs.get("host"), hdrs.get("x-forwarded-proto"));
+  const storedStatus = normalizeInvoiceStatus(invoice.status);
   const verificationUrl = invoice.verificationToken
     ? `${baseUrl}/invoice/verify/${invoice.verificationToken}`
-    : baseUrl;
-  const QRCode = await import("qrcode");
-  const qrDataUrl = await QRCode.toDataURL(verificationUrl, { margin: 1, width: 180 });
+    : null;
+  const qrDataUrl = verificationUrl
+    ? await (await import("qrcode")).toDataURL(verificationUrl, { margin: 1, width: 180 })
+    : null;
   const currency = invoice.currency || "IDR";
   const bank = getInvoiceBankAccount(invoice.bankAccount);
   const showPaymentTerms = shouldPrintTermsOfPayment(invoice);
@@ -90,7 +93,7 @@ export default async function InvoicePrintPage({ params }: InvoicePrintPageProps
           <table className="w-full border-collapse text-[10pt]">
             <tbody>
               <tr><th className="border border-black p-1 text-left">Invoice No</th><th className="border border-black p-1 text-left">Date</th></tr>
-              <tr><td className="border border-black p-1">{invoice.invoiceNumber}</td><td className="border border-black p-1">{displayDate(invoice.invoiceDate)}</td></tr>
+              <tr><td className="border border-black p-1">{invoice.invoiceNumber || "DRAFT"}</td><td className="border border-black p-1">{displayDate(invoice.invoiceDate)}</td></tr>
               <tr><th className="border border-black p-1 text-left">{invoice.period ? "Period" : "Payment Terms"}</th><th className="border border-black p-1 text-left">Due Date</th></tr>
               <tr><td className="border border-black bg-blue-100 p-1">{invoice.period || invoice.paymentTerms || "CASH"}</td><td className="border border-black p-1">{displayDate(invoice.dueDate)}</td></tr>
             </tbody>
@@ -175,17 +178,27 @@ export default async function InvoicePrintPage({ params }: InvoicePrintPageProps
           </div>
           <div className="mx-auto flex w-[48mm] flex-col items-center text-center text-[10pt]">
             <p className="w-full leading-5">Tangerang, {displayDate(invoice.invoiceDate, true)}</p>
-            <div className="mt-3 h-[36mm] w-[36mm] shrink-0">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img alt="Invoice verification QR" className="mx-auto h-[36mm] w-[36mm]" src={qrDataUrl} />
-            </div>
-            <p className="mt-3 w-full text-[8pt] font-bold leading-4">System Generated Invoice</p>
-            <p className="w-full text-[7pt] leading-4">Scan to verify - no wet signature required</p>
+            {qrDataUrl ? (
+              <div className="mt-3 h-[36mm] w-[36mm] shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img alt="Invoice verification QR" className="mx-auto h-[36mm] w-[36mm]" src={qrDataUrl} />
+              </div>
+            ) : (
+              <div className="mt-3 flex h-[36mm] w-[36mm] shrink-0 items-center justify-center border border-black text-[9pt] font-bold">
+                DRAFT
+              </div>
+            )}
+            <p className="mt-3 w-full text-[8pt] font-bold leading-4">
+              {storedStatus === "draft" ? "Draft Invoice" : "System Generated Invoice"}
+            </p>
+            <p className="w-full text-[7pt] leading-4">
+              {storedStatus === "draft" ? "No public verification until sent" : "Scan to verify - no wet signature required"}
+            </p>
             <p className="mt-2 w-full font-bold leading-5">FINANCE DEPARTMENT</p>
           </div>
         </section>
 
-        <footer className="mt-24 text-[8pt] text-gray-500">Invoice No {invoice.invoiceNumber}</footer>
+        <footer className="mt-24 text-[8pt] text-gray-500">Invoice No {invoice.invoiceNumber || "DRAFT"}</footer>
       </section>
     </main>
   );

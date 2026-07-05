@@ -431,7 +431,7 @@ export const portalUxEvents = pgTable('portal_ux_events', {
 
 export const invoices = pgTable('invoices', {
   id: uuid('id').defaultRandom().primaryKey(),
-  invoiceNumber: text('invoice_number').unique().notNull(),
+  invoiceNumber: text('invoice_number'),
   customerId: bigint('customer_id', { mode: 'number' }),
   customerCode: text('customer_code'),
   customerNameSnapshot: text('customer_name_snapshot'),
@@ -458,10 +458,13 @@ export const invoices = pgTable('invoices', {
   city: text('city'),
   bankAccount: text('bank_account'),
   period: text('period'),
-  status: text('status').default('finalized'),
+  status: text('status').notNull().default('draft'),
   verificationToken: text('verification_token'),
   verificationChecksum: text('verification_checksum'),
   withholdingProofRef: text('withholding_proof_ref'),
+  sentAt: timestamp('sent_at'),
+  paidAt: timestamp('paid_at'),
+  paymentReference: text('payment_reference'),
   archived: boolean('archived').default(false),
   showPeriod: boolean('show_period'),
   showPaymentTerms: boolean('show_payment_terms'),
@@ -471,6 +474,11 @@ export const invoices = pgTable('invoices', {
 }, (table) => [
   index('invoices_customer_idx').on(table.customerId),
   index('invoices_status_idx').on(table.status),
+  index('invoices_sent_at_idx').on(table.sentAt),
+  index('invoices_paid_at_idx').on(table.paidAt),
+  uniqueIndex('invoices_invoice_number_unique_idx')
+    .on(table.invoiceNumber)
+    .where(sql`${table.invoiceNumber} is not null and btrim(${table.invoiceNumber}) <> ''`),
   uniqueIndex('invoices_verification_token_unique_idx')
     .on(table.verificationToken)
     .where(sql`${table.verificationToken} is not null and btrim(${table.verificationToken}) <> ''`),
