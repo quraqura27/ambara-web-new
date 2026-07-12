@@ -176,7 +176,33 @@ CREATE TABLE IF NOT EXISTS documents (
   uploaded_at timestamptz NOT NULL DEFAULT now()
 );
 
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'documents'
+      AND column_name = 'name'
+  ) AND NOT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'documents'
+      AND column_name = 'file_name'
+  ) THEN
+    ALTER TABLE documents RENAME COLUMN name TO file_name;
+  END IF;
+END
+$$;
+
 ALTER TABLE documents
+  ADD COLUMN IF NOT EXISTS doc_type text,
+  ADD COLUMN IF NOT EXISTS file_name text,
+  ADD COLUMN IF NOT EXISTS file_url text,
+  ADD COLUMN IF NOT EXISTS file_size integer,
+  ADD COLUMN IF NOT EXISTS uploaded_by integer,
+  ADD COLUMN IF NOT EXISTS uploaded_at timestamptz DEFAULT now(),
   ADD COLUMN IF NOT EXISTS mime_type text NOT NULL DEFAULT 'application/pdf',
   ADD COLUMN IF NOT EXISTS checksum_sha256 text,
   ADD COLUMN IF NOT EXISTS version integer NOT NULL DEFAULT 1,
@@ -185,6 +211,36 @@ ALTER TABLE documents
   ADD COLUMN IF NOT EXISTS note text,
   ADD COLUMN IF NOT EXISTS archived_at timestamptz,
   ADD COLUMN IF NOT EXISTS archived_by integer;
+
+UPDATE documents
+SET
+  file_name = coalesce(nullif(btrim(file_name), ''), 'Legacy document ' || id::text),
+  doc_type = coalesce(
+    nullif(btrim(doc_type), ''),
+    CASE lower(btrim(file_name))
+      WHEN 'commercial invoice' THEN 'commercial_invoice'
+      WHEN 'airway bill' THEN 'air_waybill'
+      WHEN 'bill of lading' THEN 'bill_of_lading'
+      ELSE lower(regexp_replace(btrim(file_name), '[^a-zA-Z0-9]+', '_', 'g'))
+    END,
+    'other'
+  ),
+  file_url = coalesce(nullif(btrim(file_url), ''), 'legacy://unavailable/' || id::text),
+  uploaded_at = coalesce(uploaded_at, now());
+
+UPDATE documents
+SET
+  archived_at = coalesce(archived_at, uploaded_at, now()),
+  status = 'archived',
+  note = coalesce(note, 'Legacy document metadata retained; original file asset was unavailable during migration.')
+WHERE file_url LIKE 'legacy://unavailable/%';
+
+ALTER TABLE documents
+  ALTER COLUMN shipment_id SET NOT NULL,
+  ALTER COLUMN doc_type SET NOT NULL,
+  ALTER COLUMN file_name SET NOT NULL,
+  ALTER COLUMN file_url SET NOT NULL,
+  ALTER COLUMN uploaded_at SET NOT NULL;
 
 WITH ranked_documents AS (
   SELECT
