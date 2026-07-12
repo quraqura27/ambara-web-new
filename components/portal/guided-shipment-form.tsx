@@ -457,7 +457,7 @@ export function GuidedShipmentForm({
             return (
               <label
                 className={cn(
-                  "cursor-pointer rounded-xl border p-4",
+                  "cursor-pointer rounded-lg border p-4",
                   values.serviceType === value
                     ? "border-blue-500/50 bg-blue-500/10"
                     : "border-white/5 bg-white/[0.02]",
@@ -493,7 +493,7 @@ export function GuidedShipmentForm({
           ].map(([value, label, description]) => (
             <label
               className={cn(
-                "cursor-pointer rounded-xl border p-4",
+                "cursor-pointer rounded-lg border p-4",
                 values.customerMode === value
                   ? "border-blue-500/40 bg-blue-500/10"
                   : "border-white/5 bg-white/[0.02]",
@@ -1155,7 +1155,7 @@ export function GuidedShipmentForm({
         </div>
 
         {specialCargo.has(values.cargoType) ? (
-          <label className="flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-100">
+          <label className="flex items-start gap-3 rounded-lg border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-100">
             <input
               checked={values.handlingConfirmed === "yes"}
               name="handlingConfirmed"

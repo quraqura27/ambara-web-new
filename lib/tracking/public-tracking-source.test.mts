@@ -23,6 +23,16 @@ test("public tracking only selects migration-independent database columns", () =
   assert.doesNotMatch(publicTracking, /\.select\(\)\s*\.from\(trackingEvents\)/);
 });
 
+test("public tracking removes identity-bearing titles and internal void metadata", () => {
+  const payload = read("lib/tracking/public-tracking-payload.ts");
+  const publicTracking = read("lib/tracking/public-tracking.ts");
+
+  assert.doesNotMatch(payload, /title:/);
+  assert.doesNotMatch(publicTracking, /title: shipments\.title/);
+  assert.match(publicTracking, /Shipment cancelled/);
+  assert.doesNotMatch(publicTracking, /voidReason|voidNote|voidedBy/);
+});
+
 test("internal sheet sync endpoint is disabled", () => {
   const route = read("app/api/internal/sync-shipment/route.ts");
 

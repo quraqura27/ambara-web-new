@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CircleDollarSign, FileSpreadsheet, Plus, ReceiptText, Search } from "lucide-react";
 
 import { getInvoicesPage } from "@/actions/invoices";
+import { StatusBadge } from "@/components/portal/status-badge";
 import { Button, Card, Input } from "@/components/ui/core";
 import { formatCurrencyAmount, invoiceStatusLabel } from "@/lib/invoices/core";
 
@@ -54,7 +55,17 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
           <span>{result.total.toLocaleString()} invoices</span>
           <span>Page {result.page} of {result.totalPages}</span>
         </div>
-        <div className="overflow-x-auto">
+        <div className="divide-y divide-white/5 md:hidden">
+          {result.rows.map((invoice) => (
+            <Link className="block space-y-4 p-5 transition hover:bg-white/[0.02]" href={`/invoices/${invoice.id}`} key={invoice.id}>
+              <div className="flex items-start justify-between gap-3"><p className="font-mono text-sm text-blue-200">{invoice.invoiceNumber || "DRAFT"}</p><StatusBadge status={invoice.effectiveStatus} /></div>
+              <div><p className="truncate text-sm font-medium text-white">{invoice.customerName || "Customer snapshot unavailable"}</p><p className="mt-1 text-xs text-slate-500">{invoice.invoiceDate || "N/A"}</p></div>
+              <p className="text-right text-sm font-semibold">{invoice.currency || "IDR"} {formatCurrencyAmount(invoice.netPayable, invoice.currency || "IDR")}</p>
+            </Link>
+          ))}
+          {result.rows.length === 0 ? <div className="p-10 text-center text-sm text-slate-500"><ReceiptText className="mx-auto mb-3 h-10 w-10 text-slate-700" />No invoices found.</div> : null}
+        </div>
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full min-w-[840px] text-left">
             <thead className="bg-[#12121a] text-[10px] font-bold uppercase tracking-widest text-slate-500">
               <tr>
@@ -72,7 +83,7 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
                   <td className="px-5 py-4 font-mono text-sm text-blue-200">{invoice.invoiceNumber || "DRAFT"}</td>
                   <td className="px-5 py-4 text-sm">{invoice.customerName || "Customer snapshot unavailable"}</td>
                   <td className="px-5 py-4 text-xs text-slate-500">{invoice.invoiceDate || "N/A"}</td>
-                  <td className="px-5 py-4 text-xs font-semibold uppercase text-emerald-300">{invoiceStatusLabel(invoice.effectiveStatus)}</td>
+                  <td className="px-5 py-4"><StatusBadge label={invoiceStatusLabel(invoice.effectiveStatus)} status={invoice.effectiveStatus} /></td>
                   <td className="px-5 py-4 text-right text-sm font-semibold">
                     {invoice.currency || "IDR"} {formatCurrencyAmount(invoice.netPayable, invoice.currency || "IDR")}
                   </td>

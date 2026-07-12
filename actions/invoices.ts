@@ -236,7 +236,8 @@ async function getShipmentFlightNumberMap(shipmentIds: number[]) {
 
 function uninvoicedShipmentWhere() {
   return sql`
-    not exists (
+    ${shipments.voidedAt} is null
+    and not exists (
       select 1
       from invoice_line_items ili
       join invoices inv on inv.id = ili.invoice_id
@@ -649,8 +650,11 @@ export async function finalizeInvoiceFromForm(
 ): Promise<InvoiceActionState> {
   const user = await requireInvoiceUser();
   let invoiceId = "";
-  const intent = text(formData.get("invoiceIntent")) === "draft" ? "draft" : "send";
-  const isDraft = intent === "draft";
+  const intent = text(formData.get("invoiceIntent"));
+  const isDraft = true;
+  if (intent !== "draft") {
+    return { formError: "Create a draft first, then use Mark as sent after reviewing the saved invoice." };
+  }
 
   try {
     const customerId = Number.parseInt(text(formData.get("customerId")), 10);
@@ -963,10 +967,12 @@ export async function finalizeInvoiceFromForm(
   redirect(`/invoices/${invoiceId}`);
 }
 
-export async function sendDraftInvoiceFromForm(id: string, formData: FormData) {
+export async function markDraftInvoiceSentFromForm(id: string, formData: FormData) {
   const user = await requireInvoiceUser();
   const confirmed = text(formData.get("confirmed"));
-  if (confirmed !== "send") throw new Error("Send confirmation is required.");
+  if (confirmed !== "yes" || text(formData.get("confirmationCode")) !== "MARK SENT") {
+    throw new Error("Type MARK SENT to confirm the dispatch record.");
+  }
 
   const [invoice] = await db
     .select({
@@ -998,31 +1004,28 @@ export async function sendDraftInvoiceFromForm(id: string, formData: FormData) {
   });
   const now = new Date();
 
-  const [updatedInvoice] = await db
-    .update(invoices)
-    .set({
-      invoiceNumber,
-      sentAt: now,
-      status: "sent",
-      verificationChecksum,
-      verificationToken,
-    })
-    .where(and(eq(invoices.id, id), eq(invoices.status, "draft"), sql`${invoices.invoiceNumber} is null`))
-    .returning({ id: invoices.id });
+  const result = await db.execute<{ updated: boolean }>(sql`
+    with updated_invoice as (
+      update invoices
+      set invoice_number = ${invoiceNumber}, sent_at = ${now}, status = 'sent',
+          verification_checksum = ${verificationChecksum}, verification_token = ${verificationToken}
+      where id = ${id} and status = 'draft' and invoice_number is null
+      returning id
+    ), inserted_audit as (
+      insert into invoice_audit_log (action, entity_type, entity_id, performed_by, performed_at, metadata)
+      select 'invoice.marked_sent', 'invoice', id::text, ${user.id}, ${now}, ${JSON.stringify({
+        deliveryMethod: "external_or_manual",
+        invoiceNumber,
+      })}::jsonb
+      from updated_invoice
+      returning id
+    )
+    select exists(select 1 from updated_invoice) as updated
+  `);
 
-  if (!updatedInvoice) {
+  if (!result.rows[0]?.updated) {
     throw new Error("Only draft invoices can be sent.");
   }
-
-  await db.batch([
-    db.insert(invoiceAuditLog).values({
-      action: "invoice.sent",
-      entityId: id,
-      entityType: "invoice",
-      metadata: { invoiceNumber },
-      performedBy: user.id,
-    }),
-  ]);
 
   revalidatePath("/invoices");
   revalidatePath("/invoices/collections");
@@ -1032,7 +1035,7 @@ export async function sendDraftInvoiceFromForm(id: string, formData: FormData) {
 export async function markInvoicePaidFromForm(id: string, formData: FormData) {
   const user = await requireInvoiceUser();
   const confirmed = text(formData.get("confirmed"));
-  if (confirmed !== "paid") throw new Error("Paid confirmation is required.");
+  if (confirmed !== "yes") throw new Error("Paid confirmation is required.");
 
   const [invoice] = await db
     .select({ status: invoices.status })
@@ -1049,6 +1052,7 @@ export async function markInvoicePaidFromForm(id: string, formData: FormData) {
   const paidDate = dateText(formData.get("paidAt"));
   const paidAt = paidDate ? new Date(`${paidDate}T00:00:00`) : new Date();
   const paymentReference = text(formData.get("paymentReference")) || null;
+  if (!paymentReference) throw new Error("Payment reference is required.");
 
   await db.batch([
     db
@@ -1072,7 +1076,11 @@ export async function markInvoicePaidFromForm(id: string, formData: FormData) {
 export async function archiveInvoiceFromForm(id: string, formData: FormData) {
   const user = await requireInvoiceUser();
   const confirmed = text(formData.get("confirmed"));
-  if (confirmed !== "archive") throw new Error("Archive confirmation is required.");
+  const reason = text(formData.get("reason"));
+  const [invoice] = await db.select({ invoiceNumber: invoices.invoiceNumber }).from(invoices).where(eq(invoices.id, id)).limit(1);
+  if (!invoice) throw new Error("Invoice not found.");
+  if (confirmed !== "yes" || text(formData.get("confirmationCode")) !== (invoice.invoiceNumber || id)) throw new Error("Type the exact invoice identifier to archive it.");
+  if (!reason) throw new Error("Archive reason is required.");
 
   await db.batch([
     db
@@ -1083,7 +1091,7 @@ export async function archiveInvoiceFromForm(id: string, formData: FormData) {
       action: "invoice.archived",
       entityId: id,
       entityType: "invoice",
-      metadata: { reason: text(formData.get("reason")) || null },
+      metadata: { reason },
       performedBy: user.id,
     }),
   ]);
@@ -1096,16 +1104,16 @@ export async function voidInvoiceFromForm(id: string, formData: FormData) {
   const user = await requireInvoiceUser();
   const confirmed = text(formData.get("confirmed"));
   const reason = text(formData.get("reason"));
-  if (confirmed !== "void") throw new Error("Void confirmation is required.");
   if (!reason) throw new Error("Void reason is required.");
 
   const [invoice] = await db
-    .select({ status: invoices.status })
+    .select({ invoiceNumber: invoices.invoiceNumber, status: invoices.status })
     .from(invoices)
     .where(eq(invoices.id, id))
     .limit(1);
 
   if (!invoice) throw new Error("Invoice not found.");
+  if (confirmed !== "yes" || text(formData.get("confirmationCode")) !== (invoice.invoiceNumber || id)) throw new Error("Type the exact invoice identifier to void it.");
   if (normalizeInvoiceStatus(invoice.status) === "voided") throw new Error("Invoice is already voided.");
 
   const lineRows = await db

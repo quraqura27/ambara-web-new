@@ -49,7 +49,7 @@ export default async function NewInvoicePage({ searchParams }: NewInvoicePagePro
           mockData={usingMockData}
         />
       ) : (
-        <div className="rounded-xl border border-white/5 bg-[#12121a]/80 p-10 text-center text-slate-500">
+        <div className="rounded-lg border border-white/5 bg-[#12121a]/80 p-10 text-center text-slate-500">
           Add a customer before creating an invoice.
         </div>
       )}

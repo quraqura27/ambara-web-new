@@ -3,14 +3,14 @@ import { CalendarClock, PackageCheck, Plus, Search, Truck } from "lucide-react";
 
 import { getDeliveryBatchPage } from "@/actions/vendor-tracking";
 import { Button, Card, Input } from "@/components/ui/core";
+import { formatWibDateTime } from "@/lib/time/wib";
 
 type DeliveryBatchesPageProps = {
   searchParams: Promise<{ from?: string; page?: string; search?: string; sort?: "created_asc" | "created_desc" | "sla_asc"; to?: string; view?: "delivery_issues" | "missing_tracking" | "overdue" }>;
 };
 
 function formatDate(value: Date | string | null | undefined) {
-  if (!value) return "-";
-  return new Date(value).toLocaleString();
+  return formatWibDateTime(value);
 }
 
 export default async function DeliveryBatchesPage({ searchParams }: DeliveryBatchesPageProps) {
@@ -62,7 +62,17 @@ export default async function DeliveryBatchesPage({ searchParams }: DeliveryBatc
           <Button type="submit" variant="secondary">Search Batches</Button>
         </form>
         <div className="flex justify-between border-b border-white/5 px-5 py-3 text-xs text-slate-500"><span>{result.total} batches</span><span>Page {result.page} of {result.totalPages}</span></div>
-        <div className="overflow-x-auto">
+        <div className="divide-y divide-white/5 md:hidden">
+          {result.rows.map((batch) => (
+            <Link className="block space-y-4 p-5 transition hover:bg-white/[0.02]" href={`/delivery-batches/${batch.id}`} key={batch.id}>
+              <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="font-mono text-sm font-semibold text-blue-300">{batch.batchCode}</p><p className="mt-1 truncate text-xs text-slate-500">{batch.vendorName} / {batch.vendorServiceType || "No service"}</p></div><span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-xs font-bold">{batch.priority}</span></div>
+              <div className="grid grid-cols-2 gap-3 text-xs"><div><p className="text-slate-600">Status</p><p className="mt-1 uppercase text-slate-300">{batch.batchStatus.replace(/_/g, " ")}</p></div><div><p className="text-slate-600">Delivery records</p><p className="mt-1 text-slate-300">{batch.totalParcels}</p></div><div><p className="text-slate-600">Delivered / issues</p><p className="mt-1 text-slate-300">{batch.deliveredCount} / {batch.deliveryIssueCount}</p></div><div><p className="text-slate-600">Missing tracking</p><p className="mt-1 text-slate-300">{batch.missingVendorTrackingCount}</p></div></div>
+              <div className="flex flex-col gap-1 border-t border-white/5 pt-3 text-xs text-slate-500"><span>Last check: {formatDate(batch.lastCheckedAt)}</span><span>SLA: {formatDate(batch.slaDeadline)}</span></div>
+            </Link>
+          ))}
+          {result.rows.length === 0 ? <div className="p-10 text-center text-sm text-slate-500">No delivery batches match this view.</div> : null}
+        </div>
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full min-w-[980px] text-left">
             <thead className="sticky top-0 bg-[#12121a] text-[10px] font-bold uppercase tracking-widest text-slate-500"><tr><th className="px-5 py-4">Priority</th><th className="px-5 py-4">Batch</th><th className="px-5 py-4">Vendor</th><th className="px-5 py-4">Delivery records</th><th className="px-5 py-4">Status</th><th className="px-5 py-4">Counts</th><th className="px-5 py-4">Check / SLA</th><th className="px-5 py-4 text-right">Action</th></tr></thead>
             <tbody className="divide-y divide-white/5">

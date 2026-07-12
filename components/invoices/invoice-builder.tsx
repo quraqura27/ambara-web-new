@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
-import { AlertCircle, Calculator, FileCheck2, Loader2, Plus, Save, Send, Trash2 } from "lucide-react";
+import { AlertCircle, Calculator, FileCheck2, Loader2, Plus, Save, Trash2 } from "lucide-react";
 
 import {
   finalizeInvoiceFromForm,
@@ -406,7 +406,7 @@ export function InvoiceBuilder({
             # {currency === "IDR" ? terbilangRupiah(totals.netPayable) : "Amount in words is shown for IDR only."}
           </div>
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <div className="mt-5">
             <Button
               className="gap-2"
               disabled={pending || !selectedCustomer || mockData}
@@ -417,16 +417,6 @@ export function InvoiceBuilder({
             >
               {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               {mockData ? "Draft disabled" : "Save draft"}
-            </Button>
-            <Button
-              className="gap-2"
-              disabled={pending || !selectedCustomer || !selectedCustomerCode || mockData}
-              name="invoiceIntent"
-              type="submit"
-              value="send"
-            >
-              {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              {mockData ? "Send disabled" : "Send invoice"}
             </Button>
           </div>
         </Card>

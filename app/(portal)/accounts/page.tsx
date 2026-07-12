@@ -1,14 +1,16 @@
-import { KeyRound, Save, Shield, UserPlus, Users } from "lucide-react";
+import { KeyRound, RefreshCw, Save, Shield, UserPlus, Users } from "lucide-react";
 import { redirect } from "next/navigation";
 
 import {
   createStaffAccountFromForm,
   getStaffAccounts,
   resetStaffPasswordFromForm,
+  revokeStaffSessions,
   setStaffAccountActive,
   updateStaffAccountFromForm,
 } from "@/actions/staff-accounts";
 import { Button, Card, Input, cn } from "@/components/ui/core";
+import { ConfirmSubmitButton } from "@/components/portal/confirm-submit-button";
 import { requirePortalUser } from "@/lib/portal-auth";
 import {
   canManageStaffAccounts,
@@ -17,6 +19,7 @@ import {
   staffAssignableRoles,
   type StaffAssignableRole,
 } from "@/lib/portal-roles";
+import { formatWibDateTime } from "@/lib/time/wib";
 
 type AccountsPageProps = {
   searchParams?: Promise<{
@@ -29,20 +32,6 @@ type StaffAccount = Awaited<ReturnType<typeof getStaffAccounts>>[number];
 
 const selectClassName =
   "w-full rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 text-sm text-slate-100 transition-all focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/30";
-
-function formatDate(value: Date | string | null | undefined) {
-  if (!value) {
-    return "Never";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "N/A";
-  }
-
-  return date.toLocaleDateString();
-}
 
 function statusClassName(isActive: boolean | null) {
   return isActive === false
@@ -114,6 +103,7 @@ function StaffAccountRow({
   const updateAction = updateStaffAccountFromForm.bind(null, account.id);
   const toggleActiveAction = setStaffAccountActive.bind(null, account.id, account.isActive === false);
   const resetPasswordAction = resetStaffPasswordFromForm.bind(null, account.id);
+  const revokeAction = revokeStaffSessions.bind(null, account.id);
 
   return (
     <tr className="align-top transition-colors hover:bg-white/[0.02]">
@@ -136,8 +126,9 @@ function StaffAccountRow({
       <td className="px-6 py-5">
         <div className="space-y-2 text-xs text-slate-500">
           <AccountStatusBadge isActive={account.isActive} />
-          <p>Last login: {formatDate(account.lastLogin)}</p>
-          <p>Created: {formatDate(account.createdAt)}</p>
+          <p>Last login: {account.lastLogin ? formatWibDateTime(account.lastLogin) : "Never"}</p>
+          <p>Created: {formatWibDateTime(account.createdAt)}</p>
+          <p className="font-mono">Session version: {account.sessionVersion}</p>
         </div>
       </td>
       <td className="min-w-[360px] px-6 py-5">
@@ -155,12 +146,12 @@ function StaffAccountRow({
             Role
           </label>
           <RoleSelect defaultValue={editableRole} id={`role-${account.id}`} />
-          <Button className="gap-2" type="submit" variant="secondary">
+          <ConfirmSubmitButton confirmLabel="Save account" description={`Save name and role changes for ${account.fullName}. Existing sessions will be revoked.`} title="Update staff account?" variant="secondary">
             <Save className="h-4 w-4" /> Save
-          </Button>
+          </ConfirmSubmitButton>
         </form>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto_auto]">
+        <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto_auto_auto]">
           <form action={resetPasswordAction} className="flex min-w-0 gap-3">
             <label className="sr-only" htmlFor={`password-${account.id}`}>
               New password
@@ -175,21 +166,30 @@ function StaffAccountRow({
               required
               type="password"
             />
-            <Button aria-label={`Reset password for ${account.fullName}`} className="gap-2" type="submit" variant="ghost">
+            <ConfirmSubmitButton confirmLabel="Reset password" description={`Replace the password for ${account.fullName} and revoke every active session.`} title="Reset staff password?" variant="ghost">
               <KeyRound className="h-4 w-4" /> Reset
-            </Button>
+            </ConfirmSubmitButton>
           </form>
 
           <form action={toggleActiveAction}>
-            <Button
+            <ConfirmSubmitButton
+              confirmLabel={account.isActive === false ? "Activate account" : "Deactivate account"}
+              description={`${account.isActive === false ? "Activate" : "Deactivate"} ${account.fullName}. Existing sessions will be revoked.`}
               disabled={isCurrentUser && account.isActive !== false}
-              title={isCurrentUser ? "Self-deactivation is blocked" : undefined}
-              type="submit"
+              title={account.isActive === false ? "Activate staff account?" : "Deactivate staff account?"}
               variant={account.isActive === false ? "secondary" : "danger"}
             >
               {account.isActive === false ? "Activate" : "Deactivate"}
-            </Button>
+            </ConfirmSubmitButton>
           </form>
+
+          {!isCurrentUser ? (
+            <form action={revokeAction}>
+              <ConfirmSubmitButton confirmLabel="Revoke sessions" description={`Invalidate every active portal token for ${account.fullName}. The user must sign in again.`} title="Revoke all sessions?" variant="secondary">
+                <RefreshCw className="mr-2 h-4 w-4" /> Revoke sessions
+              </ConfirmSubmitButton>
+            </form>
+          ) : null}
 
           {isCurrentUser ? (
             <span className="self-center text-xs font-bold uppercase tracking-widest text-slate-600">

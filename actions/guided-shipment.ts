@@ -21,6 +21,7 @@ import {
 import { parseFlightLegsJson, resolveAirWaybill } from "@/lib/airlines/core";
 import { formValues, type PortalActionState } from "@/lib/forms/action-state";
 import { requirePortalUser } from "@/lib/portal-auth";
+import { canCreateShipments } from "@/lib/portal-roles";
 import { buildGuidedMawbRouteDefaults } from "@/lib/shipments/guided-mawb-defaults";
 import {
   getShipmentServiceDefinition,
@@ -393,6 +394,7 @@ export async function createGuidedShipment(
   formData: FormData,
 ): Promise<GuidedShipmentActionState> {
   const user = await requirePortalUser();
+  if (!canCreateShipments(user)) redirect("/shipments?error=forbidden");
   const values = formValues(formData);
   const submittedChargeLines = chargeLinesForState(formData);
   const fieldErrors: Record<string, string> = {};

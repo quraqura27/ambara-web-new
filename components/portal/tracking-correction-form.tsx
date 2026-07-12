@@ -10,6 +10,7 @@ import {
   shipmentStatusValues,
 } from "@/lib/shipments/status-model";
 import { isShipmentStatusAllowedForService } from "@/lib/shipments/service-model";
+import { formatWibDateTime } from "@/lib/time/wib";
 
 const initialState: TrackingUpdateState = {};
 
@@ -32,7 +33,7 @@ export function TrackingCorrectionForm({
   }
 
   return (
-    <form action={action} className="space-y-4 rounded-xl border border-amber-500/20 bg-amber-500/5 p-5">
+    <form action={action} className="space-y-4 rounded-lg border border-amber-500/20 bg-amber-500/5 p-5">
       <div className="flex gap-3">
         <AlertTriangle className="h-5 w-5 text-amber-300" />
         <div>
@@ -45,7 +46,7 @@ export function TrackingCorrectionForm({
         <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Incorrect event</span>
         <select className="w-full rounded-lg border border-slate-700 bg-slate-900/70 px-4 py-2 text-sm" name="eventId">
           <option value="">Select event</option>
-          {events.map((event) => <option key={event.id} value={event.id}>{event.label} / {new Date(event.timestamp).toLocaleString()}</option>)}
+          {events.map((event) => <option key={event.id} value={event.id}>{event.label} / {formatWibDateTime(event.timestamp)}</option>)}
         </select>
         {errors.eventId ? <span className="text-xs text-rose-300">{errors.eventId}</span> : null}
       </label>

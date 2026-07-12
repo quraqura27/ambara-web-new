@@ -3,6 +3,7 @@ import { FileText, Plus, Search } from "lucide-react";
 
 import { getMawbsPage } from "@/actions/mawbs";
 import { Button, Card, Input } from "@/components/ui/core";
+import { formatWibDate } from "@/lib/time/wib";
 
 type MawbsPageProps = {
   searchParams: Promise<{
@@ -64,7 +65,18 @@ export default async function MawbsPage({ searchParams }: MawbsPageProps) {
           <span>Page {result.page} of {result.totalPages}</span>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="divide-y divide-white/5 md:hidden">
+          {result.rows.map((mawb) => (
+            <Link className="block space-y-4 p-5 transition hover:bg-white/[0.02]" href={`/mawbs/${mawb.id}`} key={mawb.id}>
+              <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="font-mono text-sm font-semibold text-blue-300">{mawb.mawbNumber}</p><p className="mt-1 truncate text-xs text-slate-500">{mawb.carrierCode} / {mawb.carrierName}</p></div><span className="text-xs text-slate-500">{formatWibDate(mawb.createdAt, "N/A")}</span></div>
+              <p className="text-sm font-medium text-slate-200">{mawb.originIata} to {mawb.destinationIata}</p>
+              <div className="grid gap-1 text-xs text-slate-400"><p className="truncate">Shipper: {mawb.shipperName}</p><p className="truncate">Consignee: {mawb.consigneeName}</p></div>
+              <div className="flex items-center justify-between gap-3 text-xs"><span className="text-slate-500">{actionLabel(mawb.actionMode)}</span><span className="font-mono text-blue-300">{mawb.shipmentTrackingNumber || "No shipment link"}</span></div>
+            </Link>
+          ))}
+          {result.rows.length === 0 ? <div className="p-10 text-center text-sm text-slate-500"><FileText className="mx-auto mb-3 h-10 w-10 text-slate-700" />No MAWB documents match these filters.</div> : null}
+        </div>
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full min-w-[980px] text-left">
             <thead className="sticky top-0 z-10 bg-[#12121a] text-[10px] font-bold uppercase tracking-widest text-slate-500">
               <tr>
@@ -102,7 +114,7 @@ export default async function MawbsPage({ searchParams }: MawbsPageProps) {
                     )}
                   </td>
                   <td className="px-5 py-4 text-xs text-slate-500">
-                    {mawb.createdAt ? new Date(mawb.createdAt).toLocaleDateString() : "N/A"}
+                    {formatWibDate(mawb.createdAt, "N/A")}
                   </td>
                   <td className="px-5 py-4 text-right">
                     <Link href={`/mawbs/${mawb.id}`}>

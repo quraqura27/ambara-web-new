@@ -15,6 +15,7 @@ import {
   markBatchCheckedNoChange,
 } from "@/actions/vendor-tracking";
 import { Button, Card, cn } from "@/components/ui/core";
+import { formatWibDateTime } from "@/lib/time/wib";
 import { VendorStatusUpdateForm } from "@/components/vendor-tracking/vendor-status-update-form";
 import { VendorTrackingImportForm } from "@/components/vendor-tracking/vendor-tracking-import-form";
 import {
@@ -41,9 +42,7 @@ function parseBatchId(value: string) {
 }
 
 function formatDate(value: Date | string | null | undefined) {
-  if (!value) return "-";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "-" : date.toLocaleString();
+  return formatWibDateTime(value);
 }
 
 function statusClassName(status: string) {

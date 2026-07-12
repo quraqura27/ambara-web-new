@@ -13,7 +13,7 @@ import {
 } from "@/lib/db/schema";
 import { type PortalActionState, formValues } from "@/lib/forms/action-state";
 import { requirePortalUser } from "@/lib/portal-auth";
-import { isSuperadmin } from "@/lib/portal-roles";
+import { canManageTracking, isSuperadmin } from "@/lib/portal-roles";
 import { isShipmentStatusAllowedForService } from "@/lib/shipments/service-model";
 import {
   canTransitionShipmentStatus,
@@ -58,9 +58,11 @@ export async function updateTrackingSafely(
   formData: FormData,
 ): Promise<TrackingUpdateState> {
   const user = await requirePortalUser();
+  if (!canManageTracking(user)) return { formError: "Tracking management permission is required." };
   const values = formValues(formData);
   const shipment = await getShipment(trackingNumber);
   if (!shipment) return { formError: "Shipment was not found.", values };
+  if (shipment.voidedAt) return { formError: "Voided shipments cannot receive tracking updates.", values };
 
   const currentStatus = normalizeShipmentStatus(shipment.status);
   const nextStatus = normalizeShipmentStatus(text(formData, "status"));
@@ -218,6 +220,7 @@ export async function correctTrackingEvent(
 
   const shipment = await getShipment(trackingNumber);
   if (!shipment) return { formError: "Shipment was not found.", values };
+  if (shipment.voidedAt) return { formError: "Voided shipments cannot receive tracking corrections.", values };
 
   const eventId = Number.parseInt(text(formData, "eventId"), 10);
   const reason = text(formData, "reason");

@@ -1,23 +1,33 @@
-import { createHmac, timingSafeEqual } from "crypto";
-
+import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { normalizePortalRole } from "@/lib/portal-roles";
+import { db } from "@/lib/db";
+import { staffAccounts } from "@/lib/db/schema";
+import {
+  hasPortalCapability,
+  isPortalRole,
+  normalizePortalRole,
+  type PortalCapability,
+  type PortalRole,
+} from "@/lib/portal-roles";
+import {
+  createStaffToken,
+  STAFF_TOKEN_AUDIENCE,
+  STAFF_TOKEN_ISSUER,
+  verifyStaffToken,
+} from "@/lib/security/staff-token";
 
 const COOKIE_NAME = "ambara_portal_token";
 const LOCAL_DEV_USER_ID = -1;
+export { STAFF_TOKEN_AUDIENCE, STAFF_TOKEN_ISSUER };
 
 export type PortalUser = {
   email: string;
   id: number;
   name: string;
-  role: string;
-};
-
-type TokenPayload = PortalUser & {
-  exp: number;
-  iat: number;
+  role: PortalRole;
+  sessionVersion: number;
 };
 
 export function isLocalPortalDevAccessEnabled() {
@@ -30,88 +40,33 @@ export function getLocalPortalDevUser(): PortalUser {
     id: LOCAL_DEV_USER_ID,
     name: process.env.LOCAL_PORTAL_DEV_NAME || "Local Portal Tester",
     role: normalizePortalRole(process.env.LOCAL_PORTAL_DEV_ROLE || "superadmin"),
+    sessionVersion: 1,
   };
 }
 
-function getJwtSecret() {
-  return (
-    process.env.JWT_SECRET ||
-    process.env.NEXTAUTH_SECRET ||
-    process.env.NETLIFY_DATABASE_URL ||
-    process.env.NETLIFY_DATABASE_URL_UNPOOLED
-  );
-}
-
-function base64UrlEncode(value: Buffer | string) {
-  return Buffer.from(value)
-    .toString("base64")
-    .replace(/=/g, "")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_");
-}
-
-function base64UrlDecode(value: string) {
-  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
-  const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
-  return Buffer.from(padded, "base64").toString("utf8");
-}
-
-function signInput(input: string, secret: string) {
-  return createHmac("sha256", secret).update(input).digest();
+function getStaffJwtSecret() {
+  return process.env.STAFF_JWT_SECRET;
 }
 
 export function createPortalToken(user: PortalUser) {
-  const secret = getJwtSecret();
-  if (!secret) {
-    throw new Error("JWT_SECRET is not configured");
-  }
-
-  const now = Math.floor(Date.now() / 1000);
-  const header = base64UrlEncode(JSON.stringify({ alg: "HS256", typ: "JWT" }));
-  const payload = base64UrlEncode(
-    JSON.stringify({ ...user, role: normalizePortalRole(user.role), iat: now, exp: now + 60 * 60 * 8 }),
-  );
-  const signature = base64UrlEncode(signInput(`${header}.${payload}`, secret));
-
-  return `${header}.${payload}.${signature}`;
+  const secret = getStaffJwtSecret();
+  if (!secret) throw new Error("STAFF_JWT_SECRET is not configured");
+  if (!isPortalRole(user.role)) throw new Error("A valid staff role is required");
+  return createStaffToken(user, secret);
 }
 
 export function verifyPortalToken(token: string): PortalUser | null {
-  const secret = getJwtSecret();
-  if (!secret) {
-    return null;
-  }
-
-  const [header, payload, signature, extra] = token.split(".");
-  if (!header || !payload || !signature || extra) {
-    return null;
-  }
-
-  const expectedSignature = signInput(`${header}.${payload}`, secret);
-  const actualSignature = Buffer.from(signature.replace(/-/g, "+").replace(/_/g, "/"), "base64");
-
-  if (
-    actualSignature.length !== expectedSignature.length ||
-    !timingSafeEqual(actualSignature, expectedSignature)
-  ) {
-    return null;
-  }
-
-  try {
-    const decoded = JSON.parse(base64UrlDecode(payload)) as TokenPayload;
-    if (!decoded.exp || decoded.exp < Math.floor(Date.now() / 1000)) {
-      return null;
-    }
-
-    return {
-      email: decoded.email,
-      id: decoded.id,
-      name: decoded.name,
-      role: normalizePortalRole(decoded.role),
-    };
-  } catch {
-    return null;
-  }
+  const secret = getStaffJwtSecret();
+  if (!secret) return null;
+  const decoded = verifyStaffToken(token, secret);
+  if (!decoded || !isPortalRole(decoded.role)) return null;
+  return {
+    email: decoded.email,
+    id: decoded.id,
+    name: decoded.name,
+    role: decoded.role,
+    sessionVersion: decoded.sessionVersion,
+  };
 }
 
 export async function setPortalSession(user: PortalUser) {
@@ -130,27 +85,63 @@ export async function clearPortalSession() {
   cookieStore.delete(COOKIE_NAME);
 }
 
-export async function getPortalUser() {
+export async function getPortalUser(): Promise<PortalUser | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
-  return token ? verifyPortalToken(token) : null;
+  if (!token) return isLocalPortalDevAccessEnabled() ? getLocalPortalDevUser() : null;
+
+  const claims = verifyPortalToken(token);
+  if (!claims) return null;
+
+  const localDevUser = getLocalPortalDevUser();
+  if (
+    isLocalPortalDevAccessEnabled() &&
+    claims.id === localDevUser.id &&
+    claims.email === localDevUser.email
+  ) return localDevUser;
+
+  try {
+    const [staff] = await db
+      .select({
+        email: staffAccounts.email,
+        fullName: staffAccounts.fullName,
+        id: staffAccounts.id,
+        isActive: staffAccounts.isActive,
+        role: staffAccounts.role,
+        sessionVersion: staffAccounts.sessionVersion,
+      })
+      .from(staffAccounts)
+      .where(eq(staffAccounts.id, claims.id))
+      .limit(1);
+
+    if (
+      !staff?.isActive ||
+      staff.email.trim().toLowerCase() !== claims.email.trim().toLowerCase() ||
+      staff.sessionVersion !== claims.sessionVersion ||
+      !isPortalRole(staff.role)
+    ) return null;
+
+    return {
+      email: staff.email,
+      id: staff.id,
+      name: staff.fullName,
+      role: staff.role,
+      sessionVersion: staff.sessionVersion,
+    };
+  } catch (error) {
+    console.error("Portal session validation failed:", error);
+    return null;
+  }
 }
 
 export async function requirePortalUser() {
   const user = await getPortalUser();
-  if (!user) {
-    if (isLocalPortalDevAccessEnabled()) {
-      return getLocalPortalDevUser();
-    }
-    redirect("/sign-in");
-  }
+  if (!user) redirect("/sign-in");
+  return user;
+}
 
-  if (isLocalPortalDevAccessEnabled()) {
-    const localDevUser = getLocalPortalDevUser();
-    if (user.id === localDevUser.id && user.email === localDevUser.email) {
-      return localDevUser;
-    }
-  }
-
+export async function requirePortalCapability(capability: PortalCapability) {
+  const user = await requirePortalUser();
+  if (!hasPortalCapability(user, capability)) redirect("/dashboard?error=forbidden");
   return user;
 }

@@ -1,6 +1,6 @@
 "use server";
 
-import { and, asc, desc, eq, gte, ilike, inArray, lte, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, ilike, inArray, isNull, lte, or, sql } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -9,13 +9,20 @@ import { db } from "@/lib/db";
 import {
   customers,
   parcels,
+  portalAuditLogs,
   shipmentFlightLegs,
   shipments,
+  staffAccounts,
   trackingEvents,
   trackingUpdates,
 } from "@/lib/db/schema";
 import { requirePortalUser } from "@/lib/portal-auth";
-import { canEditShipmentDetails } from "@/lib/portal-roles";
+import {
+  canCreateShipments,
+  canEditShipmentDetails,
+  canManageCustomers,
+  canManageTracking,
+} from "@/lib/portal-roles";
 import {
   buildCustomerVisibleTrackingEvent,
   isDuplicateCustomerVisibleEvent,
@@ -124,56 +131,6 @@ async function shipmentTrackingNumberExists(trackingNumber: string) {
   return Boolean(existingShipment);
 }
 
-async function createCustomerVisibleTrackingEvent(input: {
-  createdBy?: number | null;
-  eventTime?: Date;
-  internalNote?: string;
-  location?: string;
-  shipmentId: number;
-  source: string;
-  status: string;
-}) {
-  const publicEvent = buildCustomerVisibleTrackingEvent(input.status);
-  const [latestVisibleEvent] = await db
-    .select({
-      publicDescription: trackingEvents.publicDescription,
-      status: trackingEvents.status,
-      statusCode: trackingEvents.statusCode,
-    })
-    .from(trackingEvents)
-    .where(
-      and(
-        eq(trackingEvents.shipmentId, input.shipmentId),
-        eq(trackingEvents.visibleToCustomer, true),
-      ),
-    )
-    .orderBy(desc(trackingEvents.eventTime))
-    .limit(1);
-
-  if (isDuplicateCustomerVisibleEvent(latestVisibleEvent, publicEvent)) {
-    return { created: false, publicEvent };
-  }
-
-  await db.insert(trackingEvents).values({
-    shipmentId: input.shipmentId,
-    statusCode: publicEvent.statusCode,
-    status: publicEvent.status,
-    label: publicEvent.label,
-    publicDescription: publicEvent.publicDescription,
-    description: publicEvent.publicDescription,
-    internalNote: input.internalNote || null,
-    location: input.location || null,
-    eventTime: input.eventTime ?? new Date(),
-    source: input.source,
-    visibleToCustomer: true,
-    createdBy: input.createdBy ?? null,
-    state: "done",
-    createdAt: new Date(),
-  });
-
-  return { created: true, publicEvent };
-}
-
 function redirectWithCreateError(message: string): never {
   redirect(`/shipments/new?error=${encodeURIComponent(message)}`);
 }
@@ -249,6 +206,7 @@ export async function getShipmentByTracking(trackingNumber: string) {
       customer: null,
       flightLegs: [],
       parcels: [],
+      voidedByStaff: null,
     };
   }
 
@@ -291,9 +249,18 @@ export async function getShipmentByTracking(trackingNumber: string) {
         }),
       ];
 
-  const [customer] = shipment.customerId
-    ? await db.select().from(customers).where(eq(customers.id, shipment.customerId))
-    : [null];
+  const [[customer], [voidedByStaff]] = await Promise.all([
+    shipment.customerId
+      ? db.select().from(customers).where(eq(customers.id, shipment.customerId)).limit(1)
+      : Promise.resolve([null]),
+    shipment.voidedBy
+      ? db
+          .select({ email: staffAccounts.email, fullName: staffAccounts.fullName, id: staffAccounts.id })
+          .from(staffAccounts)
+          .where(eq(staffAccounts.id, shipment.voidedBy))
+          .limit(1)
+      : Promise.resolve([null]),
+  ]);
 
   const status = normalizeStoredStatus(shipment.status);
   const lastSyncAt = events[0]?.timestamp ?? shipment.updatedAt ?? new Date();
@@ -313,11 +280,13 @@ export async function getShipmentByTracking(trackingNumber: string) {
     customer,
     flightLegs,
     parcels: shipmentParcels,
+    voidedByStaff,
   };
 }
 
 export async function linkTrackingToCustomer(customerId: number, formData: FormData) {
-  await requireUser();
+  const user = await requireUser();
+  if (!canManageCustomers(user)) throw new Error("Customer management permission is required.");
 
   const trackingNumber = normalizeTrackingNumber(formData.get("trackingNumber"));
 
@@ -326,21 +295,45 @@ export async function linkTrackingToCustomer(customerId: number, formData: FormD
   }
 
   const [existingShipment] = await db
-    .select()
+    .select({ customerId: shipments.customerId, id: shipments.id, voidedAt: shipments.voidedAt })
     .from(shipments)
-    .where(eq(shipments.trackingNumber, trackingNumber));
+    .where(eq(shipments.trackingNumber, trackingNumber))
+    .limit(1);
 
   if (!existingShipment) {
     throw new Error("Shipment not found. Create it manually or use bulk shipment import.");
   }
+  if (existingShipment.voidedAt) throw new Error("Voided shipments cannot be linked to customers.");
+  if (existingShipment.customerId === customerId) return;
+  if (existingShipment.customerId) {
+    throw new Error("Shipment is already linked to another customer. Unlink it from that customer before reassignment.");
+  }
 
-  await db
-    .update(shipments)
-    .set({
-      customerId,
-      updatedAt: new Date(),
-    })
-    .where(eq(shipments.id, existingShipment.id));
+  const now = new Date();
+  const result = await db.execute<{ updated: boolean }>(sql`
+    with updated_shipment as (
+      update shipments
+      set customer_id = ${customerId}, updated_at = ${now}, updated_by_staff = ${user.id}
+      where id = ${existingShipment.id}
+        and customer_id is null
+        and voided_at is null
+        and exists (
+          select 1 from customers where id = ${customerId} and archived_at is null
+        )
+      returning id
+    ), inserted_audit as (
+      insert into portal_audit_logs (
+        action, entity_type, entity_id, performed_by, metadata_json, created_at
+      )
+      select
+        'shipment.customer_linked', 'shipment', id::text, ${user.id},
+        ${JSON.stringify({ customerId })}, ${now}
+      from updated_shipment
+      returning id
+    )
+    select exists(select 1 from updated_shipment) as updated
+  `);
+  if (!result.rows[0]?.updated) throw new Error("Shipment or customer changed before the link was saved. Reload and try again.");
 
   revalidatePath("/dashboard");
   revalidatePath("/customers");
@@ -348,24 +341,39 @@ export async function linkTrackingToCustomer(customerId: number, formData: FormD
   revalidatePath(`/shipments/${trackingNumber}`);
 }
 
-export async function unlinkTrackingFromCustomer(customerId: number, shipmentId: number) {
-  await requireUser();
-  const [shipment] = await db
-    .update(shipments)
-    .set({
-      customerId: null,
-      updatedAt: new Date(),
-    })
-    .where(eq(shipments.id, shipmentId))
-    .returning();
+export async function unlinkTrackingFromCustomer(customerId: number, shipmentId: number, formData: FormData) {
+  const user = await requireUser();
+  if (!canManageCustomers(user)) throw new Error("Customer management permission is required.");
+  if (normalizeOptionalText(formData.get("confirmed")) !== "yes") throw new Error("Unlink confirmation is required.");
+  const now = new Date();
+  const result = await db.execute<{ tracking_number: string }>(sql`
+    with updated_shipment as (
+      update shipments
+      set customer_id = null, updated_at = ${now}, updated_by_staff = ${user.id}
+      where id = ${shipmentId}
+        and customer_id = ${customerId}
+        and voided_at is null
+      returning id, tracking_number
+    ), inserted_audit as (
+      insert into portal_audit_logs (
+        action, entity_type, entity_id, performed_by, metadata_json, created_at
+      )
+      select
+        'shipment.customer_unlinked', 'shipment', id::text, ${user.id},
+        ${JSON.stringify({ customerId })}, ${now}
+      from updated_shipment
+      returning id
+    )
+    select tracking_number from updated_shipment
+  `);
+  const shipment = result.rows[0];
+  if (!shipment) throw new Error("Shipment link changed before it could be removed. Reload and try again.");
 
   revalidatePath("/dashboard");
   revalidatePath("/customers");
   revalidatePath(`/customers/${customerId}`);
 
-  if (shipment?.trackingNumber) {
-    revalidatePath(`/shipments/${shipment.trackingNumber}`);
-  }
+  revalidatePath(`/shipments/${shipment.tracking_number}`);
 
 }
 
@@ -386,6 +394,7 @@ export async function updateShipmentTrackingFromForm(
   formData: FormData,
 ) {
   const user = await requireUser();
+  if (!canManageTracking(user)) throw new Error("Tracking management permission is required.");
 
   const normalizedTrackingNumber = normalizeTrackingNumber(trackingNumber);
   const status = normalizeManualStatus(formData.get("status"));
@@ -407,31 +416,61 @@ export async function updateShipmentTrackingFromForm(
   if (!shipment) {
     throw new Error("Shipment not found");
   }
+  if (shipment.voidedAt) throw new Error("Voided shipments cannot receive tracking updates.");
 
-  await db.insert(trackingUpdates).values({
-    shipmentId: shipment.id,
-    status: publicEvent.status,
-    description: publicEvent.publicDescription || defaultTrackingDescription(status),
-    location: location || null,
-    timestamp,
-  });
-  await createCustomerVisibleTrackingEvent({
-    createdBy: user.id,
-    eventTime: timestamp,
-    internalNote,
-    location,
-    shipmentId: shipment.id,
-    source: "manual_portal_update",
-    status,
-  });
-
-  await db
-    .update(shipments)
-    .set({
-      status,
-      updatedAt: new Date(),
+  const [latestVisibleEvent] = await db
+    .select({
+      publicDescription: trackingEvents.publicDescription,
+      status: trackingEvents.status,
+      statusCode: trackingEvents.statusCode,
     })
-    .where(eq(shipments.id, shipment.id));
+    .from(trackingEvents)
+    .where(and(eq(trackingEvents.shipmentId, shipment.id), eq(trackingEvents.visibleToCustomer, true)))
+    .orderBy(desc(trackingEvents.eventTime))
+    .limit(1);
+  const now = new Date();
+  const queries: BatchItem<"pg">[] = [
+    db.insert(trackingUpdates).values({
+      shipmentId: shipment.id,
+      status: publicEvent.status,
+      description: publicEvent.publicDescription || defaultTrackingDescription(status),
+      location: location || null,
+      timestamp,
+    }),
+    db
+      .update(shipments)
+      .set({ status, updatedAt: now, updatedByStaff: user.id })
+      .where(and(eq(shipments.id, shipment.id), isNull(shipments.voidedAt))),
+    db.insert(portalAuditLogs).values({
+      action: "shipment.tracking_updated",
+      entityType: "shipment",
+      entityId: String(shipment.id),
+      performedBy: user.id,
+      metadataJson: JSON.stringify({ location: location || null, status }),
+      createdAt: now,
+    }),
+  ];
+  if (!isDuplicateCustomerVisibleEvent(latestVisibleEvent, publicEvent)) {
+    queries.push(
+      db.insert(trackingEvents).values({
+        shipmentId: shipment.id,
+        statusCode: publicEvent.statusCode,
+        status: publicEvent.status,
+        label: publicEvent.label,
+        publicDescription: publicEvent.publicDescription,
+        description: publicEvent.publicDescription,
+        internalNote: internalNote || null,
+        location: location || null,
+        eventTime: timestamp,
+        source: "manual_portal_update",
+        visibleToCustomer: true,
+        createdBy: user.id,
+        state: "done",
+        createdAt: now,
+      }),
+    );
+  }
+  await db.batch(queries as [BatchItem<"pg">, ...BatchItem<"pg">[]]);
 
   revalidatePath("/dashboard");
   revalidatePath("/shipments");
@@ -480,6 +519,9 @@ export async function updateShipmentDetails(trackingNumber: string, formData: Fo
 
   if (!shipment) {
     redirectWithEditError(normalizedTrackingNumber, "Shipment was not found.");
+  }
+  if (shipment.voidedAt) {
+    redirectWithEditError(normalizedTrackingNumber, "Voided shipments cannot be edited.");
   }
 
   const shipmentParcels = await db
@@ -558,6 +600,7 @@ export async function getShipments(search?: string) {
     customerCompanyName: customers.companyName,
     updatedAt: shipments.updatedAt,
     createdAt: shipments.createdAt,
+    voidedAt: shipments.voidedAt,
   };
 
   const query = db
@@ -566,26 +609,30 @@ export async function getShipments(search?: string) {
     .leftJoin(customers, eq(shipments.customerId, customers.id));
 
   if (!trimmedSearch) {
-    return query.orderBy(desc(shipments.updatedAt));
+    return query.where(isNull(shipments.voidedAt)).orderBy(desc(shipments.updatedAt));
   }
 
   return query
     .where(
-      or(
-        ilike(shipments.trackingNumber, `%${trimmedSearch}%`),
-        ilike(shipments.internalTrackingNo, `%${trimmedSearch}%`),
-        ilike(shipments.title, `%${trimmedSearch}%`),
-        ilike(shipments.origin, `%${trimmedSearch}%`),
-        ilike(shipments.destination, `%${trimmedSearch}%`),
-        ilike(shipments.customerName, `%${trimmedSearch}%`),
-        ilike(customers.fullName, `%${trimmedSearch}%`),
-        ilike(customers.companyName, `%${trimmedSearch}%`),
+      and(
+        isNull(shipments.voidedAt),
+        or(
+          ilike(shipments.trackingNumber, `%${trimmedSearch}%`),
+          ilike(shipments.internalTrackingNo, `%${trimmedSearch}%`),
+          ilike(shipments.title, `%${trimmedSearch}%`),
+          ilike(shipments.origin, `%${trimmedSearch}%`),
+          ilike(shipments.destination, `%${trimmedSearch}%`),
+          ilike(shipments.customerName, `%${trimmedSearch}%`),
+          ilike(customers.fullName, `%${trimmedSearch}%`),
+          ilike(customers.companyName, `%${trimmedSearch}%`),
+        ),
       ),
     )
     .orderBy(desc(shipments.updatedAt));
 }
 
 export type ShipmentListOptions = {
+  includeVoided?: boolean;
   page?: number;
   from?: string;
   search?: string;
@@ -601,6 +648,8 @@ export async function getShipmentsPage(options: ShipmentListOptions = {}) {
   const page = Math.max(1, options.page ?? 1);
   const conditions = [];
   const search = options.search?.trim();
+
+  if (!options.includeVoided) conditions.push(isNull(shipments.voidedAt));
 
   if (search) {
     const pattern = `%${search}%`;
@@ -662,6 +711,7 @@ export async function getShipmentsPage(options: ShipmentListOptions = {}) {
     customerCompanyName: customers.companyName,
     updatedAt: shipments.updatedAt,
     createdAt: shipments.createdAt,
+    voidedAt: shipments.voidedAt,
   };
   const orderBy =
     options.sort === "created_desc"
@@ -706,21 +756,23 @@ export async function getDashboardStats() {
   return {
     totalCustomers: allCustomers.length,
     activeShipments: allShipments.filter((shipment) =>
+      !shipment.voidedAt &&
       ["arrived_destination", "customs", "departed", "departed_origin", "in_transit"].includes(
         shipment.status.toLowerCase(),
       ),
     ).length,
     deliveredShipments: allShipments.filter(
-      (shipment) => shipment.status.toLowerCase() === "delivered",
+      (shipment) => !shipment.voidedAt && shipment.status.toLowerCase() === "delivered",
     ).length,
     exceptionShipments: allShipments.filter(
-      (shipment) => shipment.status.toLowerCase() === "exception",
+      (shipment) => !shipment.voidedAt && shipment.status.toLowerCase() === "exception",
     ).length,
   };
 }
 
 export async function createShipmentFromForm(formData: FormData) {
   const user = await requireUser();
+  if (!canCreateShipments(user)) redirect("/shipments?error=forbidden");
   let input: ManualShipmentFormValues;
 
   try {
@@ -750,9 +802,19 @@ export async function createShipmentFromForm(formData: FormData) {
 
   const ambaraParcelId = `${trackingNumber}-001`;
 
-  const [newShipment] = await db
-    .insert(shipments)
-    .values({
+  const idResult = await db.execute<{ parcel_id: number; shipment_id: number }>(sql`
+    select
+      nextval(pg_get_serial_sequence('shipments', 'id'))::int as shipment_id,
+      nextval(pg_get_serial_sequence('parcels', 'id'))::int as parcel_id
+  `);
+  const ids = idResult.rows[0];
+  if (!ids) throw new Error("Shipment identifiers could not be allocated.");
+  const now = new Date();
+  const publicEvent = buildCustomerVisibleTrackingEvent("SHIPMENT_CREATED");
+
+  await db.batch([
+    db.insert(shipments).values({
+      id: ids.shipment_id,
       trackingNumber,
       mawb: input.mawb,
       internalTrackingNo: trackingNumber,
@@ -780,14 +842,14 @@ export async function createShipmentFromForm(formData: FormData) {
       updatedByStaff: user.id,
       createdBy: user.email,
       createdAt,
-      updatedAt: new Date(),
-    })
-    .returning();
+      updatedAt: now,
+    }),
 
   // Manual shipment creation stores one parcel row as the shipment package group.
   // Pieces > 1 stay on this row until true per-piece parcel entry is implemented.
-  await db.insert(parcels).values({
-    shipmentId: newShipment.id,
+    db.insert(parcels).values({
+    id: ids.parcel_id,
+    shipmentId: ids.shipment_id,
     ambaraParcelId,
     parcelNumber: 1,
     receiverName: input.receiverName,
@@ -803,24 +865,41 @@ export async function createShipmentFromForm(formData: FormData) {
     codAmount: input.codAmount,
     currentStatus: "DRAFT",
     createdAt,
-    updatedAt: new Date(),
-  });
-
-  const { publicEvent } = await createCustomerVisibleTrackingEvent({
-    createdBy: user.id,
-    internalNote: input.internalNote ?? undefined,
-    location: input.origin,
-    shipmentId: newShipment.id,
-    source: "manual",
-    status: "SHIPMENT_CREATED",
-  });
-  await db.insert(trackingUpdates).values({
-    shipmentId: newShipment.id,
+    updatedAt: now,
+  }),
+    db.insert(trackingEvents).values({
+      shipmentId: ids.shipment_id,
+      parcelId: ids.parcel_id,
+      statusCode: publicEvent.statusCode,
+      status: publicEvent.status,
+      label: publicEvent.label,
+      publicDescription: publicEvent.publicDescription,
+      description: publicEvent.publicDescription,
+      internalNote: input.internalNote || null,
+      location: input.origin,
+      eventTime: now,
+      source: "manual",
+      visibleToCustomer: true,
+      createdBy: user.id,
+      state: "done",
+      createdAt: now,
+    }),
+    db.insert(trackingUpdates).values({
+    shipmentId: ids.shipment_id,
     status: publicEvent.status,
     description: publicEvent.publicDescription,
     location: input.origin,
-    timestamp: new Date(),
-  });
+    timestamp: now,
+  }),
+    db.insert(portalAuditLogs).values({
+      action: "shipment.created",
+      entityType: "shipment",
+      entityId: String(ids.shipment_id),
+      performedBy: user.id,
+      metadataJson: JSON.stringify({ source: "manual", trackingNumber }),
+      createdAt: now,
+    }),
+  ] as const);
 
   revalidatePath("/dashboard");
   revalidatePath("/shipments");

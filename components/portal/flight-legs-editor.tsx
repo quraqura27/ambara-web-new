@@ -91,7 +91,7 @@ export function FlightLegsEditor({
 
         return (
           <div
-            className="grid gap-3 rounded-xl border border-white/5 bg-slate-950/30 p-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto]"
+            className="grid gap-3 rounded-lg border border-white/5 bg-slate-950/30 p-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto]"
             key={leg.id}
           >
             <label className="space-y-2">

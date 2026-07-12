@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import accessPolicy from "@/server/legacy-api/lib/access-policy";
 import dispatcher from "@/server/legacy-api/lib/dispatcher";
 
 type RouteContext = {
@@ -27,6 +28,10 @@ type LegacyModule = {
   default?: LegacyHandler | { handler?: LegacyHandler };
   handler?: LegacyHandler;
 };
+
+type LegacyAuthorization =
+  | { allowed: true; decoded?: unknown }
+  | { allowed: false; message: string; status: number };
 
 export const runtime = "nodejs";
 
@@ -56,26 +61,7 @@ function resolveLegacyHandler(module: LegacyModule): LegacyHandler | undefined {
 async function handle(request: NextRequest, context: RouteContext) {
   const { path = [] } = await context.params;
   const { targetFunc, remainingSegments } = resolveTarget(path);
-  const importFn = (dispatcher as Record<string, () => Promise<LegacyModule>>)[targetFunc];
-
-  if (!importFn) {
-    return NextResponse.json(
-      { error: "Handler not found", target: targetFunc },
-      { status: 404 },
-    );
-  }
-
   try {
-    const legacyModule = await importFn();
-    const legacyHandler = resolveLegacyHandler(legacyModule);
-
-    if (!legacyHandler) {
-      return NextResponse.json(
-        { error: "Handler not exported", target: targetFunc },
-        { status: 500 },
-      );
-    }
-
     const suffix = remainingSegments.length ? `/${remainingSegments.join("/")}` : "";
     const event: LegacyEvent = {
       httpMethod: request.method,
@@ -89,6 +75,35 @@ async function handle(request: NextRequest, context: RouteContext) {
       rawUrl: request.url,
       isBase64Encoded: false,
     };
+    const authorization = await accessPolicy.authorizeLegacyRequest(
+      targetFunc,
+      event,
+    ) as LegacyAuthorization;
+
+    if (!authorization.allowed) {
+      return NextResponse.json(
+        { error: authorization.message },
+        { status: authorization.status },
+      );
+    }
+
+    const importFn = (dispatcher as Record<string, () => Promise<LegacyModule>>)[targetFunc];
+    if (!importFn) {
+      return NextResponse.json(
+        { error: "Handler not found", target: targetFunc },
+        { status: 404 },
+      );
+    }
+
+    const legacyModule = await importFn();
+    const legacyHandler = resolveLegacyHandler(legacyModule);
+
+    if (!legacyHandler) {
+      return NextResponse.json(
+        { error: "Handler not exported", target: targetFunc },
+        { status: 500 },
+      );
+    }
 
     const result = await legacyHandler(event);
 
@@ -97,7 +112,9 @@ async function handle(request: NextRequest, context: RouteContext) {
       headers: result.headers,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Internal API error";
+    const message = process.env.NODE_ENV === "development" && error instanceof Error
+      ? error.message
+      : "Internal API error";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

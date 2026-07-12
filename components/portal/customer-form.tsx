@@ -1,12 +1,16 @@
+"use client";
+
 import Link from "next/link";
+import { useActionState } from "react";
 
 import { Button, Card, Input } from "@/components/ui/core";
-import type { CustomerFormValues } from "@/actions/customers";
+import type { CustomerActionState, CustomerFormValues } from "@/actions/customers";
 
 type CustomerFormProps = {
-  action: (formData: FormData) => void | Promise<void>;
+  action: (state: CustomerActionState, formData: FormData) => Promise<CustomerActionState>;
   cancelHref: string;
   description: string;
+  showDuplicateConfirmation?: boolean;
   submitLabel: string;
   title: string;
   values?: Partial<CustomerFormValues>;
@@ -19,10 +23,14 @@ export function CustomerForm({
   action,
   cancelHref,
   description,
+  showDuplicateConfirmation = false,
   submitLabel,
   title,
   values,
 }: CustomerFormProps) {
+  const [state, formAction, pending] = useActionState(action, {});
+  const currentValues = state.values ?? values;
+
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <div>
@@ -31,17 +39,18 @@ export function CustomerForm({
       </div>
 
       <Card className="p-8">
-        <form action={action} className="space-y-6">
+        <form action={formAction} className="space-y-6" key={JSON.stringify(state.values ?? {})}>
+          {state.formError ? <div aria-live="polite" className="rounded-lg border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200" role="alert">{state.formError}</div> : null}
           <div className="grid gap-6 md:grid-cols-2">
             <label className="space-y-2">
               <span className="text-xs font-bold uppercase tracking-widest text-slate-500">
                 Full Name
               </span>
               <Input
-                defaultValue={values?.fullName ?? ""}
+                defaultValue={currentValues?.fullName ?? ""}
                 name="fullName"
                 placeholder="Jane Doe"
-                required={!(values?.companyName ?? "").trim()}
+                required={!(currentValues?.companyName ?? "").trim()}
               />
             </label>
 
@@ -50,12 +59,14 @@ export function CustomerForm({
                 Company Name
               </span>
               <Input
-                defaultValue={values?.companyName ?? ""}
+                defaultValue={currentValues?.companyName ?? ""}
                 name="companyName"
                 placeholder="Ambara Trading"
               />
             </label>
           </div>
+
+          {showDuplicateConfirmation ? <label className="flex items-start gap-3 rounded-lg border border-amber-500/15 bg-amber-500/[0.04] p-4 text-sm text-slate-300"><input className="mt-1" name="confirmDuplicate" type="checkbox" value="yes" /><span>Confirm this is an intentional separate customer if the server finds matching contact or company data.</span></label> : null}
 
           <div className="grid gap-6 md:grid-cols-[140px_1fr_1fr]">
             <label className="space-y-2">
@@ -63,7 +74,7 @@ export function CustomerForm({
                 Invoice Code
               </span>
               <Input
-                defaultValue={values?.invoiceCode ?? ""}
+                defaultValue={currentValues?.invoiceCode ?? ""}
                 maxLength={3}
                 name="invoiceCode"
                 pattern="[A-Za-z]{3}"
@@ -78,7 +89,7 @@ export function CustomerForm({
                 Email
               </span>
               <Input
-                defaultValue={values?.email ?? ""}
+                defaultValue={currentValues?.email ?? ""}
                 name="email"
                 placeholder="ops@company.com"
                 type="email"
@@ -90,7 +101,7 @@ export function CustomerForm({
                 Phone
               </span>
               <Input
-                defaultValue={values?.phone ?? ""}
+                defaultValue={currentValues?.phone ?? ""}
                 name="phone"
                 placeholder="+62 812 3456 7890"
               />
@@ -104,7 +115,7 @@ export function CustomerForm({
               </span>
               <select
                 className={fieldClassName}
-                defaultValue={values?.type ?? "b2b"}
+                defaultValue={currentValues?.type ?? "b2b"}
                 name="type"
               >
                 <option value="b2b">B2B</option>
@@ -118,7 +129,7 @@ export function CustomerForm({
               </span>
               <textarea
                 className={`${fieldClassName} min-h-28 resize-y`}
-                defaultValue={values?.address ?? ""}
+                defaultValue={currentValues?.address ?? ""}
                 name="address"
                 placeholder="Street, city, province, postal code"
               />
@@ -131,8 +142,8 @@ export function CustomerForm({
                 Cancel
               </Button>
             </Link>
-            <Button className="w-full sm:w-auto" type="submit">
-              {submitLabel}
+            <Button className="w-full sm:w-auto" disabled={pending} type="submit">
+              {pending ? "Saving..." : submitLabel}
             </Button>
           </div>
         </form>

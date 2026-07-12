@@ -4,7 +4,7 @@ import {
   resolveMawbDepartureAirport,
   resolveMawbDestinationDisplay,
 } from "../airports/core.ts";
-import { normalizePortalRole, isSuperadmin, type PortalRoleUser } from "../portal-roles.ts";
+import { hasPortalCapability, isSuperadmin, type PortalRoleUser } from "../portal-roles.ts";
 import { normalizeShipmentService } from "../shipments/service-model.ts";
 
 export const mawbActionValues = ["create_shipment", "link_shipment", "print_only"] as const;
@@ -661,10 +661,9 @@ export function buildMawbShipmentCopyUpdates(input: {
 }
 
 export function canUseMawbWorkflow(user: PortalRoleUser | null | undefined) {
-  const role = normalizePortalRole(user?.role);
-  return role === "operations" || role === "admin" || role === "superadmin";
+  return hasPortalCapability(user, "mawb:manage");
 }
 
 export function canOverwriteShipmentFromMawb(user: PortalRoleUser | null | undefined) {
-  return isSuperadmin(user);
+  return hasPortalCapability(user, "mawb:overwrite");
 }

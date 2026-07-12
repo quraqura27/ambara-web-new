@@ -3,6 +3,9 @@ import { ArrowRight, Mail, Phone, Plus, Search, Users } from "lucide-react";
 
 import { getCustomers } from "@/actions/customers";
 import { Button, Card, Input } from "@/components/ui/core";
+import { getPortalUser } from "@/lib/portal-auth";
+import { canManageCustomers } from "@/lib/portal-roles";
+import { formatWibDate } from "@/lib/time/wib";
 
 type CustomersPageProps = {
   searchParams?: Promise<{ search?: string }>;
@@ -11,7 +14,7 @@ type CustomersPageProps = {
 export default async function CustomersPage({ searchParams }: CustomersPageProps) {
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const search = resolvedSearchParams?.search?.trim() ?? "";
-  const customers = await getCustomers(search);
+  const [customers, user] = await Promise.all([getCustomers(search), getPortalUser()]);
 
   return (
     <div className="space-y-8">
@@ -22,11 +25,11 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
             Search by customer name, invoice code, contact details, or tracking number.
           </p>
         </div>
-        <Link href="/customers/new">
+        {canManageCustomers(user) ? <Link href="/customers/new">
           <Button className="gap-2" type="button">
             <Plus className="h-4 w-4" /> Add New Customer
           </Button>
-        </Link>
+        </Link> : null}
       </div>
 
       <Card className="overflow-visible p-0">
@@ -46,7 +49,27 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
           </p>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="divide-y divide-white/5 md:hidden">
+          {customers.map((customer) => (
+            <Link className="block space-y-4 p-5 transition hover:bg-white/[0.02]" href={`/customers/${customer.id}`} key={customer.id}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-white">{customer.fullName || customer.companyName}</p>
+                  <p className="mt-1 truncate text-xs text-slate-500">{customer.companyName && customer.fullName ? customer.companyName : "Internal directory record"}</p>
+                </div>
+                <span className="font-mono text-xs font-semibold text-blue-200">{customer.invoiceCode || "SET"}</span>
+              </div>
+              <div className="grid gap-2 text-xs text-slate-400">
+                <p className="flex min-w-0 items-center gap-2"><Mail className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{customer.email || "No email"}</span></p>
+                <p className="flex min-w-0 items-center gap-2"><Phone className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{customer.phone || "No phone"}</span></p>
+              </div>
+              <div className="flex items-center justify-between gap-3 text-xs"><span className="uppercase text-emerald-300">{customer.type || "b2b"}</span><span className="text-slate-500">{customer.createdAt ? formatWibDate(customer.createdAt) : "N/A"}</span></div>
+            </Link>
+          ))}
+          {customers.length === 0 ? <div className="p-10 text-center text-sm text-slate-500"><Users className="mx-auto mb-3 h-10 w-10 text-slate-800" />No customers found.</div> : null}
+        </div>
+
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full text-left">
             <thead>
               <tr className="bg-white/5 text-[10px] font-bold uppercase tracking-widest text-slate-500">
@@ -100,12 +123,12 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
                   </td>
                   <td className="px-6 py-4 text-xs text-slate-500">
                     {customer.createdAt
-                      ? new Date(customer.createdAt).toLocaleDateString()
+                      ? formatWibDate(customer.createdAt)
                       : "N/A"}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <Link href={`/customers/${customer.id}`}>
-                      <Button className="h-auto p-2" variant="ghost">
+                      <Button aria-label={`Open ${customer.fullName || customer.companyName || "customer"}`} className="h-auto p-2" title="Open customer" variant="ghost">
                         <ArrowRight className="h-4 w-4" />
                       </Button>
                     </Link>
