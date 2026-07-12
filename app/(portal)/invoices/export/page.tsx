@@ -196,7 +196,7 @@ export default async function InvoiceExportPage({ searchParams }: InvoiceExportP
             Export invoice summary or line data as CSV for finance analysis.
           </p>
         </div>
-        <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10 text-blue-300">
+        <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-blue-500/20 bg-blue-500/10 text-blue-300">
           <FileSpreadsheet className="h-5 w-5" />
         </div>
       </div>

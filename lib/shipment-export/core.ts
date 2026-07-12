@@ -1,4 +1,4 @@
-import { hasPortalRoleAtLeast, type PortalRoleUser } from "../portal-roles.ts";
+import { hasPortalCapability, type PortalRoleUser } from "../portal-roles.ts";
 import { shipmentStatusValues } from "../shipments/status-model.ts";
 
 export const shipmentExportScopes = [
@@ -209,7 +209,7 @@ export function parseShipmentExportFilters(
 }
 
 export function canExportShipments(user: PortalRoleUser | null | undefined) {
-  return hasPortalRoleAtLeast(user, "admin");
+  return hasPortalCapability(user, "shipment:export");
 }
 
 function normalizeExportCellValue(value: unknown) {

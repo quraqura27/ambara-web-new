@@ -32,7 +32,7 @@ export const Button = React.forwardRef<
 Button.displayName = "Button";
 
 export const Card = ({ children, className }: { children: React.ReactNode; className?: string }) => (
-  <div className={cn("bg-[#12121a]/80 backdrop-blur-md border border-white/5 rounded-xl shadow-xl overflow-hidden", className)}>
+  <div className={cn("overflow-hidden rounded-lg border border-white/5 bg-[#12121a]/80 shadow-lg", className)}>
     {children}
   </div>
 );

@@ -20,7 +20,7 @@
   }
   
   .premium-card {
-    @apply bg-[#0f172a]/50 border border-slate-800/50 rounded-2xl p-6 transition-all hover:border-blue-500/30 hover:shadow-blue-500/5;
+    @apply bg-[#0f172a]/50 border border-slate-800/50 rounded-lg p-6 transition-all hover:border-blue-500/30 hover:shadow-blue-500/5;
   }
 }
 
@@ -45,6 +45,10 @@
 .ambara-portal-bg {
   background-color: #0a0a0f;
   color: #f8fafc;
+}
+
+.ambara-portal-bg * {
+  letter-spacing: 0 !important;
 }
 
 .ambara-sidebar-shell {

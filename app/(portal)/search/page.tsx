@@ -41,9 +41,9 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                 <Link href={`/shipments/${encodeURIComponent(shipment.trackingNumber)}`}>
                   <p className="font-mono text-sm font-bold text-white">{shipment.trackingNumber}</p>
                   <p className="mt-2 text-sm text-slate-300">{shipment.customerName || shipment.title}</p>
-                  <p className="mt-1 text-xs text-slate-500">{shipment.origin} → {shipment.destination} / {shipment.status.replace(/_/g, " ")}</p>
+                  <p className="mt-1 text-xs text-slate-500">{shipment.origin} → {shipment.destination} / {shipment.voidedAt ? "voided" : shipment.status.replace(/_/g, " ")}</p>
                 </Link>
-                {results.canUseMawbs ? (
+                {results.canUseMawbs && !shipment.voidedAt ? (
                   <Link className="mt-4 block" href={`/mawbs/new?shipment=${encodeURIComponent(shipment.trackingNumber)}`}>
                     <Button className="w-full gap-2" variant="secondary">
                       <FileText className="h-4 w-4" />

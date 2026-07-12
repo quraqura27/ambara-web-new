@@ -522,6 +522,12 @@ export async function saveMawbFromForm(
         values,
       };
     }
+    if (existingShipment.voidedAt) {
+      return {
+        fieldErrors: { existingShipmentTracking: "Voided shipments cannot be linked to MAWB records." },
+        values,
+      };
+    }
 
     linkedShipment = {
       id: existingShipment.id,

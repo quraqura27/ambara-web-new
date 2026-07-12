@@ -7,16 +7,15 @@ import {
 } from "@/actions/vendor-tracking";
 import { BulkImportForm } from "@/components/vendor-tracking/bulk-import-form";
 import { Button, Card, cn } from "@/components/ui/core";
-import { ConfirmSubmitButton } from "@/components/portal/confirm-submit-button";
+import { TypedConfirmSubmitButton } from "@/components/portal/confirm-submit-button";
+import { formatWibDateTime } from "@/lib/time/wib";
 
 type BulkImportPageProps = {
   searchParams?: Promise<{ error?: string; notice?: string }>;
 };
 
 function formatDate(value: Date | string | null | undefined) {
-  if (!value) return "-";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "-" : date.toLocaleString();
+  return formatWibDateTime(value);
 }
 
 function MessageBanner({ error, notice }: { error?: string; notice?: string }) {
@@ -104,13 +103,15 @@ export default async function BulkShipmentImportPage({ searchParams }: BulkImpor
                     </td>
                     <td className="px-6 py-4 text-right">
                       <form action={rollbackAction}>
-                        <ConfirmSubmitButton
+                        <TypedConfirmSubmitButton
+                          confirmLabel="Roll back import"
+                          confirmText={`IMPORT-${job.id}`}
                           description={`Delete the initial shipments and Delivery Records created by import job #${job.id}. This is allowed only before tracking progresses or a delivery batch is assigned.`}
                           disabled={!canRollback}
                           title="Roll back import?"
                         >
                           <RotateCcw className="mr-2 h-4 w-4" /> Roll Back
-                        </ConfirmSubmitButton>
+                        </TypedConfirmSubmitButton>
                       </form>
                     </td>
                   </tr>

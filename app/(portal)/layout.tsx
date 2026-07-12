@@ -1,8 +1,6 @@
 import { PortalShell } from "@/components/portal/portal-shell";
-import { canUseMawbWorkflow } from "@/lib/mawbs/core";
 import { requirePortalUser } from "@/lib/portal-auth";
-import { canManageInvoices, canManageStaffAccounts } from "@/lib/portal-roles";
-import { canExportShipments } from "@/lib/shipment-export/core";
+import { getPortalCapabilities } from "@/lib/portal-roles";
 
 export const dynamic = "force-dynamic";
 
@@ -11,10 +9,7 @@ export default async function PortalLayout({ children }: { children: React.React
 
   return (
     <PortalShell
-      canExportShipments={canExportShipments(user)}
-      canManageAccounts={canManageStaffAccounts(user)}
-      canManageInvoices={canManageInvoices(user)}
-      canUseMawbs={canUseMawbWorkflow(user)}
+      capabilities={getPortalCapabilities(user)}
       user={{ name: user.name, role: user.role }}
     >
       {children}

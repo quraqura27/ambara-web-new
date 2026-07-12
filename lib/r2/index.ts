@@ -1,21 +1,27 @@
 import { S3Client } from "@aws-sdk/client-s3";
 
-/**
- * CLOUDFLARE R2 CLIENT (Spec v3)
- * Optimized for high-retention document storage.
- */
+let client: S3Client | null = null;
 
-if (!process.env.R2_ACCESS_KEY_ID || !process.env.R2_SECRET_ACCESS_KEY || !process.env.R2_ENDPOINT) {
-  console.warn("WARNING: Missing R2 configuration in environment variables. Uploads will fail.");
+function requiredEnvironmentValue(name: "R2_ACCESS_KEY_ID" | "R2_BUCKET_NAME" | "R2_ENDPOINT" | "R2_SECRET_ACCESS_KEY") {
+  const value = process.env[name]?.trim();
+  if (!value) throw new Error(`${name} is required for document storage.`);
+  return value;
 }
 
-export const r2 = new S3Client({
-  region: "auto",
-  endpoint: process.env.R2_ENDPOINT,
-  credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID || "missing",
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || "missing",
-  },
-});
+export function getR2Client() {
+  if (!client) {
+    client = new S3Client({
+      region: "auto",
+      endpoint: requiredEnvironmentValue("R2_ENDPOINT"),
+      credentials: {
+        accessKeyId: requiredEnvironmentValue("R2_ACCESS_KEY_ID"),
+        secretAccessKey: requiredEnvironmentValue("R2_SECRET_ACCESS_KEY"),
+      },
+    });
+  }
+  return client;
+}
 
-export const BUCKET_NAME = process.env.R2_BUCKET_NAME || "ambara-artha-documents";
+export function getR2BucketName() {
+  return requiredEnvironmentValue("R2_BUCKET_NAME");
+}

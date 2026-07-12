@@ -91,10 +91,10 @@ export async function findPublicTrackingResult(
       originIata: shipments.originIata,
       serviceType: shipments.serviceType,
       status: shipments.status,
-      title: shipments.title,
       totalPcs: shipments.totalPcs,
       trackingNumber: shipments.trackingNumber,
       updatedAt: shipments.updatedAt,
+      voidedAt: shipments.voidedAt,
       weightKg: shipments.weightKg,
     })
     .from(shipments)
@@ -141,7 +141,18 @@ export async function findPublicTrackingResult(
   ]);
 
   const parcel = parcelRows[0];
-  const events = eventRows.length
+  const isVoided = Boolean(shipment.voidedAt);
+  const events = isVoided
+    ? [
+        {
+          status: "cancelled",
+          label: "Shipment cancelled",
+          description: "Shipment processing has been cancelled.",
+          location: null,
+          event_time: dateValue(shipment.voidedAt),
+        },
+      ]
+    : eventRows.length
     ? eventRows.map(toPublicEvent)
     : [
         fallbackStatusEvent({
@@ -157,8 +168,7 @@ export async function findPublicTrackingResult(
     shipment: {
       tracking_number: shipment.trackingNumber,
       legacy_tracking_number: null,
-      title: shipment.title,
-      status: shipment.status,
+      status: isVoided ? "cancelled" : shipment.status,
       origin: shipment.origin,
       destination: shipment.destination,
       service_type: shipment.serviceType,

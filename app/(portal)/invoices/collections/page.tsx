@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AlertTriangle, ArrowRight, Banknote, Clock, Download, Search } from "lucide-react";
 
 import { getInvoiceCollectionsDashboard } from "@/actions/invoices";
+import { StatusBadge } from "@/components/portal/status-badge";
 import { Button, Card, Input } from "@/components/ui/core";
 import {
   formatCurrencyAmount,
@@ -210,7 +211,16 @@ export default async function InvoiceCollectionsPage({ searchParams }: InvoiceCo
           </div>
           <AlertTriangle className="h-5 w-5 text-amber-300" />
         </div>
-        <div className="overflow-x-auto">
+        <div className="divide-y divide-white/5 md:hidden">
+          {dashboard.followUpRows.map((invoice) => (
+            <Link className="block space-y-4 p-5 transition hover:bg-white/[0.02]" href={`/invoices/${invoice.id}`} key={invoice.id}>
+              <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="font-mono text-sm text-blue-200">{invoice.invoiceNumber}</p><p className="mt-1 truncate text-sm font-medium text-white">{invoice.customerName}</p></div><StatusBadge label={invoiceStatusLabel(invoice.effectiveStatus)} status={invoice.effectiveStatus} /></div>
+              <div className="grid grid-cols-2 gap-3 text-xs"><div><p className="text-slate-600">Due</p><p className="mt-1 text-slate-300">{invoice.dueDate || "-"}</p><p className={invoice.daysDelta !== null && invoice.daysDelta < 0 ? "mt-1 font-semibold text-rose-300" : "mt-1 text-slate-500"}>{dueText(invoice.daysDelta)}</p></div><div className="text-right"><p className="text-slate-600">Net payable</p><p className="mt-1 font-semibold text-white">{money(invoice.currency, invoice.netPayable)}</p><p className="mt-1 text-slate-500">{invoice.paymentTerms}</p></div></div>
+            </Link>
+          ))}
+          {dashboard.followUpRows.length === 0 ? <p className="p-10 text-center text-sm text-slate-500">No unpaid invoices match the selected window.</p> : null}
+        </div>
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full min-w-[940px] text-left">
             <thead className="bg-[#12121a] text-[10px] font-bold uppercase tracking-widest text-slate-500">
               <tr>
@@ -241,9 +251,7 @@ export default async function InvoiceCollectionsPage({ searchParams }: InvoiceCo
                     </p>
                   </td>
                   <td className="px-5 py-4">
-                    <span className={invoice.effectiveStatus === "overdue" ? "text-xs font-semibold uppercase text-rose-300" : "text-xs font-semibold uppercase text-emerald-300"}>
-                      {invoiceStatusLabel(invoice.effectiveStatus)}
-                    </span>
+                    <StatusBadge label={invoiceStatusLabel(invoice.effectiveStatus)} status={invoice.effectiveStatus} />
                   </td>
                   <td className="px-5 py-4 text-sm text-slate-300">{invoice.paymentTerms}</td>
                   <td className="px-5 py-4 text-right text-sm font-semibold">
@@ -271,7 +279,16 @@ export default async function InvoiceCollectionsPage({ searchParams }: InvoiceCo
           <h2 className="font-semibold text-white">Customer balances</h2>
           <p className="mt-1 text-sm text-slate-500">{dashboard.balances.length.toLocaleString()} customer currency groups</p>
         </div>
-        <div className="overflow-x-auto">
+        <div className="divide-y divide-white/5 md:hidden">
+          {dashboard.balances.map((balance) => (
+            <div className="space-y-4 p-5" key={`${balance.currency}-${balance.customerCode}-${balance.customerName}`}>
+              <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate text-sm font-medium text-white">{balance.customerName}</p><p className="mt-1 font-mono text-xs text-slate-500">{balance.customerCode || "-"}</p></div><span className="font-mono text-xs text-slate-300">{balance.currency}</span></div>
+              <div className="grid grid-cols-2 gap-3 text-xs"><div><p className="text-slate-600">Oldest due</p><p className="mt-1 text-slate-300">{balance.oldestDueDate || "-"}</p></div><div className="text-right"><p className="text-slate-600">Outstanding</p><p className="mt-1 font-semibold text-white">{money(balance.currency, balance.outstanding)}</p></div><div><p className="text-slate-600">Invoices</p><p className="mt-1 text-slate-300">{balance.invoiceCount.toLocaleString()}</p></div><div className="text-right"><p className="text-slate-600">Overdue</p><p className="mt-1 font-semibold text-rose-300">{balance.overdueCount.toLocaleString()}</p></div></div>
+            </div>
+          ))}
+          {dashboard.balances.length === 0 ? <p className="p-10 text-center text-sm text-slate-500">No customer balances match the selected filters.</p> : null}
+        </div>
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full min-w-[760px] text-left">
             <thead className="bg-[#12121a] text-[10px] font-bold uppercase tracking-widest text-slate-500">
               <tr>

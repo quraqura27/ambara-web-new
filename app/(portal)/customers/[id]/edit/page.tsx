@@ -1,6 +1,9 @@
 import { getCustomerById, updateCustomerFromForm } from "@/actions/customers";
 import { CustomerForm } from "@/components/portal/customer-form";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+
+import { requirePortalUser } from "@/lib/portal-auth";
+import { canManageCustomers } from "@/lib/portal-roles";
 
 type EditCustomerPageProps = {
   params: Promise<{ id: string }>;
@@ -9,6 +12,8 @@ type EditCustomerPageProps = {
 export default async function EditCustomerPage({ params }: EditCustomerPageProps) {
   const { id } = await params;
   const customerId = Number.parseInt(id, 10);
+  const user = await requirePortalUser();
+  if (!canManageCustomers(user)) redirect(`/customers/${customerId}?error=forbidden`);
   const customer = Number.isNaN(customerId) ? null : await getCustomerById(customerId);
 
   if (!customer) {

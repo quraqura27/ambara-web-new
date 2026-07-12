@@ -16,15 +16,33 @@ import {
   User,
 } from "lucide-react";
 
+import { getShipmentVoidContext } from "@/actions/shipment-void";
+import { getShipmentOperationalReadiness } from "@/actions/shipment-readiness";
+import { getShipmentDocuments } from "@/actions/documents";
 import { getShipmentByTracking } from "@/actions/shipments";
+import { ShipmentLifecycleActions } from "@/components/portal/shipment-lifecycle-actions";
+import { ShipmentReadinessPanel } from "@/components/portal/shipment-readiness-panel";
+import { ShipmentDocumentsPanel } from "@/components/portal/shipment-documents-panel";
+import { StatusBadge } from "@/components/portal/status-badge";
 import { Button, Card } from "@/components/ui/core";
 import { getPortalUser } from "@/lib/portal-auth";
-import { canEditShipmentDetails, isSuperadmin } from "@/lib/portal-roles";
+import {
+  canEditShipmentDetails,
+  canManageOperations,
+  canManageTracking,
+  canManageDocuments,
+  canPrintShipmentDocuments,
+  canRestoreShipment,
+  canVoidShipment,
+  isSuperadmin,
+} from "@/lib/portal-roles";
 import { getShipmentStatusDefinition } from "@/lib/shipments/status-model";
+import { shipmentVoidReasonLabels, type ShipmentVoidReason } from "@/lib/shipments/voiding";
 import type { TrackingEvent } from "@/lib/tracking/interface";
 import { TrackingUpdateForm } from "@/components/portal/tracking-update-form";
 import { TrackingCorrectionForm } from "@/components/portal/tracking-correction-form";
 import { canUseMawbWorkflow } from "@/lib/mawbs/core";
+import { formatWibDateTime } from "@/lib/time/wib";
 
 type TrackingDetailPageProps = {
   params: Promise<{ number: string }>;
@@ -51,50 +69,9 @@ function formatStatus(status: string) {
   return normalizeStatusKey(status).replace(/_/g, " ");
 }
 
-function statusBadgeClassName(status: string) {
-  const normalized = normalizeStatusKey(status);
-
-  if (normalized === "delivered") {
-    return "border border-emerald-500/20 bg-emerald-500/10 text-emerald-500";
-  }
-
-  if (normalized === "exception" || normalized === "cancelled") {
-    return "border border-rose-500/20 bg-rose-500/10 text-rose-400";
-  }
-
-  if (
-    normalized === "arrived_destination" ||
-    normalized === "customs" ||
-    normalized === "departed_origin" ||
-    normalized === "in_transit"
-  ) {
-    return "border border-amber-500/20 bg-amber-500/10 text-amber-500";
-  }
-
-  return "border border-blue-500/20 bg-blue-500/10 text-blue-500";
-}
-
-function statusDotClassName(status: string) {
-  const normalized = normalizeStatusKey(status);
-
-  if (normalized === "delivered") {
-    return "bg-emerald-500";
-  }
-
-  if (normalized === "exception" || normalized === "cancelled") {
-    return "bg-rose-400";
-  }
-
-  if (
-    normalized === "arrived_destination" ||
-    normalized === "customs" ||
-    normalized === "departed_origin" ||
-    normalized === "in_transit"
-  ) {
-    return "bg-amber-500";
-  }
-
-  return "bg-blue-500";
+function formatVoidReason(reason: string | null | undefined) {
+  if (!reason) return "-";
+  return shipmentVoidReasonLabels[reason as ShipmentVoidReason] ?? formatStatus(reason);
 }
 
 function StatusStep({ event, isFirst, isLast }: StatusStepProps) {
@@ -122,7 +99,7 @@ function StatusStep({ event, isFirst, isLast }: StatusStepProps) {
           </span>
           <span className="h-1 w-1 rounded-full bg-slate-700" />
           <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-tight text-slate-500">
-            <Calendar className="h-3 w-3" /> {new Date(event.timestamp).toLocaleString()}
+            <Calendar className="h-3 w-3" /> {formatWibDateTime(event.timestamp)}
           </span>
         </div>
       </div>
@@ -176,14 +153,24 @@ export default async function TrackingDetailPage({
   const { number } = await params;
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const user = await getPortalUser();
-  const { shipment, liveData, customer, parcels, flightLegs } =
-    await getShipmentByTracking(number);
+  const [shipmentResult, voidContext, readiness, documents] = await Promise.all([
+    getShipmentByTracking(number),
+    canVoidShipment(user) ? getShipmentVoidContext(number) : Promise.resolve(null),
+    getShipmentOperationalReadiness(number),
+    getShipmentDocuments(number),
+  ]);
+  const { shipment, liveData, customer, parcels, flightLegs, voidedByStaff } = shipmentResult;
   const consignmentNoteTrackingNo = shipment?.internalTrackingNo ?? "";
   const primaryParcel = parcels[0];
-  const canEditShipment = shipment && canEditShipmentDetails(user);
-  const canUseMawbs = canUseMawbWorkflow(user);
+  const isVoided = Boolean(shipment?.voidedAt);
+  const canEditShipment = shipment && !isVoided && canEditShipmentDetails(user);
+  const canUseMawbs = !isVoided && canUseMawbWorkflow(user);
+  const canUpdateTracking = !isVoided && canManageTracking(user);
+  const canPrint = !isVoided && canPrintShipmentDocuments(user);
   const statusLabel = shipment
-    ? getShipmentStatusDefinition(liveData.status, shipment.serviceType).label
+    ? isVoided
+      ? "Voided"
+      : getShipmentStatusDefinition(liveData.status, shipment.serviceType).label
     : formatStatus(liveData.status);
 
   return (
@@ -203,7 +190,7 @@ export default async function TrackingDetailPage({
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3 sm:ml-auto sm:justify-end">
-          {consignmentNoteTrackingNo ? (
+          {consignmentNoteTrackingNo && canPrint ? (
             <Link href={`/shipments/${encodeURIComponent(consignmentNoteTrackingNo)}/consignment-note`}>
               <Button className="gap-2" variant="secondary">
                 <Printer className="h-4 w-4" />
@@ -227,16 +214,27 @@ export default async function TrackingDetailPage({
               </Button>
             </Link>
           ) : null}
-          <span
-            className={`inline-flex items-center rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-widest ${statusBadgeClassName(
-              liveData.status,
-            )}`}
-          >
-            <div className={`mr-2 h-2 w-2 rounded-full ${statusDotClassName(liveData.status)}`} />
-            {statusLabel}
-          </span>
+          <StatusBadge label={statusLabel} status={isVoided ? "voided" : liveData.status} />
         </div>
       </div>
+
+      {shipment && isVoided ? (
+        <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 p-5">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-rose-300" />
+            <div className="min-w-0">
+              <h2 className="font-semibold text-rose-100">Voided shipment</h2>
+              <div className="mt-3 grid gap-3 text-sm text-rose-100/80 sm:grid-cols-2 lg:grid-cols-4">
+                <p><span className="block text-xs uppercase text-rose-300/70">Reason</span>{formatVoidReason(shipment.voidReason)}</p>
+                <p><span className="block text-xs uppercase text-rose-300/70">Voided by</span>{voidedByStaff?.fullName || (shipment.voidedBy ? `Staff #${shipment.voidedBy}` : "-")}</p>
+                <p><span className="block text-xs uppercase text-rose-300/70">Voided at</span>{formatWibDateTime(shipment.voidedAt)}</p>
+                <p><span className="block text-xs uppercase text-rose-300/70">Previous status</span>{shipment.previousStatus ? formatStatus(shipment.previousStatus) : "-"}</p>
+              </div>
+              {shipment.voidNote ? <p className="mt-3 text-sm text-rose-100/70">{shipment.voidNote}</p> : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
@@ -257,7 +255,7 @@ export default async function TrackingDetailPage({
                 Tracking Timeline
               </h3>
               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-600">
-                Last Synced: {new Date(liveData.lastSyncAt).toLocaleTimeString()}
+                Last synced: {formatWibDateTime(liveData.lastSyncAt)}
               </p>
             </div>
 
@@ -390,7 +388,7 @@ export default async function TrackingDetailPage({
         </div>
 
         <div className="space-y-6 lg:col-span-1">
-          {shipment ? (
+          {shipment && canUpdateTracking ? (
             <div id="tracking-update">
               <Card className="p-6">
                 <h3 className="mb-6 text-xs font-bold uppercase tracking-widest text-slate-500">
@@ -408,7 +406,7 @@ export default async function TrackingDetailPage({
             </div>
           ) : null}
 
-          {shipment && isSuperadmin(user) ? (
+          {shipment && canUpdateTracking && isSuperadmin(user) ? (
             <Card className="p-6">
               <h3 className="mb-4 text-xs font-bold uppercase tracking-widest text-slate-500">
                 Tracking Correction
@@ -427,6 +425,21 @@ export default async function TrackingDetailPage({
             </Card>
           ) : null}
 
+          {shipment && ((!isVoided && canVoidShipment(user)) || (isVoided && canRestoreShipment(user))) ? (
+            <Card className="p-6">
+              <ShipmentLifecycleActions
+                blockedBySafeguard={Boolean(
+                  voidContext?.assessment.requiresElevatedOverride && !voidContext.assessment.allowed,
+                )}
+                canRestore={canRestoreShipment(user)}
+                isVoided={isVoided}
+                requiresElevatedOverride={Boolean(voidContext?.assessment.requiresElevatedOverride)}
+                trackingNumber={shipment.trackingNumber}
+                warnings={voidContext?.assessment.warnings ?? []}
+              />
+            </Card>
+          ) : null}
+
           <Card className="p-6">
             <h3 className="mb-6 text-xs font-bold uppercase tracking-widest text-slate-500">
               Owner Information
@@ -434,7 +447,7 @@ export default async function TrackingDetailPage({
             {customer ? (
               <div className="space-y-6">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-blue-600/20 bg-blue-600/10 text-blue-400">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-blue-600/20 bg-blue-600/10 text-blue-400">
                     <User className="h-6 w-6" />
                   </div>
                   <div>
@@ -499,6 +512,8 @@ export default async function TrackingDetailPage({
           </Card>
         </div>
       </div>
+      {readiness ? <ShipmentReadinessPanel canManage={canManageOperations(user)} data={readiness} /> : null}
+      {documents ? <ShipmentDocumentsPanel canManage={canManageDocuments(user)} data={documents} /> : null}
     </div>
   );
 }

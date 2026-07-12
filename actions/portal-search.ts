@@ -1,15 +1,17 @@
 "use server";
 
-import { desc, ilike, or } from "drizzle-orm";
+import { and, desc, ilike, isNull, or } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { customers, deliveryBatches, mawbDocuments, shipments } from "@/lib/db/schema";
 import { canUseMawbWorkflow } from "@/lib/mawbs/core";
 import { requirePortalUser } from "@/lib/portal-auth";
+import { hasPortalCapability } from "@/lib/portal-roles";
 
 export async function searchPortal(query: string) {
   const user = await requirePortalUser();
   const canUseMawbs = canUseMawbWorkflow(user);
+  const canViewDelivery = hasPortalCapability(user, "delivery:view");
   const search = query.trim();
   if (!search) return { batches: [], canUseMawbs, customers: [], mawbs: [], shipments: [] };
   const pattern = `%${search}%`;
@@ -24,6 +26,7 @@ export async function searchPortal(query: string) {
         status: shipments.status,
         title: shipments.title,
         trackingNumber: shipments.trackingNumber,
+        voidedAt: shipments.voidedAt,
       })
       .from(shipments)
       .where(
@@ -48,16 +51,19 @@ export async function searchPortal(query: string) {
       })
       .from(customers)
       .where(
-        or(
+        and(
+          isNull(customers.archivedAt),
+          or(
           ilike(customers.fullName, pattern),
           ilike(customers.companyName, pattern),
           ilike(customers.email, pattern),
           ilike(customers.phone, pattern),
+          ),
         ),
       )
       .orderBy(desc(customers.updatedAt))
       .limit(8),
-    db
+    canViewDelivery ? db
       .select({
         batchCode: deliveryBatches.batchCode,
         batchStatus: deliveryBatches.batchStatus,
@@ -73,7 +79,7 @@ export async function searchPortal(query: string) {
         ),
       )
       .orderBy(desc(deliveryBatches.updatedAt))
-      .limit(8),
+      .limit(8) : Promise.resolve([]),
     canUseMawbs
       ? db
           .select({

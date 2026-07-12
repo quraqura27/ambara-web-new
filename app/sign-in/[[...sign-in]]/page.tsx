@@ -8,10 +8,11 @@ type SignInPageProps = {
 };
 
 const errorMessages: Record<string, string> = {
-  config: "Portal sign-in is not configured. Check JWT_SECRET in the deployment environment.",
+  config: "Portal sign-in is not configured. Check STAFF_JWT_SECRET in the deployment environment.",
   invalid: "Invalid email or password.",
   missing: "Email and password are required.",
   server: "Unable to reach the staff account database. Try again shortly.",
+  throttled: "Too many sign-in attempts. Wait 15 minutes before trying again.",
 };
 
 export default async function Page({ searchParams }: SignInPageProps) {
@@ -20,7 +21,7 @@ export default async function Page({ searchParams }: SignInPageProps) {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#0a0a0f] px-4 text-slate-100">
-      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0f0f16] p-8 shadow-2xl">
+      <div className="w-full max-w-md rounded-lg border border-white/10 bg-[#0f0f16] p-8 shadow-2xl">
         <div className="mb-8 text-center">
           <Image
             src="/logo.png"

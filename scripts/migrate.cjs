@@ -135,6 +135,74 @@ const migration009Indexes = [
   "invoice_line_items_invoice_idx",
   "invoice_deductions_invoice_idx",
 ];
+const migration014Columns = [
+  ["shipments", "voided_at"],
+  ["shipments", "voided_by"],
+  ["shipments", "void_reason"],
+  ["shipments", "void_note"],
+  ["shipments", "previous_status"],
+  ["shipments", "restored_at"],
+  ["shipments", "restored_by"],
+  ["shipments", "restore_reason"],
+];
+const migration014Indexes = ["shipments_voided_at_idx"];
+const migration015Columns = [
+  ["staff_accounts", "session_version"],
+  ["customers", "session_version"],
+  ["customers", "archived_at"],
+  ["customers", "archived_by"],
+  ["shipments", "operational_stage"],
+  ["shipments", "hs_code"],
+  ["shipments", "incoterm"],
+  ["shipments", "clearance_mode"],
+  ["shipments", "cargo_risks"],
+  ["shipments", "document_readiness"],
+  ["shipments", "assigned_to"],
+  ["shipments", "blocker"],
+  ["shipments", "next_action"],
+  ["shipments", "action_due_at"],
+  ["shipments", "sla_due_at"],
+  ["shipments", "volumetric_weight_kg"],
+  ["shipments", "customs_review_required"],
+  ["shipments", "regulated_cargo"],
+  ["shipments", "readiness_updated_at"],
+  ["shipments", "readiness_updated_by"],
+  ["quote_requests", "assigned_to"],
+  ["quote_requests", "next_action"],
+  ["quote_requests", "due_at"],
+  ["quote_requests", "internal_notes"],
+  ["quote_requests", "updated_at"],
+  ["documents", "mime_type"],
+  ["documents", "checksum_sha256"],
+  ["documents", "version"],
+  ["documents", "supersedes_document_id"],
+  ["documents", "status"],
+  ["documents", "note"],
+  ["documents", "archived_at"],
+  ["documents", "archived_by"],
+];
+const migration015Tables = [
+  "portal_login_attempts",
+  "shipment_packages",
+  "shipment_operational_tasks",
+  "quote_requests",
+  "documents",
+];
+const migration015Indexes = [
+  "customers_archived_at_idx",
+  "portal_login_attempts_blocked_idx",
+  "shipments_operational_queue_idx",
+  "shipments_document_readiness_idx",
+  "shipment_packages_shipment_number_unique_idx",
+  "shipment_packages_shipment_idx",
+  "shipment_operational_tasks_queue_idx",
+  "shipment_operational_tasks_shipment_idx",
+  "shipment_operational_tasks_owner_idx",
+  "quote_requests_reference_unique_idx",
+  "quote_requests_queue_idx",
+  "documents_shipment_type_version_unique_idx",
+  "documents_shipment_status_idx",
+];
 
 function checksum(contents) {
   return createHash("sha256").update(contents).digest("hex");
@@ -234,11 +302,29 @@ async function migrationMissingObjects(sql, name) {
     });
   }
 
+  if (name.startsWith("014-")) {
+    return missingSchemaObjects(sql, {
+      columns: migration014Columns,
+      tables: [],
+      indexes: migration014Indexes,
+    });
+  }
+
+  if (name.startsWith("015-")) {
+    return missingSchemaObjects(sql, {
+      columns: migration015Columns,
+      tables: migration015Tables,
+      indexes: migration015Indexes,
+    });
+  }
+
   return [];
 }
 
 function hasSchemaObjectCheck(name) {
-  return name.startsWith("006-") || name.startsWith("007-") || name.startsWith("008-") || name.startsWith("009-");
+  return ["006-", "007-", "008-", "009-", "014-", "015-"].some((prefix) =>
+    name.startsWith(prefix),
+  );
 }
 
 async function ensureHistoryTable(sql) {

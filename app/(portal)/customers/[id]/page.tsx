@@ -8,16 +8,22 @@ import {
   Package,
   Phone,
   Plus,
-  Trash2,
+  Archive,
   Users,
 } from "lucide-react";
 
-import { deleteCustomerAndRedirect, getCustomerById } from "@/actions/customers";
+import { archiveCustomerAndRedirect, getCustomerById } from "@/actions/customers";
 import {
   linkTrackingToCustomer,
   unlinkTrackingFromCustomer,
 } from "@/actions/shipments";
 import { Button, Card, Input } from "@/components/ui/core";
+import { ConfirmSubmitButton, TypedConfirmSubmitButton } from "@/components/portal/confirm-submit-button";
+import { CustomerCredentialForm } from "@/components/portal/customer-credential-form";
+import { StatusBadge } from "@/components/portal/status-badge";
+import { getPortalUser } from "@/lib/portal-auth";
+import { canManageCustomers, hasPortalCapability } from "@/lib/portal-roles";
+import { formatWibDate } from "@/lib/time/wib";
 
 type CustomerDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -26,7 +32,7 @@ type CustomerDetailPageProps = {
 export default async function CustomerDetailPage({ params }: CustomerDetailPageProps) {
   const { id } = await params;
   const customerId = Number.parseInt(id, 10);
-  const customer = Number.isNaN(customerId) ? null : await getCustomerById(customerId);
+  const [customer, user] = await Promise.all([Number.isNaN(customerId) ? null : getCustomerById(customerId), getPortalUser()]);
 
   if (!customer) {
     return (
@@ -44,7 +50,10 @@ export default async function CustomerDetailPage({ params }: CustomerDetailPageP
   }
 
   const linkTrackingAction = linkTrackingToCustomer.bind(null, customer.id);
-  const deleteCustomerAction = deleteCustomerAndRedirect.bind(null, customer.id);
+  const archiveCustomerAction = archiveCustomerAndRedirect.bind(null, customer.id);
+  const canManage = canManageCustomers(user);
+  const canManageCredentials = hasPortalCapability(user, "customer:credentials");
+  const archiveIdentifier = customer.companyName || customer.fullName || `CUSTOMER-${customer.id}`;
 
   return (
     <div className="space-y-8">
@@ -65,7 +74,7 @@ export default async function CustomerDetailPage({ params }: CustomerDetailPageP
             <p className="text-xs text-slate-500">
               Member since{" "}
               {customer.createdAt
-                ? new Date(customer.createdAt).toLocaleDateString()
+                ? formatWibDate(customer.createdAt)
                 : "N/A"}
             </p>
           </div>
@@ -80,7 +89,7 @@ export default async function CustomerDetailPage({ params }: CustomerDetailPageP
             </h3>
             <div className="space-y-6">
               <div className="flex gap-4">
-                <div className="rounded-xl border border-white/5 bg-slate-900 p-3 text-slate-400">
+                <div className="rounded-lg border border-white/5 bg-slate-900 p-3 text-slate-400">
                   <BadgeCheck className="h-5 w-5" />
                 </div>
                 <div>
@@ -91,7 +100,7 @@ export default async function CustomerDetailPage({ params }: CustomerDetailPageP
                 </div>
               </div>
               <div className="flex gap-4">
-                <div className="rounded-xl border border-white/5 bg-slate-900 p-3 text-slate-400">
+                <div className="rounded-lg border border-white/5 bg-slate-900 p-3 text-slate-400">
                   <Mail className="h-5 w-5" />
                 </div>
                 <div>
@@ -100,7 +109,7 @@ export default async function CustomerDetailPage({ params }: CustomerDetailPageP
                 </div>
               </div>
               <div className="flex gap-4">
-                <div className="rounded-xl border border-white/5 bg-slate-900 p-3 text-slate-400">
+                <div className="rounded-lg border border-white/5 bg-slate-900 p-3 text-slate-400">
                   <Phone className="h-5 w-5" />
                 </div>
                 <div>
@@ -109,7 +118,7 @@ export default async function CustomerDetailPage({ params }: CustomerDetailPageP
                 </div>
               </div>
               <div className="flex gap-4">
-                <div className="rounded-xl border border-white/5 bg-slate-900 p-3 text-slate-400">
+                <div className="rounded-lg border border-white/5 bg-slate-900 p-3 text-slate-400">
                   <MapPin className="h-5 w-5" />
                 </div>
                 <div>
@@ -122,22 +131,19 @@ export default async function CustomerDetailPage({ params }: CustomerDetailPageP
             </div>
 
             <div className="mt-8 space-y-3 border-t border-white/5 pt-8">
-              <Link href={`/customers/${customer.id}/edit`}>
+              {canManage ? <Link href={`/customers/${customer.id}/edit`}>
                 <Button className="w-full" variant="secondary">
                   Edit Profile
                 </Button>
-              </Link>
-              <form action={deleteCustomerAction}>
-                <Button className="w-full" type="submit" variant="danger">
-                  Delete Customer
-                </Button>
-              </form>
+              </Link> : null}
+              {canManage ? <form action={archiveCustomerAction} className="space-y-2"><Input name="reason" placeholder="Archive reason" required /><TypedConfirmSubmitButton confirmLabel="Archive customer" confirmText={archiveIdentifier} description="The customer and linked shipment history remain retained. Active portal sessions for the customer are revoked." title="Archive customer?"><Archive className="mr-2 h-4 w-4" />Archive Customer</TypedConfirmSubmitButton></form> : null}
             </div>
           </Card>
+          {canManageCredentials ? <Card className="p-6"><h3 className="mb-4 text-sm font-semibold text-white">Client portal access</h3><CustomerCredentialForm customerId={customer.id} /></Card> : null}
         </div>
 
         <div className="space-y-6 lg:col-span-2">
-          <Card className="p-6">
+          {canManage ? <Card className="p-6">
             <div className="mb-5 flex items-center justify-between">
               <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">
                 Link Tracking Number
@@ -158,7 +164,7 @@ export default async function CustomerDetailPage({ params }: CustomerDetailPageP
                 <Plus className="h-4 w-4" /> Link Tracking
               </Button>
             </form>
-          </Card>
+          </Card> : null}
 
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">
@@ -205,30 +211,10 @@ export default async function CustomerDetailPage({ params }: CustomerDetailPageP
                       <span className="mb-1 text-[10px] font-bold uppercase tracking-widest text-slate-600">
                         Status
                       </span>
-                      <span
-                        className={`inline-flex items-center text-[10px] font-bold uppercase tracking-tight ${
-                          shipment.status === "delivered"
-                            ? "text-emerald-500"
-                            : shipment.status === "in_transit"
-                              ? "text-amber-500"
-                              : shipment.status === "exception"
-                                ? "text-rose-400"
-                                : "text-blue-400"
-                        }`}
-                      >
-                        <div
-                          className={`mr-1.5 h-1.5 w-1.5 rounded-full ${
-                            shipment.status === "delivered"
-                              ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"
-                              : shipment.status === "in_transit"
-                                ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]"
-                                : shipment.status === "exception"
-                                  ? "bg-rose-400 shadow-[0_0_8px_rgba(251,113,133,0.5)]"
-                                  : "bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.6)]"
-                          }`}
-                        />
-                        {shipment.status.replace("_", " ")}
-                      </span>
+                      <StatusBadge
+                        label={shipment.voidedAt ? "Voided" : undefined}
+                        status={shipment.voidedAt ? "voided" : shipment.status}
+                      />
                     </div>
                     <div className="text-right">
                       <span className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-slate-600">
@@ -236,23 +222,19 @@ export default async function CustomerDetailPage({ params }: CustomerDetailPageP
                       </span>
                       <span className="text-xs text-slate-400">
                         {shipment.updatedAt
-                          ? new Date(shipment.updatedAt).toLocaleDateString()
+                          ? formatWibDate(shipment.updatedAt)
                           : "N/A"}
                       </span>
                     </div>
                   </div>
 
-                  <form action={unlinkAction} className="mt-4">
-                    <Button className="w-full gap-2" type="submit" variant="ghost">
-                      <Trash2 className="h-4 w-4" /> Unlink Shipment
-                    </Button>
-                  </form>
+                  {canManage ? <form action={unlinkAction} className="mt-4"><ConfirmSubmitButton confirmLabel="Unlink" description="Remove the customer link from this shipment without deleting either record." title="Unlink shipment?" variant="ghost"><Archive className="mr-2 h-4 w-4" />Unlink Shipment</ConfirmSubmitButton></form> : null}
                 </Card>
               );
             })}
 
             {customer.shipments.length === 0 && (
-              <div className="col-span-full rounded-2xl border-2 border-dashed border-white/5 py-12 text-center">
+              <div className="col-span-full rounded-lg border-2 border-dashed border-white/5 py-12 text-center">
                 <Package className="mx-auto mb-3 h-10 w-10 text-slate-800" />
                 <p className="font-medium text-slate-500">No tracking numbers linked</p>
                 <p className="mt-1 text-xs text-slate-700">

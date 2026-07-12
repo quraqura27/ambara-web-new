@@ -13,19 +13,20 @@ import {
   bulkUpdateItems,
   bulkUpdateJobs,
   deliveryBatches,
+  invoiceLineItems,
   mawbDocuments,
   mawbShipmentLinks,
   parcels,
   parcelVendorTracking,
   portalAuditLogs,
+  shipmentDocuments,
   shipmentFlightLegs,
   shipments,
   trackingEvents,
   trackingUpdates,
 } from "@/lib/db/schema";
 import { requirePortalUser } from "@/lib/portal-auth";
-import { hasPortalRoleAtLeast } from "@/lib/portal-roles";
-import { recordPortalAudit } from "@/lib/portal-audit";
+import { canManageDeliveryBatches } from "@/lib/portal-roles";
 import {
   isDoorDeliveryService,
   normalizeShipmentService,
@@ -139,7 +140,7 @@ function revalidateVendorTrackingPaths(batchId?: number) {
 async function requireVendorTrackingAdmin() {
   const user = await requirePortalUser();
 
-  if (!hasPortalRoleAtLeast(user, "operations")) {
+  if (!canManageDeliveryBatches(user)) {
     redirect("/dashboard");
   }
 
@@ -189,7 +190,7 @@ function eventSourceForFilename(filename: string, fallback: string) {
   return /\.csv$/i.test(filename) ? "csv_import" : fallback;
 }
 
-async function createCustomerTrackingEvent(input: {
+function buildCustomerTrackingQueries(input: {
   createdBy: number;
   internalNote?: string;
   location?: string;
@@ -199,7 +200,7 @@ async function createCustomerTrackingEvent(input: {
   source: string;
   statusCode: AmbaraStatusCode;
   visibleToCustomer?: boolean;
-}) {
+}): BatchItem<"pg">[] {
   const definition = getShipmentStatusDefinition(input.statusCode, input.serviceType);
   const publicDescription = definition.publicDescription;
   const label = definition.publicLabel;
@@ -207,7 +208,7 @@ async function createCustomerTrackingEvent(input: {
   const visibleToCustomer = input.visibleToCustomer !== false;
   const status = definition.publicStatus;
 
-  await db.insert(trackingEvents).values({
+  const queries: BatchItem<"pg">[] = [db.insert(trackingEvents).values({
     shipmentId: input.shipmentId,
     parcelId: input.parcelId ?? null,
     statusCode: input.statusCode,
@@ -223,17 +224,37 @@ async function createCustomerTrackingEvent(input: {
     createdBy: input.createdBy,
     state: "done",
     createdAt: eventTime,
-  });
+  })];
 
   if (visibleToCustomer) {
-    await db.insert(trackingUpdates).values({
+    queries.push(db.insert(trackingUpdates).values({
       shipmentId: input.shipmentId,
       status,
       description: publicDescription,
       location: input.location ?? null,
       timestamp: eventTime,
-    });
+    }));
   }
+
+  return queries;
+}
+
+async function allocateDeliveryBatchId() {
+  const result = await db.execute<{ id: number }>(sql`
+    select nextval(pg_get_serial_sequence('delivery_batches', 'id'))::int as id
+  `);
+  const id = result.rows[0]?.id;
+  if (!id) throw new Error("Unable to allocate a delivery batch identifier.");
+  return id;
+}
+
+async function allocateBulkUpdateJobId() {
+  const result = await db.execute<{ id: number }>(sql`
+    select nextval(pg_get_serial_sequence('bulk_update_jobs', 'id'))::int as id
+  `);
+  const id = result.rows[0]?.id;
+  if (!id) throw new Error("Unable to allocate an update job identifier.");
+  return id;
 }
 
 async function createUniqueTrackingNumber() {
@@ -719,6 +740,9 @@ export async function rollbackBulkShipmentImportJob(jobId: number, formData: For
   if (!job || job.status === "rolled_back") {
     redirectWithError("/shipments/bulk-import", "Import job is not available for rollback.");
   }
+  if (formText(formData.get("confirmationCode")) !== `IMPORT-${jobId}`) {
+    redirectWithError("/shipments/bulk-import", `Type IMPORT-${jobId} to confirm rollback.`);
+  }
 
   const items = await db
     .select()
@@ -748,10 +772,10 @@ export async function rollbackBulkShipmentImportJob(jobId: number, formData: For
     );
   }
 
-  const [createdParcels, createdShipments, createdTrackingEvents] = await Promise.all([
+  const [createdParcels, createdShipments, createdTrackingEvents, invoiceLinks, documentLinks, downstreamAudit] = await Promise.all([
     db.select().from(parcels).where(inArray(parcels.id, parcelIds)),
     db
-      .select({ id: shipments.id, status: shipments.status })
+      .select({ customerId: shipments.customerId, id: shipments.id, status: shipments.status })
       .from(shipments)
       .where(inArray(shipments.id, shipmentIds)),
     db
@@ -764,6 +788,24 @@ export async function rollbackBulkShipmentImportJob(jobId: number, formData: For
       })
       .from(trackingEvents)
       .where(inArray(trackingEvents.shipmentId, shipmentIds)),
+    db
+      .select({ id: invoiceLineItems.id })
+      .from(invoiceLineItems)
+      .where(inArray(invoiceLineItems.shipmentId, shipmentIds))
+      .limit(1),
+    db
+      .select({ id: shipmentDocuments.id })
+      .from(shipmentDocuments)
+      .where(inArray(shipmentDocuments.shipmentId, shipmentIds))
+      .limit(1),
+    db
+      .select({ id: portalAuditLogs.id })
+      .from(portalAuditLogs)
+      .where(and(
+        eq(portalAuditLogs.entityType, "shipment"),
+        inArray(portalAuditLogs.entityId, shipmentIds.map(String)),
+      ))
+      .limit(1),
   ]);
   const nonDraftParcel = createdParcels.find((parcel) => parcel.currentStatus !== "DRAFT");
 
@@ -771,6 +813,17 @@ export async function rollbackBulkShipmentImportJob(jobId: number, formData: For
     redirectWithError(
       "/shipments/bulk-import",
       "Only initial, unassigned imports can be rolled back.",
+    );
+  }
+  if (
+    createdShipments.some((shipment) => shipment.customerId !== null) ||
+    invoiceLinks.length > 0 ||
+    documentLinks.length > 0 ||
+    downstreamAudit.length > 0
+  ) {
+    redirectWithError(
+      "/shipments/bulk-import",
+      "This import has customer, invoice, document, print, export, or operational history. Void the shipments instead.",
     );
   }
 
@@ -878,6 +931,7 @@ export async function getAvailableParcelsForBatch(search?: string) {
   };
   const baseCondition = and(
     isNull(parcelVendorTracking.id),
+    isNull(shipments.voidedAt),
     sql`upper(coalesce(${shipments.serviceType}, ${parcels.serviceType}, '')) in ('DTD', 'PTD')`,
     sql`upper(coalesce(${parcels.currentStatus}, '')) not in ('CANCELLED', 'DELIVERED', 'RETURN_IN_PROGRESS')`,
   );
@@ -905,7 +959,7 @@ export async function getAvailableParcelsForBatch(search?: string) {
 }
 
 export async function createDeliveryBatchFromForm(formData: FormData) {
-  await requireVendorTrackingAdmin();
+  const user = await requireVendorTrackingAdmin();
   const parcelIds = formData
     .getAll("parcelIds")
     .map((value) => Number.parseInt(String(value), 10))
@@ -932,12 +986,17 @@ export async function createDeliveryBatchFromForm(formData: FormData) {
       currentStatus: parcels.currentStatus,
       destinationCity: parcels.destinationCity,
       serviceType: sql<string>`upper(coalesce(${shipments.serviceType}, ${parcels.serviceType}, ''))`,
+      voidedAt: shipments.voidedAt,
     })
     .from(parcels)
+    .innerJoin(shipments, eq(parcels.shipmentId, shipments.id))
     .where(inArray(parcels.id, parcelIds));
 
   if (selectedParcels.length !== parcelIds.length) {
     redirectWithError("/delivery-batches/new", "One or more selected shipments no longer exist.");
+  }
+  if (selectedParcels.some((parcel) => parcel.voidedAt)) {
+    redirectWithError("/delivery-batches/new", "Voided shipments cannot be added to a delivery batch.");
   }
   if (
     selectedParcels.some(
@@ -961,9 +1020,10 @@ export async function createDeliveryBatchFromForm(formData: FormData) {
 
   const batchCode = await createUniqueBatchCode();
   const now = new Date();
-  const [batch] = await db
-    .insert(deliveryBatches)
-    .values({
+  const batchId = await allocateDeliveryBatchId();
+  const queries: BatchItem<"pg">[] = [
+    db.insert(deliveryBatches).values({
+      id: batchId,
       batchCode,
       vendorName,
       vendorServiceType: vendorServiceType || null,
@@ -974,30 +1034,40 @@ export async function createDeliveryBatchFromForm(formData: FormData) {
       notes: notes || null,
       createdAt: now,
       updatedAt: now,
-    })
-    .returning();
+    }),
+  ];
 
   for (let index = 0; index < selectedParcels.length; index += 1) {
     const parcel = selectedParcels[index];
     if (!parcel) continue;
 
-    await db.insert(parcelVendorTracking).values({
+    queries.push(db.insert(parcelVendorTracking).values({
       parcelId: parcel.id,
-      deliveryBatchId: batch.id,
+      deliveryBatchId: batchId,
       vendorName,
-      exportRowId: `${batch.batchCode}-${String(index + 1).padStart(4, "0")}`,
+      exportRowId: `${batchCode}-${String(index + 1).padStart(4, "0")}`,
       createdAt: now,
       updatedAt: now,
-    });
+    }));
 
-    await db
+    queries.push(db
       .update(parcels)
       .set({ currentStatus: "HANDED_TO_DELIVERY_PARTNER", updatedAt: now })
-      .where(eq(parcels.id, parcel.id));
+      .where(eq(parcels.id, parcel.id)));
   }
 
-  revalidateVendorTrackingPaths(batch.id);
-  redirect(`/delivery-batches/${batch.id}?notice=${encodeURIComponent("Delivery batch created.")}`);
+  queries.push(db.insert(portalAuditLogs).values({
+    action: "delivery_batch.created",
+    entityId: String(batchId),
+    entityType: "delivery_batch",
+    metadataJson: JSON.stringify({ parcelCount: selectedParcels.length, vendorName }),
+    performedBy: user.id,
+    createdAt: now,
+  }));
+  await db.batch(queries as [BatchItem<"pg">, ...BatchItem<"pg">[]]);
+
+  revalidateVendorTrackingPaths(batchId);
+  redirect(`/delivery-batches/${batchId}?notice=${encodeURIComponent("Delivery batch created.")}`);
 }
 
 export async function getDeliveryBatchDashboard() {
@@ -1015,7 +1085,12 @@ export async function getDeliveryBatchDashboard() {
     .from(parcelVendorTracking)
     .innerJoin(parcels, eq(parcelVendorTracking.parcelId, parcels.id))
     .innerJoin(shipments, eq(parcels.shipmentId, shipments.id))
-    .where(sql`upper(coalesce(${shipments.serviceType}, ${parcels.serviceType}, '')) in ('DTD', 'PTD')`);
+    .where(
+      and(
+        isNull(shipments.voidedAt),
+        sql`upper(coalesce(${shipments.serviceType}, ${parcels.serviceType}, '')) in ('DTD', 'PTD')`,
+      ),
+    );
   const now = new Date();
   const today = now.toISOString().slice(0, 10);
 
@@ -1151,6 +1226,7 @@ async function getBatchParcels(batchId: number) {
       shipmentServiceType: shipments.serviceType,
       shipmentTrackingNumber: shipments.trackingNumber,
       shipmentInternalTrackingNo: shipments.internalTrackingNo,
+      shipmentVoidedAt: shipments.voidedAt,
       exportRowId: parcelVendorTracking.exportRowId,
       vendorTrackingNumber: parcelVendorTracking.vendorTrackingNumber,
       vendorName: parcelVendorTracking.vendorName,
@@ -1318,10 +1394,20 @@ export async function commitVendorTrackingImport(formData: FormData) {
       match.parcel &&
       (match.matchStatus === "auto_confirm" || selectedReviewRows.has(match.row.rowNumber)),
   );
+  const batchParcelById = new Map(batchParcels.map((parcel) => [parcel.id, parcel]));
+  const voidedMatches = confirmableMatches.filter(
+    (match) => match.parcel && batchParcelById.get(match.parcel.id)?.shipmentVoidedAt,
+  );
   const now = new Date();
 
   if (confirmableMatches.length === 0) {
     redirectWithError(`/delivery-batches/${payload.batchId}`, "No vendor tracking rows were confirmed.");
+  }
+  if (voidedMatches.length > 0) {
+    redirectWithError(
+      `/delivery-batches/${payload.batchId}`,
+      `${voidedMatches.length} confirmed rows belong to voided shipments and cannot be updated.`,
+    );
   }
 
   const [existingJob] = await db
@@ -1333,9 +1419,10 @@ export async function commitVendorTrackingImport(formData: FormData) {
     redirectWithNotice(`/delivery-batches/${payload.batchId}`, "This vendor tracking import was already processed.");
   }
 
-  const [job] = await db
-    .insert(bulkUpdateJobs)
-    .values({
+  const jobId = await allocateBulkUpdateJobId();
+  const queries: BatchItem<"pg">[] = [
+    db.insert(bulkUpdateJobs).values({
+      id: jobId,
       deliveryBatchId: payload.batchId,
       updateType: "vendor_tracking_import",
       source: "vendor_tracking_import",
@@ -1351,16 +1438,16 @@ export async function commitVendorTrackingImport(formData: FormData) {
       createdBy: user.id,
       createdAt: now,
       completedAt: now,
-    })
-    .returning();
+    }),
+  ];
 
   for (const match of recomputedResult.matches) {
     const shouldCommit =
       match.parcel &&
       (match.matchStatus === "auto_confirm" || selectedReviewRows.has(match.row.rowNumber));
 
-    await db.insert(bulkUpdateItems).values({
-      bulkUpdateJobId: job.id,
+    queries.push(db.insert(bulkUpdateItems).values({
+      bulkUpdateJobId: jobId,
       parcelId: match.parcel?.id ?? null,
       vendorTrackingNumber: match.row.vendorTrackingNumber || null,
       oldStatus: match.parcel?.currentStatus ?? null,
@@ -1372,13 +1459,13 @@ export async function commitVendorTrackingImport(formData: FormData) {
       matchStatus: shouldCommit ? "matched" : match.matchStatus,
       errorMessage: match.errors.join("; ") || null,
       createdAt: now,
-    });
+    }));
 
     if (!shouldCommit || !match.parcel) {
       continue;
     }
 
-    await db
+    queries.push(db
       .update(parcelVendorTracking)
       .set({
         vendorTrackingNumber: match.row.vendorTrackingNumber,
@@ -1398,13 +1485,13 @@ export async function commitVendorTrackingImport(formData: FormData) {
           eq(parcelVendorTracking.deliveryBatchId, payload.batchId),
           eq(parcelVendorTracking.parcelId, match.parcel.id),
         ),
-      );
+      ));
 
-    await db
+    queries.push(db
       .update(parcels)
       .set({ currentStatus: "VENDOR_TRACKING_ASSIGNED", updatedAt: now })
-      .where(eq(parcels.id, match.parcel.id));
-    await createCustomerTrackingEvent({
+      .where(eq(parcels.id, match.parcel.id)));
+    queries.push(...buildCustomerTrackingQueries({
       createdBy: user.id,
       shipmentId: match.parcel.shipmentId,
       parcelId: match.parcel.id,
@@ -1412,22 +1499,39 @@ export async function commitVendorTrackingImport(formData: FormData) {
       source: "vendor_tracking_import",
       statusCode: "VENDOR_TRACKING_ASSIGNED",
       visibleToCustomer: false,
-      internalNote: `Vendor tracking number ${match.row.vendorTrackingNumber}; import job ${job.id}.`,
-    });
+      internalNote: `Vendor tracking number ${match.row.vendorTrackingNumber}; import job ${jobId}.`,
+    }));
   }
 
-  await db
+  queries.push(db
     .update(deliveryBatches)
     .set({ batchStatus: "VENDOR_TRACKING_IMPORTED", updatedAt: now })
-    .where(eq(deliveryBatches.id, payload.batchId));
-
-  await recordPortalAudit({
+    .where(eq(deliveryBatches.id, payload.batchId)));
+  queries.push(db.insert(portalAuditLogs).values({
     action: "delivery_batch.vendor_tracking_imported",
-    entityId: payload.batchId,
+    entityId: String(payload.batchId),
     entityType: "delivery_batch",
-    metadata: { confirmedRows: confirmableMatches.length, jobId: job.id },
+    metadataJson: JSON.stringify({ confirmedRows: confirmableMatches.length, jobId }),
     performedBy: user.id,
-  });
+    createdAt: now,
+  }));
+
+  try {
+    await db.batch(queries as [BatchItem<"pg">, ...BatchItem<"pg">[]]);
+  } catch {
+    const [processedJob] = await db
+      .select({ id: bulkUpdateJobs.id })
+      .from(bulkUpdateJobs)
+      .where(eq(bulkUpdateJobs.idempotencyKey, payload.idempotencyKey))
+      .limit(1);
+    if (processedJob) {
+      redirectWithNotice(`/delivery-batches/${payload.batchId}`, "This vendor tracking import was already processed.");
+    }
+    redirectWithError(
+      `/delivery-batches/${payload.batchId}`,
+      "Vendor tracking import failed. No delivery records were changed.",
+    );
+  }
 
   revalidateVendorTrackingPaths(payload.batchId);
   redirectWithNotice(
@@ -1493,10 +1597,15 @@ export async function bulkUpdateBatchStatusFromForm(batchId: number, formData: F
   }
 
   const batchParcels = await getBatchParcels(batchId);
-  const targets =
+  const selectedTargets =
     scope === "all"
       ? batchParcels
       : batchParcels.filter((parcel) => selectedParcelIds.includes(parcel.id));
+
+  if (scope !== "all" && selectedTargets.some((target) => target.shipmentVoidedAt)) {
+    redirectWithError(`/delivery-batches/${batchId}`, "Voided shipments cannot be updated.");
+  }
+  const targets = selectedTargets.filter((target) => !target.shipmentVoidedAt);
 
   if (targets.length === 0) {
     redirectWithError(`/delivery-batches/${batchId}`, "Select at least one shipment to update.");
@@ -1518,9 +1627,10 @@ export async function bulkUpdateBatchStatusFromForm(batchId: number, formData: F
   }
 
   const now = new Date();
-  const [job] = await db
-    .insert(bulkUpdateJobs)
-    .values({
+  const jobId = await allocateBulkUpdateJobId();
+  const queries: BatchItem<"pg">[] = [
+    db.insert(bulkUpdateJobs).values({
+      id: jobId,
       deliveryBatchId: batchId,
       updateType: scope === "all" ? "batch_status_update" : "selected_status_update",
       source: "bulk_update",
@@ -1533,32 +1643,32 @@ export async function bulkUpdateBatchStatusFromForm(batchId: number, formData: F
       createdBy: user.id,
       createdAt: now,
       completedAt: now,
-    })
-    .returning();
+    }),
+  ];
 
   for (const target of targets) {
-    await db.insert(bulkUpdateItems).values({
-      bulkUpdateJobId: job.id,
+    queries.push(db.insert(bulkUpdateItems).values({
+      bulkUpdateJobId: jobId,
       parcelId: target.id,
       vendorTrackingNumber: target.vendorTrackingNumber || null,
       oldStatus: target.currentStatus,
       newStatus: status,
       matchStatus: "matched",
       createdAt: now,
-    });
-    await db
+    }));
+    queries.push(db
       .update(parcels)
       .set({ currentStatus: status, updatedAt: now })
-      .where(eq(parcels.id, target.id));
-    await db
+      .where(eq(parcels.id, target.id)));
+    queries.push(db
       .update(parcelVendorTracking)
       .set({ lastVendorStatus: status, updatedAt: now })
-      .where(eq(parcelVendorTracking.id, target.vendorTrackingId));
-    await db
+      .where(eq(parcelVendorTracking.id, target.vendorTrackingId)));
+    queries.push(db
       .update(shipments)
       .set({ status: lowerShipmentStatus(status), updatedAt: now, updatedByStaff: user.id })
-      .where(eq(shipments.id, target.shipmentId));
-    await createCustomerTrackingEvent({
+      .where(and(eq(shipments.id, target.shipmentId), isNull(shipments.voidedAt))));
+    queries.push(...buildCustomerTrackingQueries({
       createdBy: user.id,
       shipmentId: target.shipmentId,
       parcelId: target.id,
@@ -1566,22 +1676,33 @@ export async function bulkUpdateBatchStatusFromForm(batchId: number, formData: F
       source: "bulk_update",
       statusCode: status,
       location: target.destinationCity,
-      internalNote: `Bulk update job ${job.id}.`,
-    });
+      internalNote: `Bulk update job ${jobId}.`,
+    }));
   }
 
-  await db
+  queries.push(db
     .update(deliveryBatches)
     .set({ batchStatus: status, updatedAt: now })
-    .where(eq(deliveryBatches.id, batchId));
-
-  await recordPortalAudit({
+    .where(eq(deliveryBatches.id, batchId)));
+  queries.push(db.insert(portalAuditLogs).values({
     action: scope === "all" ? "delivery_batch.status_updated_all" : "delivery_batch.status_updated_selected",
-    entityId: batchId,
+    entityId: String(batchId),
     entityType: "delivery_batch",
-    metadata: { status, targetCount: targets.length },
+    metadataJson: JSON.stringify({ jobId, status, targetCount: targets.length }),
     performedBy: user.id,
-  });
+    createdAt: now,
+  }));
+  try {
+    await db.batch(queries as [BatchItem<"pg">, ...BatchItem<"pg">[]]);
+  } catch {
+    const [processedJob] = await db
+      .select({ id: bulkUpdateJobs.id })
+      .from(bulkUpdateJobs)
+      .where(eq(bulkUpdateJobs.idempotencyKey, idempotencyKey))
+      .limit(1);
+    if (processedJob) redirectWithNotice(`/delivery-batches/${batchId}`, "This update was already processed.");
+    redirectWithError(`/delivery-batches/${batchId}`, "The update failed. No shipment records were changed.");
+  }
 
   revalidateVendorTrackingPaths(batchId);
   redirectWithNotice(`/delivery-batches/${batchId}`, `Updated ${targets.length} shipments.`);
@@ -1640,6 +1761,7 @@ export async function commitVendorStatusUpdate(formData: FormData) {
     const parcel = match.parcel ? parcelById.get(match.parcel.id) : null;
     return (
       !parcel ||
+      Boolean(parcel.shipmentVoidedAt) ||
       !match.newStatus ||
       !canTransitionShipmentStatus(
         parcel.shipmentStatus,
@@ -1664,9 +1786,10 @@ export async function commitVendorStatusUpdate(formData: FormData) {
     redirectWithNotice(`/delivery-batches/${payload.batchId}`, "This vendor status import was already processed.");
   }
 
-  const [job] = await db
-    .insert(bulkUpdateJobs)
-    .values({
+  const jobId = await allocateBulkUpdateJobId();
+  const queries: BatchItem<"pg">[] = [
+    db.insert(bulkUpdateJobs).values({
+      id: jobId,
       deliveryBatchId: payload.batchId,
       updateType: "vendor_status_import",
       source: "vendor_status_import",
@@ -1682,12 +1805,12 @@ export async function commitVendorStatusUpdate(formData: FormData) {
       createdBy: user.id,
       createdAt: now,
       completedAt: now,
-    })
-    .returning();
+    }),
+  ];
 
   for (const match of recomputedMatches) {
-    await db.insert(bulkUpdateItems).values({
-      bulkUpdateJobId: job.id,
+    queries.push(db.insert(bulkUpdateItems).values({
+      bulkUpdateJobId: jobId,
       parcelId: match.parcel?.id ?? null,
       vendorTrackingNumber: match.row.vendorTrackingNumber || null,
       oldStatus: match.oldStatus || null,
@@ -1699,18 +1822,18 @@ export async function commitVendorStatusUpdate(formData: FormData) {
       matchStatus: match.matchStatus,
       errorMessage: match.errors.join("; ") || null,
       createdAt: now,
-    });
+    }));
 
     if (match.matchStatus !== "matched" || !match.parcel || !match.newStatus) {
       continue;
     }
 
     const mapped = mapVendorStatus(match.row.vendorStatus, match.row.vendorName);
-    await db
+    queries.push(db
       .update(parcels)
       .set({ currentStatus: mapped.statusCode, updatedAt: now })
-      .where(eq(parcels.id, match.parcel.id));
-    await db
+      .where(eq(parcels.id, match.parcel.id)));
+    queries.push(db
       .update(parcelVendorTracking)
       .set({
         lastVendorStatus: match.row.vendorStatus || null,
@@ -1724,8 +1847,8 @@ export async function commitVendorStatusUpdate(formData: FormData) {
           eq(parcelVendorTracking.deliveryBatchId, payload.batchId),
           eq(parcelVendorTracking.parcelId, match.parcel.id),
         ),
-      );
-    await db
+      ));
+    queries.push(db
       .update(shipments)
       .set({
         status: lowerShipmentStatus(mapped.statusCode),
@@ -1733,8 +1856,8 @@ export async function commitVendorStatusUpdate(formData: FormData) {
         updatedByStaff: user.id,
         ...(mapped.statusCode === "DELIVERED" ? { deliveredAt: now } : {}),
       })
-      .where(eq(shipments.id, match.parcel.shipmentId));
-    await createCustomerTrackingEvent({
+      .where(and(eq(shipments.id, match.parcel.shipmentId), isNull(shipments.voidedAt))));
+    queries.push(...buildCustomerTrackingQueries({
       createdBy: user.id,
       shipmentId: match.parcel.shipmentId,
       parcelId: match.parcel.id,
@@ -1742,22 +1865,38 @@ export async function commitVendorStatusUpdate(formData: FormData) {
       source: "vendor_status_import",
       statusCode: mapped.statusCode,
       location: match.parcel.destinationCity,
-      internalNote: `Vendor raw status "${match.row.vendorStatus}" imported by job ${job.id}.`,
-    });
+      internalNote: `Vendor raw status "${match.row.vendorStatus}" imported by job ${jobId}.`,
+    }));
   }
 
-  await db
+  queries.push(db
     .update(deliveryBatches)
     .set({ lastCheckedAt: now, lastCheckedBy: user.id, updatedAt: now })
-    .where(eq(deliveryBatches.id, payload.batchId));
-
-  await recordPortalAudit({
+    .where(eq(deliveryBatches.id, payload.batchId)));
+  queries.push(db.insert(portalAuditLogs).values({
     action: "delivery_batch.vendor_status_imported",
-    entityId: payload.batchId,
+    entityId: String(payload.batchId),
     entityType: "delivery_batch",
-    metadata: { jobId: job.id, matchedRows: matches.length },
+    metadataJson: JSON.stringify({ jobId, matchedRows: matches.length }),
     performedBy: user.id,
-  });
+    createdAt: now,
+  }));
+  try {
+    await db.batch(queries as [BatchItem<"pg">, ...BatchItem<"pg">[]]);
+  } catch {
+    const [processedJob] = await db
+      .select({ id: bulkUpdateJobs.id })
+      .from(bulkUpdateJobs)
+      .where(eq(bulkUpdateJobs.idempotencyKey, payload.idempotencyKey))
+      .limit(1);
+    if (processedJob) {
+      redirectWithNotice(`/delivery-batches/${payload.batchId}`, "This vendor status import was already processed.");
+    }
+    redirectWithError(
+      `/delivery-batches/${payload.batchId}`,
+      "Vendor status import failed. No shipment records were changed.",
+    );
+  }
 
   revalidateVendorTrackingPaths(payload.batchId);
   redirectWithNotice(`/delivery-batches/${payload.batchId}`, `Imported ${matches.length} status updates.`);

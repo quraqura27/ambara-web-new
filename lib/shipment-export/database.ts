@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, desc, eq, gte, ilike, inArray, lte, or, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, gte, ilike, inArray, isNull, lte, or, type SQL } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import {
@@ -139,6 +139,8 @@ function appendShipmentDateCondition(conditions: SQL[], filters: ShipmentExportF
 }
 
 function appendCommonFilters(conditions: SQL[], filters: ShipmentExportFilters) {
+  conditions.push(isNull(shipments.voidedAt));
+
   if (filters.status !== "all") {
     conditions.push(eq(shipments.status, filters.status));
   }

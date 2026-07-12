@@ -30,7 +30,7 @@ export default async function ShipmentCreatedPage({ params }: ShipmentCreatedPag
         <p className="mt-3 text-sm text-slate-400">
           One shipment, tracking number, and consignment note were created. The shipment starts at Received.
         </p>
-        <div className="mt-8 grid gap-3 rounded-xl border border-white/5 bg-slate-950/40 p-5 text-left sm:grid-cols-2">
+        <div className="mt-8 grid gap-3 rounded-lg border border-white/5 bg-slate-950/40 p-5 text-left sm:grid-cols-2">
           <div className="flex gap-3">
             <Package className="h-5 w-5 text-blue-400" />
             <div>

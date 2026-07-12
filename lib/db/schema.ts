@@ -34,8 +34,32 @@ export const shipments = pgTable('shipments', {
   deliveredAt: timestamp('delivered_at'),
   cargoType: text('cargo_type').default('general'),
   commodity: text('commodity'),
+  operationalStage: text('operational_stage').notNull().default('intake'),
+  hsCode: text('hs_code'),
+  incoterm: text('incoterm'),
+  clearanceMode: text('clearance_mode'),
+  cargoRisks: jsonb('cargo_risks').$type<string[]>().notNull().default([]),
+  documentReadiness: text('document_readiness').notNull().default('not_ready'),
+  assignedTo: integer('assigned_to'),
+  blocker: text('blocker'),
+  nextAction: text('next_action'),
+  actionDueAt: timestamp('action_due_at', { withTimezone: true }),
+  slaDueAt: timestamp('sla_due_at', { withTimezone: true }),
+  volumetricWeightKg: numeric('volumetric_weight_kg'),
+  customsReviewRequired: boolean('customs_review_required').notNull().default(false),
+  regulatedCargo: boolean('regulated_cargo').notNull().default(false),
+  readinessUpdatedAt: timestamp('readiness_updated_at', { withTimezone: true }),
+  readinessUpdatedBy: integer('readiness_updated_by'),
   idempotencyKey: text('idempotency_key'),
   unlinkedReason: text('unlinked_reason'),
+  voidedAt: timestamp('voided_at', { withTimezone: true }),
+  voidedBy: integer('voided_by'),
+  voidReason: text('void_reason'),
+  voidNote: text('void_note'),
+  previousStatus: text('previous_status'),
+  restoredAt: timestamp('restored_at', { withTimezone: true }),
+  restoredBy: integer('restored_by'),
+  restoreReason: text('restore_reason'),
   createdByStaff: integer('created_by_staff'),
   updatedByStaff: integer('updated_by_staff'),
   createdBy: text('created_by'),
@@ -54,6 +78,48 @@ export const shipments = pgTable('shipments', {
   uniqueIndex('shipments_idempotency_key_unique_idx')
     .on(table.idempotencyKey)
     .where(sql`${table.idempotencyKey} is not null and btrim(${table.idempotencyKey}) <> ''`),
+  index('shipments_voided_at_idx')
+    .on(table.voidedAt)
+    .where(sql`${table.voidedAt} is not null`),
+  index('shipments_operational_queue_idx').on(table.operationalStage, table.actionDueAt),
+  index('shipments_document_readiness_idx').on(table.documentReadiness),
+]);
+
+export const shipmentPackages = pgTable('shipment_packages', {
+  id: serial('id').primaryKey(),
+  shipmentId: integer('shipment_id').notNull().references(() => shipments.id, { onDelete: 'cascade' }),
+  packageNumber: integer('package_number').notNull(),
+  pieces: integer('pieces').notNull().default(1),
+  lengthCm: numeric('length_cm').notNull(),
+  widthCm: numeric('width_cm').notNull(),
+  heightCm: numeric('height_cm').notNull(),
+  grossWeightKg: numeric('gross_weight_kg'),
+  volumetricWeightKg: numeric('volumetric_weight_kg').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex('shipment_packages_shipment_number_unique_idx').on(table.shipmentId, table.packageNumber),
+  index('shipment_packages_shipment_idx').on(table.shipmentId),
+]);
+
+export const shipmentOperationalTasks = pgTable('shipment_operational_tasks', {
+  id: serial('id').primaryKey(),
+  shipmentId: integer('shipment_id').notNull().references(() => shipments.id, { onDelete: 'cascade' }),
+  taskType: text('task_type').notNull().default('next_action'),
+  title: text('title').notNull(),
+  status: text('status').notNull().default('open'),
+  ownerId: integer('owner_id'),
+  blocker: text('blocker'),
+  dueAt: timestamp('due_at', { withTimezone: true }),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+  completedBy: integer('completed_by'),
+  createdBy: integer('created_by').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index('shipment_operational_tasks_queue_idx').on(table.status, table.dueAt),
+  index('shipment_operational_tasks_shipment_idx').on(table.shipmentId),
+  index('shipment_operational_tasks_owner_idx').on(table.ownerId, table.status),
 ]);
 
 export const shipmentFlightLegs = pgTable('shipment_flight_legs', {
@@ -272,11 +338,20 @@ export const staffAccounts = pgTable('staff_accounts', {
   passwordHash: text('password_hash').notNull(),
   role: text('role').notNull(), // superadmin, operations, finance
   isActive: boolean('is_active').default(true),
+  sessionVersion: integer('session_version').notNull().default(1),
   lastLogin: timestamp('last_login'),
   createdBy: integer('created_by'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
+
+export const portalLoginAttempts = pgTable('portal_login_attempts', {
+  throttleKey: text('throttle_key').primaryKey(),
+  attemptCount: integer('attempt_count').notNull().default(0),
+  windowStartedAt: timestamp('window_started_at', { withTimezone: true }).defaultNow().notNull(),
+  blockedUntil: timestamp('blocked_until', { withTimezone: true }),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [index('portal_login_attempts_blocked_idx').on(table.blockedUntil)]);
 
 export const awbs = pgTable('awbs', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -395,6 +470,9 @@ export const customers = pgTable('customers', {
   npwp: text('npwp'),
   contactPerson: text('contact_person'),
   passwordHash: text('password_hash'),
+  sessionVersion: integer('session_version').notNull().default(1),
+  archivedAt: timestamp('archived_at', { withTimezone: true }),
+  archivedBy: integer('archived_by'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 }, (table) => [
@@ -489,6 +567,60 @@ export const invoiceSequences = pgTable('invoice_sequences', {
   lastValue: integer('last_value').notNull().default(0),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
+
+export const quoteRequests = pgTable('quote_requests', {
+  id: serial('id').primaryKey(),
+  referenceNumber: text('reference_number').notNull(),
+  freightType: text('freight_type'),
+  origin: text('origin').notNull(),
+  destination: text('destination').notNull(),
+  readyDate: date('ready_date'),
+  incoterms: text('incoterms'),
+  cargoDescription: text('cargo_description'),
+  weightKg: numeric('weight_kg'),
+  volumeCbm: numeric('volume_cbm'),
+  numPackages: integer('num_packages'),
+  cargoValueUsd: numeric('cargo_value_usd'),
+  needsInsurance: text('needs_insurance'),
+  specialRequirements: text('special_requirements'),
+  contactName: text('contact_name').notNull(),
+  companyName: text('company_name'),
+  email: text('email').notNull(),
+  phone: text('phone'),
+  notes: text('notes'),
+  status: text('status').notNull().default('new'),
+  assignedTo: integer('assigned_to'),
+  nextAction: text('next_action'),
+  dueAt: timestamp('due_at', { withTimezone: true }),
+  internalNotes: text('internal_notes'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex('quote_requests_reference_unique_idx').on(table.referenceNumber),
+  index('quote_requests_queue_idx').on(table.status, table.dueAt),
+]);
+
+export const shipmentDocuments = pgTable('documents', {
+  id: serial('id').primaryKey(),
+  shipmentId: integer('shipment_id').notNull().references(() => shipments.id, { onDelete: 'cascade' }),
+  docType: text('doc_type').notNull(),
+  fileName: text('file_name').notNull(),
+  fileUrl: text('file_url').notNull(),
+  fileSize: integer('file_size'),
+  mimeType: text('mime_type').notNull().default('application/pdf'),
+  checksumSha256: text('checksum_sha256'),
+  version: integer('version').notNull().default(1),
+  supersedesDocumentId: integer('supersedes_document_id'),
+  status: text('status').notNull().default('current'),
+  note: text('note'),
+  uploadedBy: integer('uploaded_by'),
+  uploadedAt: timestamp('uploaded_at', { withTimezone: true }).defaultNow().notNull(),
+  archivedAt: timestamp('archived_at', { withTimezone: true }),
+  archivedBy: integer('archived_by'),
+}, (table) => [
+  uniqueIndex('documents_shipment_type_version_unique_idx').on(table.shipmentId, table.docType, table.version),
+  index('documents_shipment_status_idx').on(table.shipmentId, table.status),
+]);
 
 export const invoiceLineItems = pgTable('invoice_line_items', {
   id: uuid('id').defaultRandom().primaryKey(),

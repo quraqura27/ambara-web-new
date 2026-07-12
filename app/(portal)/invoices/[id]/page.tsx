@@ -6,10 +6,11 @@ import {
   archiveInvoiceFromForm,
   getInvoiceDetail,
   markInvoicePaidFromForm,
-  sendDraftInvoiceFromForm,
+  markDraftInvoiceSentFromForm,
   voidInvoiceFromForm,
 } from "@/actions/invoices";
 import { Button, Card } from "@/components/ui/core";
+import { ConfirmSubmitButton, TypedConfirmSubmitButton } from "@/components/portal/confirm-submit-button";
 import {
   formatCurrencyAmount,
   invoiceEffectiveStatus,
@@ -31,12 +32,13 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
   const { deductions, invoice, lines } = detail;
   const archiveAction = archiveInvoiceFromForm.bind(null, invoice.id);
   const paidAction = markInvoicePaidFromForm.bind(null, invoice.id);
-  const sendAction = sendDraftInvoiceFromForm.bind(null, invoice.id);
+  const sendAction = markDraftInvoiceSentFromForm.bind(null, invoice.id);
   const voidAction = voidInvoiceFromForm.bind(null, invoice.id);
   const currency = invoice.currency || "IDR";
   const storedStatus = normalizeInvoiceStatus(invoice.status);
   const effectiveStatus = invoiceEffectiveStatus(invoice);
   const invoiceDisplayNumber = invoice.invoiceNumber || "DRAFT";
+  const confirmationIdentifier = invoice.invoiceNumber || invoice.id;
 
   return (
     <div className="space-y-8">
@@ -159,13 +161,13 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
 
           {storedStatus === "draft" ? (
             <Card className="p-5">
-              <h2 className="mb-3 text-sm font-semibold text-blue-200">Send invoice</h2>
+              <h2 className="mb-2 text-sm font-semibold text-blue-200">Mark as sent</h2>
+              <p className="mb-3 text-xs leading-5 text-slate-500">Assigns the final number and records dispatch. Email delivery remains external.</p>
               <form action={sendAction} className="space-y-3">
-                <input name="confirmed" type="hidden" value="send" />
-                <Button className="gap-2" type="submit">
+                <TypedConfirmSubmitButton confirmLabel="Mark sent" confirmText="MARK SENT" description="This records the invoice as sent and enables its public verification. It does not send an email." title="Record invoice dispatch?">
                   <Send className="h-4 w-4" />
-                  Assign number and send
-                </Button>
+                  Assign number and mark sent
+                </TypedConfirmSubmitButton>
               </form>
             </Card>
           ) : null}
@@ -174,7 +176,6 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
             <Card className="p-5">
               <h2 className="mb-3 text-sm font-semibold text-emerald-200">Mark paid</h2>
               <form action={paidAction} className="space-y-3">
-                <input name="confirmed" type="hidden" value="paid" />
                 <input
                   className="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-4 py-2 text-sm"
                   defaultValue={new Date().toISOString().slice(0, 10)}
@@ -185,11 +186,12 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
                   className="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-4 py-2 text-sm"
                   name="paymentReference"
                   placeholder="Payment reference"
+                  required
                 />
-                <Button className="gap-2" type="submit" variant="secondary">
+                <ConfirmSubmitButton confirmLabel="Mark paid" description="Record the entered payment date and reference in the invoice audit trail." title="Confirm payment?" variant="secondary">
                   <CheckCircle2 className="h-4 w-4" />
                   Mark paid
-                </Button>
+                </ConfirmSubmitButton>
               </form>
             </Card>
           ) : null}
@@ -198,12 +200,11 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
             <Card className="p-5">
               <h2 className="mb-3 text-sm font-semibold text-amber-200">Archive invoice</h2>
               <form action={archiveAction} className="space-y-3">
-                <input name="confirmed" type="hidden" value="archive" />
-                <input className="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-4 py-2 text-sm" name="reason" placeholder="Reason" />
-                <Button className="gap-2" type="submit" variant="secondary">
+                <input className="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-4 py-2 text-sm" name="reason" placeholder="Reason" required />
+                <TypedConfirmSubmitButton confirmLabel="Archive invoice" confirmText={confirmationIdentifier} description="The invoice and audit history remain retained, but the record leaves active finance queues." title="Archive invoice?" variant="secondary">
                   <Archive className="h-4 w-4" />
                   Archive
-                </Button>
+                </TypedConfirmSubmitButton>
               </form>
             </Card>
           ) : null}
@@ -212,17 +213,16 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
             <Card className="border-red-500/20 p-5">
               <h2 className="mb-3 text-sm font-semibold text-red-200">Void invoice</h2>
               <form action={voidAction} className="space-y-3">
-                <input name="confirmed" type="hidden" value="void" />
                 <input
                   className="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-4 py-2 text-sm"
                   name="reason"
                   placeholder="Reason"
                   required
                 />
-                <Button className="gap-2" type="submit" variant="danger">
+                <TypedConfirmSubmitButton confirmLabel="Void invoice" confirmText={confirmationIdentifier} description="Voiding releases linked billing lines but preserves the invoice, lines, and audit history." title="Void invoice?">
                   <XCircle className="h-4 w-4" />
                   Void and release lines
-                </Button>
+                </TypedConfirmSubmitButton>
               </form>
             </Card>
           ) : null}

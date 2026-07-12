@@ -13,6 +13,7 @@ import { FlightLegsEditor } from "@/components/portal/flight-legs-editor";
 import { Button, Card, Input, cn } from "@/components/ui/core";
 import { requirePortalUser } from "@/lib/portal-auth";
 import { canEditShipmentDetails } from "@/lib/portal-roles";
+import { formatWibDateTime } from "@/lib/time/wib";
 
 type EditShipmentPageProps = {
   params: Promise<{ number: string }>;
@@ -85,7 +86,7 @@ function TextArea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
 
 function readOnlyValue(value: number | string | Date | null | undefined) {
   if (value instanceof Date) {
-    return value.toLocaleString();
+    return formatWibDateTime(value);
   }
 
   if (value === null || value === undefined || value === "") {
@@ -127,6 +128,9 @@ export default async function EditShipmentPage({ params, searchParams }: EditShi
   ]);
 
   if (!shipment) {
+    notFound();
+  }
+  if (shipment.voidedAt) {
     notFound();
   }
 

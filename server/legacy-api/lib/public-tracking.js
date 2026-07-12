@@ -22,9 +22,7 @@ function toPublicShipment(shipment) {
 
   return {
     tracking_number: stringValue(source.tracking_number),
-    internal_tracking_no: stringValue(source.internal_tracking_no),
     legacy_tracking_number: stringValue(source.legacy_tracking_number),
-    title: stringValue(source.title),
     status: stringValue(source.status),
     origin: stringValue(source.origin),
     destination: stringValue(source.destination),
@@ -55,9 +53,20 @@ function toPublicEvent(event) {
 }
 
 function toPublicTrackingResponse(shipment, events) {
+  const voidedAt = stringValue(shipment?.voided_at);
+  const safeShipment = voidedAt ? { ...shipment, status: 'cancelled' } : shipment;
+
   return {
-    shipment: toPublicShipment(shipment),
-    events: Array.isArray(events) ? events.map(toPublicEvent) : [],
+    shipment: toPublicShipment(safeShipment),
+    events: voidedAt
+      ? [{
+          status: 'cancelled',
+          label: 'Shipment cancelled',
+          description: 'Shipment processing has been cancelled.',
+          location: null,
+          event_time: voidedAt,
+        }]
+      : Array.isArray(events) ? events.map(toPublicEvent) : [],
   };
 }
 

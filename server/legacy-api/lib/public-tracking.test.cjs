@@ -6,6 +6,7 @@ const { toPublicTrackingResponse } = require('./public-tracking');
 const forbiddenKeys = [
   'customer_name',
   'customer_email',
+  'title',
   'mawb',
   'shipper_name',
   'shipper_address',
@@ -20,6 +21,11 @@ const forbiddenKeys = [
   'bulk_update_job_id',
   'error_message',
   'documents',
+  'voided_at',
+  'voided_by',
+  'void_reason',
+  'void_note',
+  'previous_status',
 ];
 
 function collectKeys(value, keys = new Set()) {
@@ -74,11 +80,30 @@ test('legacy public tracking response is shipment-field allowlisted', () => {
     ],
   );
 
-  assert.equal(response.shipment.internal_tracking_no, 'AA26-TEST-0001');
   assert.deepEqual(response.events.map((event) => event.label), [
     'Shipment processed at origin',
   ]);
 
+  const keys = collectKeys(response);
+  forbiddenKeys.forEach((key) => assert.equal(keys.has(key), false, key));
+});
+
+test('voided public tracking is generic and omits internal void data', () => {
+  const response = toPublicTrackingResponse(
+    {
+      tracking_number: 'AA26-TEST-VOID',
+      status: 'processed',
+      title: 'Private customer shipment',
+      voided_at: '2026-07-12T03:00:00.000Z',
+      voided_by: 99,
+      void_reason: 'wrong_shipment_data',
+      void_note: 'Private internal note',
+    },
+    [{ label: 'Private operational event', internal_note: 'Private detail' }],
+  );
+
+  assert.equal(response.shipment.status, 'cancelled');
+  assert.deepEqual(response.events.map((event) => event.label), ['Shipment cancelled']);
   const keys = collectKeys(response);
   forbiddenKeys.forEach((key) => assert.equal(keys.has(key), false, key));
 });

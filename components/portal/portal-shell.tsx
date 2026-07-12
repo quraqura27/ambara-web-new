@@ -8,11 +8,14 @@ import {
   ChevronRight,
   CircleDollarSign,
   ClipboardList,
+  FileCheck2,
   FileSpreadsheet,
   FileText,
   Home,
+  ListTodo,
   LogOut,
   Menu,
+  MessageSquareQuote,
   Package,
   Search,
   Shield,
@@ -24,13 +27,14 @@ import {
 
 import { signOut } from "@/actions/auth";
 import { cn } from "@/components/ui/core";
-import { normalizePortalRole, portalRoleLabels } from "@/lib/portal-roles";
+import {
+  normalizePortalRole,
+  portalRoleLabels,
+  type PortalCapability,
+} from "@/lib/portal-roles";
 
 type PortalShellProps = {
-  canExportShipments: boolean;
-  canManageAccounts: boolean;
-  canManageInvoices: boolean;
-  canUseMawbs: boolean;
+  capabilities: PortalCapability[];
   children: React.ReactNode;
   user: {
     name: string;
@@ -75,7 +79,7 @@ function NavLink({
     <Link
       aria-current={active ? "page" : undefined}
       className={cn(
-        "group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition",
+        "group flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition",
         item.secondary && "ml-5 py-2 text-xs",
         active
           ? "bg-blue-500/15 text-white ring-1 ring-inset ring-blue-500/20"
@@ -109,6 +113,9 @@ function Breadcrumbs({ pathname }: { pathname: string }) {
     collections: "Collections",
     invoices: "Invoices",
     mawbs: "MAWB",
+    operations: "Operations",
+    documents: "Documents",
+    quotes: "Quotes",
     new: "New",
     search: "Search",
     shipments: "Shipments",
@@ -136,16 +143,14 @@ function Breadcrumbs({ pathname }: { pathname: string }) {
 }
 
 export function PortalShell({
-  canExportShipments,
-  canManageAccounts,
-  canManageInvoices,
-  canUseMawbs,
+  capabilities,
   children,
   user,
 }: PortalShellProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const role = normalizePortalRole(user.role);
+  const can = (capability: PortalCapability) => capabilities.includes(capability);
   const groups: Array<{ items: NavItem[]; label: string }> = [
     {
       label: "Home",
@@ -154,8 +159,12 @@ export function PortalShell({
     {
       label: "Primary Tasks",
       items: [
-        { href: "/shipments/new", icon: UserPlus, label: "Create Shipment", mobileSafe: true },
-        { href: "/shipments/bulk-import", icon: Upload, label: "Bulk Input" },
+        ...(can("shipment:create")
+          ? [{ href: "/shipments/new", icon: UserPlus, label: "Create Shipment", mobileSafe: true }]
+          : []),
+        ...(can("shipment:create")
+          ? [{ href: "/shipments/bulk-import", icon: Upload, label: "Bulk Input" }]
+          : []),
         { href: "/search", icon: Search, label: "Find and Track", mobileSafe: true },
       ],
     },
@@ -163,24 +172,37 @@ export function PortalShell({
       label: "Records",
       items: [
         { href: "/shipments", icon: Package, label: "All Shipments", mobileSafe: true },
-        ...(canUseMawbs
+        ...(can("operations:manage")
+          ? [{ href: "/operations", icon: ListTodo, label: "Readiness Queue", mobileSafe: true }]
+          : []),
+        ...(can("mawb:view")
           ? [{ href: "/mawbs", icon: FileText, label: "MAWB Documents", mobileSafe: true }]
           : []),
-        ...(canExportShipments
+        ...(can("shipment:export")
           ? [{ href: "/shipments/export", icon: FileSpreadsheet, label: "Export", secondary: true }]
           : []),
-        ...(canManageInvoices
+        ...(can("invoice:view")
           ? [
               { href: "/invoices", icon: FileText, label: "Invoices", mobileSafe: true },
               { href: "/invoices/collections", icon: CircleDollarSign, label: "Collections", secondary: true },
               { href: "/invoices/export", icon: FileSpreadsheet, label: "Invoice Export", secondary: true },
             ]
           : []),
-        { href: "/customers", icon: Users, label: "Customers", mobileSafe: true },
-        { href: "/delivery-batches", icon: ClipboardList, label: "Delivery Batches", mobileSafe: true },
+        ...(can("quote:view")
+          ? [{ href: "/quotes", icon: MessageSquareQuote, label: "Quote Requests", mobileSafe: true }]
+          : []),
+        ...(can("document:view")
+          ? [{ href: "/documents", icon: FileCheck2, label: "Documents", mobileSafe: true }]
+          : []),
+        ...(can("customer:view")
+          ? [{ href: "/customers", icon: Users, label: "Customers", mobileSafe: true }]
+          : []),
+        ...(can("delivery:view")
+          ? [{ href: "/delivery-batches", icon: ClipboardList, label: "Delivery Batches", mobileSafe: true }]
+          : []),
       ],
     },
-    ...(canManageAccounts
+    ...(can("staff:manage")
       ? [{
           label: "Administration",
           items: [{ href: "/accounts", icon: Shield, label: "Staff Accounts", mobileSafe: true }],
@@ -215,7 +237,7 @@ export function PortalShell({
         ))}
       </nav>
 
-      <div className="mt-6 rounded-2xl border border-white/5 bg-white/[0.03] p-4">
+      <div className="mt-6 rounded-lg border border-white/5 bg-white/[0.03] p-4">
         <p className="text-xs text-slate-500">Logged in as</p>
         <p className="mt-2 truncate text-sm font-semibold text-white">{user.name}</p>
         <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-blue-400">

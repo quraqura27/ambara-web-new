@@ -7,6 +7,7 @@ const { PublicTrackingPayloadError, sanitizeTrackingPayload } = publicTrackingPa
 
 const forbiddenKeys = [
   "customer_name",
+  "title",
   "mawb",
   "shipper_name",
   "shipper_address",
@@ -25,6 +26,25 @@ const forbiddenKeys = [
   "vendor_raw_status",
   "bulk_update_job_id",
   "error_message",
+  "voided_at",
+  "voided_by",
+  "void_reason",
+  "void_note",
+  "previous_status",
+  "operational_stage",
+  "document_readiness",
+  "clearance_mode",
+  "internal_owner_id",
+  "blocker_note",
+  "next_action",
+  "action_due_at",
+  "sla_due_at",
+  "invoice_id",
+  "invoice_number",
+  "customer_id",
+  "staff_email",
+  "staff_name",
+  "audit_logs",
 ];
 
 function collectKeys(value: unknown, keys = new Set<string>()) {
@@ -51,6 +71,7 @@ test("sanitizes payload and sorts events chronologically", () => {
       tracking_number: "AA26-K6AR-997L",
       internal_tracking_no: "AA26-PRIVATE-ALIAS",
       status: "processed",
+      title: "Private customer shipment",
       origin: "Jakarta, Indonesia",
       destination: "Sorong, ID",
       customer_name: "Private customer",
