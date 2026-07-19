@@ -8,6 +8,9 @@ import {
   formatInvoiceNumber,
   invoiceBlocksLineReuse,
   invoiceEffectiveStatus,
+  invoiceLineBillingBasis,
+  invoiceLineReference,
+  invoiceLineService,
   INVOICE_QR_STAMP_ISSUER_TEXT,
   INVOICE_QR_STAMP_TITLE,
   INVOICE_QR_STAMP_VALIDITY_TEXT,
@@ -16,8 +19,11 @@ import {
   invoiceStatusLabel,
   normalizeCustomerCode,
   normalizeInvoiceStatus,
+  parseInvoiceSourceKey,
+  resolveInvoiceReference,
   shouldPrintTermsOfPayment,
   terbilangRupiah,
+  uniqueInvoiceSources,
 } from "./core.ts";
 
 test("calculates a full-payment invoice without PPh withholding", () => {
@@ -43,6 +49,55 @@ test("calculates PPh 23 withholding from net amount excluding VAT by default", (
   assert.equal(totals.pphBaseAmount, 744_600);
   assert.equal(totals.pphAmount, 14_892);
   assert.equal(totals.netPayable, 737_898.6);
+});
+
+test("calculates mixed per-kg and flat service charges", () => {
+  const totals = calculateInvoiceTotals({
+    lines: [
+      {
+        billingBasis: "per_kg",
+        chargeableWeight: 100,
+        type: "charge",
+        unitRate: 2500,
+      },
+      {
+        billingBasis: "flat",
+        type: "charge",
+        unitRate: 150000,
+      },
+    ],
+  });
+
+  assert.equal(totals.subtotal, 400_000);
+  assert.equal(totals.amountDue, 400_000);
+});
+
+test("infers legacy invoice line display values", () => {
+  assert.equal(invoiceLineBillingBasis({ lineType: "awb" }), "per_kg");
+  assert.equal(invoiceLineBillingBasis({ lineType: "service" }), "flat");
+  assert.equal(invoiceLineReference({ awbNumber: "126-12345678" }), "126-12345678");
+  assert.equal(invoiceLineService({ lineType: "awb" }), "Air Freight");
+});
+
+test("groups repeated service charges by their underlying shipment source", () => {
+  assert.deepEqual(
+    uniqueInvoiceSources(["shipment:42", "shipment:42", "awb:test-awb", null]),
+    [
+      { sourceId: "42", sourceType: "shipment" },
+      { sourceId: "test-awb", sourceType: "awb" },
+    ],
+  );
+  assert.deepEqual(parseInvoiceSourceKey("shipment:42"), {
+    sourceId: "42",
+    sourceType: "shipment",
+  });
+});
+
+test("uses the first available shipment reference without requiring an AWB", () => {
+  assert.equal(resolveInvoiceReference({ awbNumber: "126-12345678", internalTrackingNumber: "AA26-TEST" }), "126-12345678");
+  assert.equal(resolveInvoiceReference({ internalTrackingNumber: "AA26-TEST" }), "AA26-TEST");
+  assert.equal(resolveInvoiceReference({ customerReference: "PO-100", trackingNumber: "TRACK-100" }), "PO-100");
+  assert.equal(resolveInvoiceReference({ trackingNumber: "TRACK-100" }), "TRACK-100");
 });
 
 test("prints terms of payment only for full-payment invoices when enabled", () => {

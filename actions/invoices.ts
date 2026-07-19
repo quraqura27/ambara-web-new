@@ -24,10 +24,15 @@ import {
   calculateInvoiceTotals,
   formatInvoiceNumber,
   invoiceEffectiveStatus,
+  invoiceLineBillingBasis,
   normalizeCustomerCode,
   normalizeInvoiceStatus,
   numberValue,
+  parseInvoiceSourceKey,
+  resolveInvoiceReference,
+  type InvoiceBillingBasis,
   type InvoiceCurrency,
+  uniqueInvoiceSources,
   invoiceCurrencies,
 } from "@/lib/invoices/core";
 import { formatInvoiceFlightNumber } from "@/lib/invoices/flight";
@@ -53,7 +58,7 @@ export type InvoiceCustomerOption = {
   npwp: string | null;
 };
 
-export type InvoiceableAwb = {
+export type InvoiceableSource = {
   awbNumber: string | null;
   carrier: string | null;
   chargeableWeight: string | null;
@@ -62,6 +67,7 @@ export type InvoiceableAwb = {
   id: string;
   origin: string | null;
   pieces: number | null;
+  reference: string;
   shipmentDate: string | null;
   sourceId: string;
   sourceType: "awb" | "shipment";
@@ -71,14 +77,13 @@ export type InvoiceActionState = {
   formError?: string;
 };
 
-type SubmittedAwbLine = {
-  awbId: string;
-  pricePerKg: number | string;
-};
-
-type SubmittedServiceLine = {
-  amount: number | string;
+type SubmittedChargeLine = {
+  billingBasis: InvoiceBillingBasis;
   description: string;
+  manualChargeableWeight?: number | string | null;
+  reference?: string | null;
+  sourceKey?: string | null;
+  unitRate: number | string;
 };
 
 type SubmittedDeduction = {
@@ -154,31 +159,11 @@ function sourceKey(sourceType: "awb" | "shipment", id: number | string) {
   return `${sourceType}:${id}`;
 }
 
-function parseSourceKey(value: string) {
-  const normalized = value.trim();
-  const match = /^(awb|shipment):(.+)$/.exec(normalized);
-  if (match) {
-    return {
-      sourceId: match[2] ?? "",
-      sourceType: match[1] as "awb" | "shipment",
-    };
-  }
-  return normalized ? { sourceId: normalized, sourceType: "awb" as const } : null;
-}
-
 function dateOnly(value: Date | string | null | undefined) {
   if (!value) return null;
   if (value instanceof Date) return value.toISOString().slice(0, 10);
   const normalized = value.trim();
   return /^\d{4}-\d{2}-\d{2}/.test(normalized) ? normalized.slice(0, 10) : null;
-}
-
-function shipmentAwbNumber(shipment: {
-  internalTrackingNo: string | null;
-  mawb: string | null;
-  trackingNumber: string | null;
-}) {
-  return shipment.mawb || shipment.internalTrackingNo || shipment.trackingNumber;
 }
 
 async function getShipmentFlightNumberMap(shipmentIds: number[]) {
@@ -340,7 +325,7 @@ export async function getInvoiceCustomerOptions(search = ""): Promise<InvoiceCus
   }));
 }
 
-export async function getInvoiceableAwbs(customerId: number): Promise<InvoiceableAwb[]> {
+export async function getInvoiceableSources(customerId: number): Promise<InvoiceableSource[]> {
   await requireInvoiceUser();
   if (!Number.isInteger(customerId) || customerId <= 0) return [];
 
@@ -359,6 +344,7 @@ export async function getInvoiceableAwbs(customerId: number): Promise<Invoiceabl
     awbAirlineName: string | null;
     chargeableWeight: string | null;
     createdAt: Date | null;
+    customerReference: string | null;
     destination: string | null;
     id: number;
     internalTrackingNo: string | null;
@@ -390,6 +376,7 @@ export async function getInvoiceableAwbs(customerId: number): Promise<Invoiceabl
           awbAirlineName: shipments.awbAirlineName,
           chargeableWeight: shipments.chargeableWeight,
           createdAt: shipments.createdAt,
+          customerReference: shipments.customerReference,
           destination: shipments.destination,
           id: shipments.id,
           internalTrackingNo: shipments.internalTrackingNo,
@@ -421,12 +408,13 @@ export async function getInvoiceableAwbs(customerId: number): Promise<Invoiceabl
       ...row,
       chargeableWeight: row.chargeableWeight === null ? null : String(row.chargeableWeight),
       id: sourceKey("awb", row.id),
+      reference: row.awbNumber || row.id,
       shipmentDate: row.shipmentDate,
       sourceId: row.id,
       sourceType: "awb" as const,
     })),
     ...shipmentRows.map((row) => ({
-      awbNumber: shipmentAwbNumber(row),
+      awbNumber: row.mawb,
       carrier: row.awbAirlineName,
       chargeableWeight: row.chargeableWeight === null ? null : String(row.chargeableWeight),
       destination: row.destination,
@@ -434,6 +422,12 @@ export async function getInvoiceableAwbs(customerId: number): Promise<Invoiceabl
       id: sourceKey("shipment", row.id),
       origin: row.origin,
       pieces: row.totalPcs,
+      reference: resolveInvoiceReference({
+        awbNumber: row.mawb,
+        customerReference: row.customerReference,
+        internalTrackingNumber: row.internalTrackingNo,
+        trackingNumber: row.trackingNumber,
+      }),
       shipmentDate: dateOnly(row.createdAt),
       sourceId: String(row.id),
       sourceType: "shipment" as const,
@@ -679,31 +673,62 @@ export async function finalizeInvoiceFromForm(
       .limit(1);
     if (!customer) throw new Error("Selected customer is not available.");
 
-    const awbInputs = parseJsonArray<SubmittedAwbLine>(formData.get("awbLines"), "AWB line");
-    const serviceInputs = parseJsonArray<SubmittedServiceLine>(formData.get("serviceLines"), "Service line")
-      .filter((line) => line.description.trim() || numberValue(line.amount) > 0);
+    const chargeInputs = parseJsonArray<SubmittedChargeLine>(formData.get("chargeLines"), "Charge line")
+      .map((line, index) => {
+        const billingBasis = line.billingBasis === "per_kg" || line.billingBasis === "flat"
+          ? line.billingBasis
+          : null;
+        const description = String(line.description ?? "").trim();
+        const reference = String(line.reference ?? "").trim();
+        const selectedSource = line.sourceKey ? parseInvoiceSourceKey(String(line.sourceKey)) : null;
+        const unitRate = numberValue(line.unitRate);
+        const manualChargeableWeight = numberValue(line.manualChargeableWeight);
+
+        if (!billingBasis) throw new Error(`Charge ${index + 1} has an invalid billing basis.`);
+        if (!description) throw new Error(`Charge ${index + 1} requires a service description.`);
+        if (line.sourceKey && !selectedSource?.sourceId) {
+          throw new Error(`Charge ${index + 1} has an invalid shipment source.`);
+        }
+        if (!selectedSource && !reference) {
+          throw new Error(`Charge ${index + 1} requires a reference.`);
+        }
+        if (billingBasis === "per_kg" && !selectedSource && manualChargeableWeight <= 0) {
+          throw new Error(`Charge ${index + 1} requires a positive chargeable weight.`);
+        }
+        if (unitRate < 0) {
+          throw new Error(`Charge ${index + 1} cannot use a negative rate.`);
+        }
+        if (!isDraft && unitRate <= 0) {
+          throw new Error(`Charge ${index + 1} requires a positive rate before sending.`);
+        }
+
+        return {
+          billingBasis,
+          description,
+          manualChargeableWeight,
+          reference,
+          selectedSource,
+          unitRate,
+        };
+      });
     const deductionInputs = parseJsonArray<SubmittedDeduction>(formData.get("deductions"), "Deduction")
       .filter((line) => line.description.trim() || numberValue(line.amount) > 0);
 
-    if (awbInputs.length === 0 && serviceInputs.length === 0) {
-      throw new Error("Select at least one AWB or add one service line.");
+    if (chargeInputs.length === 0) {
+      throw new Error("Add at least one shipment or manual service charge.");
     }
 
-    const selectedSources = awbInputs.map((line) => parseSourceKey(line.awbId));
-    if (selectedSources.some((source) => !source?.sourceId)) {
-      throw new Error("One or more selected invoice lines are invalid.");
-    }
-    const selectedKeys = selectedSources.map((source) => sourceKey(source!.sourceType, source!.sourceId));
-    if (new Set(selectedKeys).size !== selectedKeys.length) {
-      throw new Error("Remove duplicate AWB or shipment selections before finalizing.");
-    }
-
+    const selectedSources = uniqueInvoiceSources(
+      chargeInputs.map((line) => line.selectedSource
+        ? sourceKey(line.selectedSource.sourceType, line.selectedSource.sourceId)
+        : null),
+    );
     const awbIds = selectedSources
-      .filter((source) => source?.sourceType === "awb")
-      .map((source) => source!.sourceId);
+      .filter((source) => source.sourceType === "awb")
+      .map((source) => source.sourceId);
     const shipmentIds = selectedSources
-      .filter((source) => source?.sourceType === "shipment")
-      .map((source) => Number.parseInt(source!.sourceId, 10));
+      .filter((source) => source.sourceType === "shipment")
+      .map((source) => Number.parseInt(source.sourceId, 10));
     if (shipmentIds.some((id) => !Number.isInteger(id) || id <= 0)) {
       throw new Error("One or more selected shipment lines are invalid.");
     }
@@ -715,6 +740,7 @@ export async function finalizeInvoiceFromForm(
             .select({
               chargeableWeight: shipments.chargeableWeight,
               createdAt: shipments.createdAt,
+              customerReference: shipments.customerReference,
               customerId: shipments.customerId,
               destination: shipments.destination,
               id: shipments.id,
@@ -741,7 +767,7 @@ export async function finalizeInvoiceFromForm(
         : [],
     ]);
     if (persistedAwbs.length !== awbIds.length || persistedShipments.length !== shipmentIds.length) {
-      throw new Error("One or more selected AWBs or shipments are no longer available.");
+      throw new Error("One or more selected shipment sources are no longer available.");
     }
     const persistedAwbsById = new Map(persistedAwbs.map((row) => [row.id, row]));
     const persistedShipmentsById = new Map(persistedShipments.map((row) => [row.id, row]));
@@ -755,74 +781,109 @@ export async function finalizeInvoiceFromForm(
     }
     const shipmentFlightNumbers = await getShipmentFlightNumberMap(shipmentIds);
 
-    const awbLines = awbInputs.map((line, index) => {
-      const source = parseSourceKey(line.awbId);
-      if (!source) throw new Error("Selected invoice line is not available.");
-      const pricePerKg = numberValue(line.pricePerKg);
-      if (source.sourceType === "shipment") {
-        const shipmentId = Number.parseInt(source.sourceId, 10);
-        const shipment = persistedShipmentsById.get(shipmentId);
-        if (!shipment) throw new Error("Selected shipment is not available.");
-        const chargeableWeight = numberValue(shipment.chargeableWeight);
+    const chargeLines = chargeInputs.map((line, index) => {
+      const common = {
+        billingBasis: line.billingBasis,
+        description: line.description,
+        flatAmount: line.billingBasis === "flat" ? line.unitRate : null,
+        pricePerKg: line.billingBasis === "per_kg" ? line.unitRate : null,
+        sortOrder: index + 1,
+        type: "charge" as const,
+        unitRate: line.unitRate,
+      };
+
+      if (!line.selectedSource) {
+        const chargeableWeight = line.billingBasis === "per_kg"
+          ? line.manualChargeableWeight
+          : null;
         return {
+          ...common,
           awbId: null,
-          awbNumber: shipmentAwbNumber(shipment),
+          awbNumber: null,
           chargeableWeight,
-          destination: shipment.destination,
-          flightNumber: shipmentFlightNumbers.get(shipmentId) ?? null,
-          lineTotal: chargeableWeight * pricePerKg,
-          origin: shipment.origin,
-          pieces: shipment.totalPcs,
-          pricePerKg,
-          shipmentDate: dateOnly(shipment.createdAt),
-          shipmentId,
-          sortOrder: index + 1,
-          type: "awb" as const,
+          destination: null,
+          flightNumber: null,
+          lineTotal: line.billingBasis === "per_kg"
+            ? numberValue(chargeableWeight) * line.unitRate
+            : line.unitRate,
+          origin: null,
+          pieces: null,
+          reference: line.reference,
+          shipmentDate: null,
+          shipmentId: null,
         };
       }
 
-      const awb = persistedAwbsById.get(source.sourceId);
+      if (line.selectedSource.sourceType === "shipment") {
+        const shipmentId = Number.parseInt(line.selectedSource.sourceId, 10);
+        const shipment = persistedShipmentsById.get(shipmentId);
+        if (!shipment) throw new Error("Selected shipment is not available.");
+        const chargeableWeight = line.billingBasis === "per_kg"
+          ? numberValue(shipment.chargeableWeight)
+          : null;
+        if (line.billingBasis === "per_kg" && numberValue(chargeableWeight) <= 0) {
+          throw new Error(`Correct the chargeable weight for ${resolveInvoiceReference({
+            awbNumber: shipment.mawb,
+            customerReference: shipment.customerReference,
+            internalTrackingNumber: shipment.internalTrackingNo,
+            trackingNumber: shipment.trackingNumber,
+          })} before invoicing.`);
+        }
+        return {
+          ...common,
+          awbId: null,
+          awbNumber: shipment.mawb,
+          chargeableWeight,
+          destination: shipment.destination,
+          flightNumber: shipmentFlightNumbers.get(shipmentId) ?? null,
+          lineTotal: line.billingBasis === "per_kg"
+            ? numberValue(chargeableWeight) * line.unitRate
+            : line.unitRate,
+          origin: shipment.origin,
+          pieces: shipment.totalPcs,
+          reference: resolveInvoiceReference({
+            awbNumber: shipment.mawb,
+            customerReference: shipment.customerReference,
+            internalTrackingNumber: shipment.internalTrackingNo,
+            trackingNumber: shipment.trackingNumber,
+          }),
+          shipmentDate: dateOnly(shipment.createdAt),
+          shipmentId,
+        };
+      }
+
+      const awb = persistedAwbsById.get(line.selectedSource.sourceId);
       if (!awb) throw new Error("Selected AWB is not available.");
-      const chargeableWeight = numberValue(awb.chargeableWeight);
+      const chargeableWeight = line.billingBasis === "per_kg"
+        ? numberValue(awb.chargeableWeight)
+        : null;
+      if (line.billingBasis === "per_kg" && numberValue(chargeableWeight) <= 0) {
+        throw new Error(`Correct the chargeable weight for ${awb.awbNumber || awb.id} before invoicing.`);
+      }
       return {
+        ...common,
         awbId: awb.id,
         awbNumber: awb.awbNumber,
         chargeableWeight,
         destination: awb.destination,
         flightNumber: awb.flightNumber,
-        lineTotal: chargeableWeight * pricePerKg,
+        lineTotal: line.billingBasis === "per_kg"
+          ? numberValue(chargeableWeight) * line.unitRate
+          : line.unitRate,
         origin: awb.origin,
         pieces: awb.pieces,
-        pricePerKg,
+        reference: awb.awbNumber || awb.id,
         shipmentDate: awb.shipmentDate,
         shipmentId: null,
-        sortOrder: index + 1,
-        type: "awb" as const,
       };
     });
-    const serviceLines = serviceInputs.map((line, index) => ({
-      amount: numberValue(line.amount),
-      description: line.description.trim() || "Service",
-      sortOrder: awbLines.length + index + 1,
-      type: "service" as const,
-    }));
 
     const vatEnabled = booleanField(formData.get("vatEnabled"));
     const pphEnabled = booleanField(formData.get("pphEnabled"));
     const totals = calculateInvoiceTotals({
       deductions: deductionInputs,
       depositAmount: text(formData.get("depositAmount")),
-      lines: [
-        ...awbLines.map((line) => ({
-          chargeableWeight: line.chargeableWeight,
-          pricePerKg: line.pricePerKg,
-          type: "awb" as const,
-        })),
-        ...serviceLines.map((line) => ({
-          flatAmount: line.amount,
-          type: "service" as const,
-        })),
-      ],
+      lines: chargeLines,
       pphEnabled,
       vatEnabled,
     });
@@ -866,6 +927,7 @@ export async function finalizeInvoiceFromForm(
         customerNpwpSnapshot: customer.npwp,
         depositAmount: String(totals.depositAmount),
         dueDate: dateText(formData.get("dueDate")),
+        formatVersion: 2,
         generatedAt: now,
         generatedBy: user.id,
         invoiceDate,
@@ -893,31 +955,25 @@ export async function finalizeInvoiceFromForm(
         verificationToken,
         withholdingProofRef: text(formData.get("withholdingProofRef")) || null,
       }),
-      ...awbLines.map((line) =>
+      ...chargeLines.map((line) =>
         db.insert(invoiceLineItems).values({
           awbId: line.awbId,
           awbNumber: line.awbNumber,
-          chargeableWeight: String(line.chargeableWeight),
+          billingBasis: line.billingBasis,
+          chargeableWeight: line.chargeableWeight === null ? null : String(line.chargeableWeight),
+          description: line.description,
           destination: line.destination,
+          flatAmount: line.flatAmount === null ? null : String(line.flatAmount),
           flightNumber: line.flightNumber,
           invoiceId,
           lineTotal: String(line.lineTotal),
-          lineType: "awb",
+          lineType: "service",
           origin: line.origin,
           pieces: line.pieces,
-          pricePerKg: String(line.pricePerKg),
+          pricePerKg: line.pricePerKg === null ? null : String(line.pricePerKg),
+          reference: line.reference,
           shipmentDate: line.shipmentDate,
           shipmentId: line.shipmentId,
-          sortOrder: line.sortOrder,
-        }),
-      ),
-      ...serviceLines.map((line) =>
-        db.insert(invoiceLineItems).values({
-          description: line.description,
-          flatAmount: String(line.amount),
-          invoiceId,
-          lineTotal: String(line.amount),
-          lineType: "service",
           sortOrder: line.sortOrder,
         }),
       ),
@@ -935,6 +991,7 @@ export async function finalizeInvoiceFromForm(
         entityType: "invoice",
         metadata: {
           awbCount: awbIds.length,
+          chargeCount: chargeLines.length,
           invoiceNumber,
           netPayable: totals.netPayable,
           pphEnabled,
@@ -977,6 +1034,7 @@ export async function markDraftInvoiceSentFromForm(id: string, formData: FormDat
   const [invoice] = await db
     .select({
       customerCode: invoices.customerCode,
+      formatVersion: invoices.formatVersion,
       invoiceDate: invoices.invoiceDate,
       netPayable: invoices.netPayable,
       status: invoices.status,
@@ -992,6 +1050,30 @@ export async function markDraftInvoiceSentFromForm(id: string, formData: FormDat
   const customerCode = normalizeCustomerCode(invoice.customerCode ?? "");
   if (!customerCode) {
     throw new Error("Set this customer's 3-letter invoice code in Customer Directory before sending.");
+  }
+
+  if (invoice.formatVersion >= 2) {
+    const draftLines = await db
+      .select({
+        billingBasis: invoiceLineItems.billingBasis,
+        chargeableWeight: invoiceLineItems.chargeableWeight,
+        flatAmount: invoiceLineItems.flatAmount,
+        lineTotal: invoiceLineItems.lineTotal,
+        lineType: invoiceLineItems.lineType,
+        pricePerKg: invoiceLineItems.pricePerKg,
+      })
+      .from(invoiceLineItems)
+      .where(eq(invoiceLineItems.invoiceId, id));
+    if (draftLines.length === 0) throw new Error("Add at least one charge before sending.");
+    const invalidLine = draftLines.find((line) => {
+      const billingBasis = invoiceLineBillingBasis(line);
+      return billingBasis === "per_kg"
+        ? numberValue(line.chargeableWeight) <= 0 || numberValue(line.pricePerKg) <= 0
+        : numberValue(line.flatAmount ?? line.lineTotal) <= 0;
+    });
+    if (invalidLine) {
+      throw new Error("Every charge requires a positive quantity and rate before sending.");
+    }
   }
 
   const sequence = await allocateInvoiceSequence(invoiceYear);
@@ -1120,12 +1202,12 @@ export async function voidInvoiceFromForm(id: string, formData: FormData) {
     .select({ awbId: invoiceLineItems.awbId, shipmentId: invoiceLineItems.shipmentId })
     .from(invoiceLineItems)
     .where(eq(invoiceLineItems.invoiceId, id));
-  const awbIds = lineRows
+  const awbIds = [...new Set(lineRows
     .map((row) => row.awbId)
-    .filter((value): value is string => Boolean(value));
-  const shipmentIds = lineRows
+    .filter((value): value is string => Boolean(value)))];
+  const shipmentIds = [...new Set(lineRows
     .map((row) => row.shipmentId)
-    .filter((value): value is number => typeof value === "number");
+    .filter((value): value is number => typeof value === "number"))];
   const now = new Date();
   const queries: BatchItem<"pg">[] = [
     db

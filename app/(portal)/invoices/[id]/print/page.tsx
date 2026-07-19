@@ -12,6 +12,9 @@ import {
   INVOICE_QR_STAMP_TITLE,
   INVOICE_QR_STAMP_VALIDITY_TEXT,
   INVOICE_QR_STAMP_VERIFY_TEXT,
+  invoiceLineBillingBasis,
+  invoiceLineReference,
+  invoiceLineService,
   numberValue,
   normalizeInvoiceStatus,
   shouldPrintTermsOfPayment,
@@ -104,61 +107,48 @@ export default async function InvoicePrintPage({ params }: InvoicePrintPageProps
           </table>
         </section>
 
-        <table className="mt-8 w-full border-collapse text-[9.5pt]">
-          <thead>
-            <tr>
-              <th className="border border-black p-1">No</th>
-              <th className="border border-black p-1">ORI</th>
-              <th className="border border-black p-1">DES</th>
-              <th className="border border-black p-1">Shipment Date</th>
-              <th className="border border-black p-1">AWB No</th>
-              <th className="border border-black p-1">Flight No</th>
-              <th className="border border-black p-1">Pcs</th>
-              <th className="border border-black p-1">CAW</th>
-              <th className="border border-black p-1">Price</th>
-              <th className="border border-black p-1">Total Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {lines.map((line, index) => (
-              <tr key={line.id}>
-                <td className="border border-black p-1 text-center">{index + 1}</td>
-                {line.lineType === "awb" ? (
-                  <>
-                    <td className="border border-black p-1 text-center">{line.origin || "-"}</td>
-                    <td className="border border-black p-1 text-center">{line.destination || "-"}</td>
-                    <td className="border border-black p-1 text-center">{displayDate(line.shipmentDate)}</td>
-                    <td className="border border-black p-1">{line.awbNumber || "-"}</td>
-                    <td className="border border-black p-1 text-center">{line.flightNumber || "-"}</td>
-                    <td className="border border-black p-1 text-center">{line.pieces ?? "-"}</td>
-                    <td className="border border-black p-1 text-right">{line.chargeableWeight || "-"}</td>
-                    <td className="border border-black p-1 text-right">{formatCurrencyCell(line.pricePerKg, currency)}</td>
+        {invoice.formatVersion >= 2 ? (
+          <table className="mt-8 w-full table-fixed border-collapse text-[8.5pt]">
+            <colgroup><col className="w-[5%]" /><col className="w-[16%]" /><col className="w-[22%]" /><col className="w-[19%]" /><col className="w-[11%]" /><col className="w-[13%]" /><col className="w-[14%]" /></colgroup>
+            <thead><tr><th className="border border-black p-1">No</th><th className="border border-black p-1">Reference</th><th className="border border-black p-1">Shipment Details</th><th className="border border-black p-1">Service</th><th className="border border-black p-1">Quantity</th><th className="border border-black p-1">Unit Rate</th><th className="border border-black p-1">Amount</th></tr></thead>
+            <tbody>
+              {lines.map((line, index) => {
+                const billingBasis = invoiceLineBillingBasis(line);
+                const rate = billingBasis === "per_kg" ? line.pricePerKg : line.flatAmount ?? line.lineTotal;
+                const route = [line.origin, line.destination].filter(Boolean).join(" - ");
+                const secondaryDetails = [line.flightNumber, line.pieces ? `${line.pieces} pcs` : ""].filter(Boolean).join(" / ");
+                return (
+                  <tr key={line.id}>
+                    <td className="border border-black p-1 text-center">{index + 1}</td>
+                    <td className="break-words border border-black p-1 font-mono">{invoiceLineReference(line)}</td>
+                    <td className="border border-black p-1"><p>{[displayDate(line.shipmentDate), route].filter((value) => value && value !== "-").join(" / ") || "-"}</p>{secondaryDetails ? <p className="text-[7.5pt]">{secondaryDetails}</p> : null}</td>
+                    <td className="break-words border border-black p-1">{invoiceLineService(line)}</td>
+                    <td className="border border-black p-1 text-right">{billingBasis === "per_kg" ? `${line.chargeableWeight || "-"} kg` : "1 service"}</td>
+                    <td className="border border-black p-1 text-right">{formatCurrencyCell(rate, currency)}{billingBasis === "per_kg" ? "/kg" : ""}</td>
                     <td className="border border-black p-1 text-right">{formatCurrencyCell(line.lineTotal, currency)}</td>
-                  </>
-                ) : (
-                  <>
-                    <td className="border border-black p-1 italic" colSpan={8}>{line.description || "Service"}</td>
-                    <td className="border border-black p-1 text-right">{formatCurrencyCell(line.lineTotal, currency)}</td>
-                  </>
-                )}
-              </tr>
-            ))}
-            {deductions.map((deduction) => (
-              <tr key={deduction.id}>
-                <td className="border border-black p-1"></td>
-                <td className="border border-black p-1 italic" colSpan={8}>{deduction.description}</td>
-                <td className="border border-black p-1 text-right">{formatCurrencyCell(deduction.amount, currency, true)}</td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <SummaryPrintRow currency={currency} label="Subtotal" value={invoice.subtotal} />
-            {numberValue(invoice.vatAmount) > 0 ? <SummaryPrintRow currency={currency} label="VAT 1.1%" value={invoice.vatAmount} /> : null}
-            <SummaryPrintRow currency={currency} label="Total Due" strong value={invoice.amountDue} />
-            {numberValue(invoice.pphAmount) > 0 ? <SummaryPrintRow currency={currency} label="PPh 23 (2%)" negative value={invoice.pphAmount} /> : null}
-            {numberValue(invoice.pphAmount) > 0 ? <SummaryPrintRow currency={currency} highlight label="Net Payable" strong value={invoice.netPayable} /> : null}
-          </tfoot>
-        </table>
+                  </tr>
+                );
+              })}
+              {deductions.map((deduction) => <tr key={deduction.id}><td className="border border-black p-1"></td><td className="border border-black p-1 italic" colSpan={5}>{deduction.description}</td><td className="border border-black p-1 text-right">{formatCurrencyCell(deduction.amount, currency, true)}</td></tr>)}
+            </tbody>
+            <tfoot>
+              <SummaryPrintRow currency={currency} label="Subtotal" labelColSpan={6} value={invoice.subtotal} />
+              {numberValue(invoice.vatAmount) > 0 ? <SummaryPrintRow currency={currency} label="VAT 1.1%" labelColSpan={6} value={invoice.vatAmount} /> : null}
+              <SummaryPrintRow currency={currency} label="Total Due" labelColSpan={6} strong value={invoice.amountDue} />
+              {numberValue(invoice.pphAmount) > 0 ? <SummaryPrintRow currency={currency} label="PPh 23 (2%)" labelColSpan={6} negative value={invoice.pphAmount} /> : null}
+              {numberValue(invoice.pphAmount) > 0 ? <SummaryPrintRow currency={currency} highlight label="Net Payable" labelColSpan={6} strong value={invoice.netPayable} /> : null}
+            </tfoot>
+          </table>
+        ) : (
+          <table className="mt-8 w-full border-collapse text-[9.5pt]">
+            <thead><tr><th className="border border-black p-1">No</th><th className="border border-black p-1">ORI</th><th className="border border-black p-1">DES</th><th className="border border-black p-1">Shipment Date</th><th className="border border-black p-1">AWB No</th><th className="border border-black p-1">Flight No</th><th className="border border-black p-1">Pcs</th><th className="border border-black p-1">CAW</th><th className="border border-black p-1">Price</th><th className="border border-black p-1">Total Amount</th></tr></thead>
+            <tbody>
+              {lines.map((line, index) => <tr key={line.id}><td className="border border-black p-1 text-center">{index + 1}</td>{line.lineType === "awb" ? <><td className="border border-black p-1 text-center">{line.origin || "-"}</td><td className="border border-black p-1 text-center">{line.destination || "-"}</td><td className="border border-black p-1 text-center">{displayDate(line.shipmentDate)}</td><td className="border border-black p-1">{line.awbNumber || "-"}</td><td className="border border-black p-1 text-center">{line.flightNumber || "-"}</td><td className="border border-black p-1 text-center">{line.pieces ?? "-"}</td><td className="border border-black p-1 text-right">{line.chargeableWeight || "-"}</td><td className="border border-black p-1 text-right">{formatCurrencyCell(line.pricePerKg, currency)}</td><td className="border border-black p-1 text-right">{formatCurrencyCell(line.lineTotal, currency)}</td></> : <><td className="border border-black p-1 italic" colSpan={8}>{line.description || "Service"}</td><td className="border border-black p-1 text-right">{formatCurrencyCell(line.lineTotal, currency)}</td></>}</tr>)}
+              {deductions.map((deduction) => <tr key={deduction.id}><td className="border border-black p-1"></td><td className="border border-black p-1 italic" colSpan={8}>{deduction.description}</td><td className="border border-black p-1 text-right">{formatCurrencyCell(deduction.amount, currency, true)}</td></tr>)}
+            </tbody>
+            <tfoot><SummaryPrintRow currency={currency} label="Subtotal" value={invoice.subtotal} />{numberValue(invoice.vatAmount) > 0 ? <SummaryPrintRow currency={currency} label="VAT 1.1%" value={invoice.vatAmount} /> : null}<SummaryPrintRow currency={currency} label="Total Due" strong value={invoice.amountDue} />{numberValue(invoice.pphAmount) > 0 ? <SummaryPrintRow currency={currency} label="PPh 23 (2%)" negative value={invoice.pphAmount} /> : null}{numberValue(invoice.pphAmount) > 0 ? <SummaryPrintRow currency={currency} highlight label="Net Payable" strong value={invoice.netPayable} /> : null}</tfoot>
+          </table>
+        )}
 
         <p className="mt-6 text-[8.5pt] italic"># {currency === "IDR" ? terbilangRupiah(invoice.netPayable) : ""}</p>
 
@@ -217,6 +207,7 @@ function SummaryPrintRow({
   currency,
   highlight,
   label,
+  labelColSpan = 9,
   negative,
   strong,
   value,
@@ -224,13 +215,14 @@ function SummaryPrintRow({
   currency: string;
   highlight?: boolean;
   label: string;
+  labelColSpan?: number;
   negative?: boolean;
   strong?: boolean;
   value: number | string | null;
 }) {
   return (
     <tr>
-      <td className="border border-black p-1 text-right font-bold" colSpan={9}>{label}</td>
+      <td className="border border-black p-1 text-right font-bold" colSpan={labelColSpan}>{label}</td>
       <td className={`border border-black p-1 text-right ${strong ? "font-bold" : ""} ${highlight ? "bg-blue-200" : ""}`}>
         {formatCurrencyCell(value, currency, negative)}
       </td>

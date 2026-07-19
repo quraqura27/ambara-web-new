@@ -13,6 +13,9 @@ import {
   INVOICE_QR_STAMP_TITLE,
   INVOICE_QR_STAMP_VALIDITY_TEXT,
   INVOICE_QR_STAMP_VERIFY_TEXT,
+  invoiceLineBillingBasis,
+  invoiceLineReference,
+  invoiceLineService,
   numberValue,
   shouldPrintTermsOfPayment,
   terbilangRupiah,
@@ -27,6 +30,7 @@ type InvoicePdfInvoice = {
   customerNameSnapshot: string | null;
   customerNpwpSnapshot: string | null;
   dueDate: string | null;
+  formatVersion?: number | null;
   invoiceDate: string | null;
   invoiceNumber: string | null;
   netPayable: number | string | null;
@@ -42,16 +46,19 @@ type InvoicePdfInvoice = {
 
 type InvoicePdfLine = {
   awbNumber: string | null;
+  billingBasis?: string | null;
   chargeableWeight: number | string | null;
   description: string | null;
   destination: string | null;
   flightNumber: string | null;
+  flatAmount?: number | string | null;
   id: string;
   lineTotal: number | string | null;
   lineType: string;
   origin: string | null;
   pieces: number | null;
   pricePerKg: number | string | null;
+  reference?: string | null;
   shipmentDate: string | null;
 };
 
@@ -73,7 +80,8 @@ const pageWidth = 595.28;
 const pageHeight = 841.89;
 const margin = 42;
 const contentWidth = pageWidth - margin * 2;
-const invoiceTableColumns = [22, 38, 44, 68, 76, 56, 26, 45, 60, 76];
+const legacyInvoiceTableColumns = [22, 38, 44, 68, 76, 56, 26, 45, 60, 76];
+const flexibleInvoiceTableColumns = [22, 78, 112, 90, 52, 70, 87];
 
 function safeText(value: unknown) {
   return String(value ?? "")
@@ -148,6 +156,25 @@ function wrapText(text: string, font: PDFFont, size: number, maxWidth: number) {
   return lines.length ? lines : [""];
 }
 
+function wrapReference(text: string, font: PDFFont, size: number, maxWidth: number) {
+  const value = safeText(text);
+  if (font.widthOfTextAtSize(value, size) <= maxWidth) return [value];
+  const parts = value.match(/[^-]+-?/g) ?? [value];
+  const lines: string[] = [];
+  let current = "";
+  for (const part of parts) {
+    const candidate = `${current}${part}`;
+    if (!current || font.widthOfTextAtSize(candidate, size) <= maxWidth) {
+      current = candidate;
+      continue;
+    }
+    lines.push(current);
+    current = part;
+  }
+  if (current) lines.push(current);
+  return lines;
+}
+
 function drawCell(
   page: PDFPage,
   text: string,
@@ -186,6 +213,37 @@ function drawCell(
   });
 }
 
+function drawMultilineCell(
+  page: PDFPage,
+  lines: string[],
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  font: PDFFont,
+  size: number,
+  align: "left" | "center" | "right" = "left",
+) {
+  page.drawRectangle({
+    borderColor: rgb(0, 0, 0),
+    borderWidth: 0.75,
+    height,
+    width,
+    x,
+    y,
+  });
+  lines.forEach((line, index) => {
+    const value = safeText(line);
+    const textWidth = font.widthOfTextAtSize(value, size);
+    const textX = align === "right"
+      ? x + width - textWidth - 4
+      : align === "center"
+        ? x + (width - textWidth) / 2
+        : x + 4;
+    drawText(page, value, Math.max(x + 3, textX), y + height - 11 - index * 10, { font, size });
+  });
+}
+
 function drawSummaryRow(
   page: PDFPage,
   label: string,
@@ -195,9 +253,10 @@ function drawSummaryRow(
   fonts: { bold: PDFFont; regular: PDFFont },
   strong = false,
   negative = false,
+  columns = legacyInvoiceTableColumns,
 ) {
-  const labelWidth = tableColumnWidth(0, 9);
-  const amountWidth = invoiceTableColumns[9]!;
+  const labelWidth = tableColumnWidth(columns, 0, columns.length - 1);
+  const amountWidth = columns[columns.length - 1]!;
   drawCell(page, label, margin, y, labelWidth, 20, fonts.bold, 9, "right");
   drawCell(
     page,
@@ -212,8 +271,8 @@ function drawSummaryRow(
   );
 }
 
-function tableColumnWidth(startIndex: number, endIndex: number) {
-  return invoiceTableColumns
+function tableColumnWidth(columns: number[], startIndex: number, endIndex: number) {
+  return columns
     .slice(startIndex, endIndex)
     .reduce((sum, width) => sum + width, 0);
 }
@@ -315,27 +374,17 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
   drawCell(page, displayDate(input.invoice.dueDate), metaX + 105, y - 74, 105, 22, regular, 10);
   y -= 120;
 
-  const columns = invoiceTableColumns;
-  const headers = [
-    { span: 1, text: "No" },
-    { span: 1, text: "ORI" },
-    { span: 1, text: "DES" },
-    { span: 1, text: "Shipment Date" },
-    { span: 1, text: "AWB No" },
-    { span: 1, text: "Flight No" },
-    { span: 1, text: "Pcs" },
-    { span: 1, text: "CAW" },
-    { span: 1, text: "Price" },
-    { span: 1, text: "Total Amount" },
-  ];
+  const flexibleFormat = numberValue(input.invoice.formatVersion) >= 2;
+  const columns = flexibleFormat ? flexibleInvoiceTableColumns : legacyInvoiceTableColumns;
+  const headers = flexibleFormat
+    ? ["No", "Reference", "Shipment Details", "Service", "Quantity", "Unit Rate", "Amount"]
+    : ["No", "ORI", "DES", "Shipment Date", "AWB No", "Flight No", "Pcs", "CAW", "Price", "Total Amount"];
   function drawTableHeader() {
     let x = margin;
-    let columnIndex = 0;
-    headers.forEach((header) => {
-      const width = tableColumnWidth(columnIndex, columnIndex + header.span);
-      drawCell(page, header.text, x, y, width, 22, bold, 8.5, "center");
+    headers.forEach((header, columnIndex) => {
+      const width = columns[columnIndex]!;
+      drawCell(page, header, x, y, width, 22, bold, 8.2, "center");
       x += width;
-      columnIndex += header.span;
     });
     y -= 22;
   }
@@ -348,11 +397,68 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
 
   drawTableHeader();
   input.lines.forEach((line, index) => {
+    if (flexibleFormat) {
+      const billingBasis = invoiceLineBillingBasis(line);
+      const route = [line.origin, line.destination].filter(Boolean).join(" - ");
+      const primaryDetails = [displayDate(line.shipmentDate), route]
+        .filter((value) => value && value !== "-")
+        .join(" / ") || "-";
+      const secondaryDetails = [line.flightNumber, line.pieces ? `${line.pieces} pcs` : ""]
+        .filter(Boolean)
+        .join(" / ");
+      const detailLines = [
+        ...wrapText(primaryDetails, regular, 7.6, columns[2]! - 8),
+        ...(secondaryDetails ? wrapText(secondaryDetails, regular, 7.2, columns[2]! - 8) : []),
+      ];
+      const serviceLines = wrapText(invoiceLineService(line), regular, 7.6, columns[3]! - 8);
+      const referenceLines = wrapReference(invoiceLineReference(line), regular, 7.2, columns[1]! - 8);
+      const rowHeight = Math.max(
+        24,
+        8 + Math.max(detailLines.length, referenceLines.length, serviceLines.length) * 10,
+      );
+      ensureSpace(rowHeight, true);
+      const rate = billingBasis === "per_kg" ? line.pricePerKg : line.flatAmount ?? line.lineTotal;
+      const values = [
+        String(index + 1),
+        "",
+        "",
+        "",
+        billingBasis === "per_kg" ? `${line.chargeableWeight ?? "-"} kg` : "1 service",
+        `${formatCurrencyCell(rate, currency)}${billingBasis === "per_kg" ? "/kg" : ""}`,
+        formatCurrencyCell(line.lineTotal, currency),
+      ];
+      let x = margin;
+      values.forEach((value, colIndex) => {
+        if (colIndex === 1) {
+          drawMultilineCell(page, referenceLines, x, y, columns[colIndex]!, rowHeight, regular, 7.2);
+        } else if (colIndex === 2) {
+          drawMultilineCell(page, detailLines, x, y, columns[colIndex]!, rowHeight, regular, 7.6);
+        } else if (colIndex === 3) {
+          drawMultilineCell(page, serviceLines, x, y, columns[colIndex]!, rowHeight, regular, 7.6);
+        } else {
+          drawCell(
+            page,
+            value,
+            x,
+            y,
+            columns[colIndex]!,
+            rowHeight,
+            regular,
+            7.6,
+            colIndex === 0 ? "center" : colIndex >= 4 ? "right" : "left",
+          );
+        }
+        x += columns[colIndex]!;
+      });
+      y -= rowHeight;
+      return;
+    }
+
     ensureSpace(22, true);
     if (line.lineType !== "awb") {
       const descriptionX = margin + columns[0]!;
-      const descriptionWidth = tableColumnWidth(1, 9);
-      const amountX = margin + tableColumnWidth(0, 9);
+      const descriptionWidth = tableColumnWidth(columns, 1, 9);
+      const amountX = margin + tableColumnWidth(columns, 0, 9);
       drawCell(page, String(index + 1), margin, y, columns[0]!, 22, regular, 8.5, "center");
       drawCell(page, line.description || "Service", descriptionX, y, descriptionWidth, 22, italic, 8.5);
       drawCell(page, formatCurrencyCell(line.lineTotal, currency), amountX, y, columns[9]!, 22, regular, 8.5, "right");
@@ -397,27 +503,27 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
   for (const deduction of input.deductions) {
     ensureSpace(22, true);
     const descriptionX = margin + columns[0]!;
-    const descriptionWidth = tableColumnWidth(1, 9);
-    const amountX = margin + tableColumnWidth(0, 9);
+    const descriptionWidth = tableColumnWidth(columns, 1, columns.length - 1);
+    const amountX = margin + tableColumnWidth(columns, 0, columns.length - 1);
     drawCell(page, "", margin, y, columns[0]!, 22, regular, 8.5, "center");
     drawCell(page, deduction.description, descriptionX, y, descriptionWidth, 22, italic, 8.5);
-    drawCell(page, formatCurrencyCell(deduction.amount, currency, true), amountX, y, columns[9]!, 22, regular, 8.5, "right");
+    drawCell(page, formatCurrencyCell(deduction.amount, currency, true), amountX, y, columns[columns.length - 1]!, 22, regular, 8.5, "right");
     y -= 22;
   }
 
   ensureSpace(88);
-  drawSummaryRow(page, "Subtotal", input.invoice.subtotal, y, currency, fonts);
+  drawSummaryRow(page, "Subtotal", input.invoice.subtotal, y, currency, fonts, false, false, columns);
   y -= 20;
   if (numberValue(input.invoice.vatAmount) > 0) {
-    drawSummaryRow(page, "VAT 1.1%", input.invoice.vatAmount, y, currency, fonts);
+    drawSummaryRow(page, "VAT 1.1%", input.invoice.vatAmount, y, currency, fonts, false, false, columns);
     y -= 20;
   }
-  drawSummaryRow(page, "Total Due", input.invoice.amountDue, y, currency, fonts, true);
+  drawSummaryRow(page, "Total Due", input.invoice.amountDue, y, currency, fonts, true, false, columns);
   y -= 20;
   if (numberValue(input.invoice.pphAmount) > 0) {
-    drawSummaryRow(page, "PPh 23 (2%)", input.invoice.pphAmount, y, currency, fonts, false, true);
+    drawSummaryRow(page, "PPh 23 (2%)", input.invoice.pphAmount, y, currency, fonts, false, true, columns);
     y -= 20;
-    drawSummaryRow(page, "Net Payable", input.invoice.netPayable, y, currency, fonts, true);
+    drawSummaryRow(page, "Net Payable", input.invoice.netPayable, y, currency, fonts, true, false, columns);
     y -= 20;
   }
 

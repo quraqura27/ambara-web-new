@@ -14,6 +14,9 @@ import { ConfirmSubmitButton, TypedConfirmSubmitButton } from "@/components/port
 import {
   formatCurrencyAmount,
   invoiceEffectiveStatus,
+  invoiceLineBillingBasis,
+  invoiceLineReference,
+  invoiceLineService,
   invoiceStatusLabel,
   normalizeInvoiceStatus,
 } from "@/lib/invoices/core";
@@ -81,36 +84,47 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
             <h2 className="text-lg font-semibold">Line items</h2>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[840px] text-left text-sm">
-              <thead className="bg-[#15151f] text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                <tr>
-                  <th className="px-5 py-3">No</th>
-                  <th className="px-5 py-3">Type</th>
-                  <th className="px-5 py-3">Route / Description</th>
-                  <th className="px-5 py-3">AWB</th>
-                  <th className="px-5 py-3">CAW</th>
-                  <th className="px-5 py-3">Price</th>
-                  <th className="px-5 py-3 text-right">Total</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {lines.map((line, index) => (
-                  <tr key={line.id}>
-                    <td className="px-5 py-3 text-slate-500">{index + 1}</td>
-                    <td className="px-5 py-3 uppercase text-slate-400">{line.lineType}</td>
-                    <td className="px-5 py-3">
-                      {line.lineType === "awb"
-                        ? `${line.origin || "-"} - ${line.destination || "-"}`
-                        : line.description || "Service"}
-                    </td>
-                    <td className="px-5 py-3 font-mono text-blue-200">{line.awbNumber || "-"}</td>
-                    <td className="px-5 py-3">{line.chargeableWeight || "-"}</td>
-                    <td className="px-5 py-3">{line.pricePerKg ? `${currency} ${formatCurrencyAmount(line.pricePerKg, currency)}` : "-"}</td>
-                    <td className="px-5 py-3 text-right font-semibold">{currency} {formatCurrencyAmount(line.lineTotal, currency)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            {invoice.formatVersion >= 2 ? (
+              <table className="w-full min-w-[940px] text-left text-sm">
+                <thead className="bg-[#15151f] text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                  <tr><th className="px-4 py-3">No</th><th className="px-4 py-3">Reference</th><th className="px-4 py-3">Shipment details</th><th className="px-4 py-3">Service</th><th className="px-4 py-3">Quantity</th><th className="px-4 py-3">Unit rate</th><th className="px-4 py-3 text-right">Amount</th></tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {lines.map((line, index) => {
+                    const billingBasis = invoiceLineBillingBasis(line);
+                    const rate = billingBasis === "per_kg" ? line.pricePerKg : line.flatAmount ?? line.lineTotal;
+                    const detailParts = [
+                      [line.origin, line.destination].filter(Boolean).join(" - "),
+                      line.shipmentDate,
+                      line.flightNumber,
+                      line.pieces ? `${line.pieces} pcs` : "",
+                    ].filter(Boolean);
+                    return (
+                      <tr key={line.id}>
+                        <td className="px-4 py-3 text-slate-500">{index + 1}</td>
+                        <td className="px-4 py-3 font-mono text-blue-200">{invoiceLineReference(line)}</td>
+                        <td className="px-4 py-3 text-slate-400">{detailParts.join(" / ") || "-"}</td>
+                        <td className="px-4 py-3">{invoiceLineService(line)}</td>
+                        <td className="px-4 py-3">{billingBasis === "per_kg" ? `${line.chargeableWeight || "-"} kg` : "1 service"}</td>
+                        <td className="px-4 py-3">{currency} {formatCurrencyAmount(rate, currency)}{billingBasis === "per_kg" ? "/kg" : "/service"}</td>
+                        <td className="px-4 py-3 text-right font-semibold">{currency} {formatCurrencyAmount(line.lineTotal, currency)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            ) : (
+              <table className="w-full min-w-[840px] text-left text-sm">
+                <thead className="bg-[#15151f] text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                  <tr><th className="px-5 py-3">No</th><th className="px-5 py-3">Type</th><th className="px-5 py-3">Route / Description</th><th className="px-5 py-3">AWB</th><th className="px-5 py-3">CAW</th><th className="px-5 py-3">Price</th><th className="px-5 py-3 text-right">Total</th></tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {lines.map((line, index) => (
+                    <tr key={line.id}><td className="px-5 py-3 text-slate-500">{index + 1}</td><td className="px-5 py-3 uppercase text-slate-400">{line.lineType}</td><td className="px-5 py-3">{line.lineType === "awb" ? `${line.origin || "-"} - ${line.destination || "-"}` : line.description || "Service"}</td><td className="px-5 py-3 font-mono text-blue-200">{line.awbNumber || "-"}</td><td className="px-5 py-3">{line.chargeableWeight || "-"}</td><td className="px-5 py-3">{line.pricePerKg ? `${currency} ${formatCurrencyAmount(line.pricePerKg, currency)}` : "-"}</td><td className="px-5 py-3 text-right font-semibold">{currency} {formatCurrencyAmount(line.lineTotal, currency)}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </Card>
 

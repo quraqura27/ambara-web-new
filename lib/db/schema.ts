@@ -535,6 +535,7 @@ export const invoices = pgTable('invoices', {
   currency: text('currency').default('IDR'),
   city: text('city'),
   bankAccount: text('bank_account'),
+  formatVersion: integer('format_version').notNull().default(1),
   period: text('period'),
   status: text('status').notNull().default('draft'),
   verificationToken: text('verification_token'),
@@ -626,6 +627,7 @@ export const invoiceLineItems = pgTable('invoice_line_items', {
   id: uuid('id').defaultRandom().primaryKey(),
   invoiceId: uuid('invoice_id').notNull().references(() => invoices.id),
   awbId: uuid('awb_id').references(() => awbs.id),
+  billingBasis: text('billing_basis'),
   shipmentId: integer('shipment_id').references(() => shipments.id),
   lineType: text('line_type').notNull(),
   sortOrder: integer('sort_order').notNull().default(0),
@@ -638,6 +640,7 @@ export const invoiceLineItems = pgTable('invoice_line_items', {
   chargeableWeight: numeric('chargeable_weight'),
   description: text('description'),
   pricePerKg: numeric('price_per_kg'),
+  reference: text('reference'),
   flatAmount: numeric('flat_amount'),
   lineTotal: numeric('line_total').notNull(),
 }, (table) => [

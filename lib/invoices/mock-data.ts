@@ -1,4 +1,4 @@
-import type { InvoiceCustomerOption, InvoiceableAwb } from "@/actions/invoices";
+import type { InvoiceCustomerOption, InvoiceableSource } from "@/actions/invoices";
 
 export const mockInvoiceCustomers: InvoiceCustomerOption[] = [
   {
@@ -19,7 +19,7 @@ export const mockInvoiceCustomers: InvoiceCustomerOption[] = [
   },
 ];
 
-export const mockInvoiceAwbsByCustomerId: Record<number, InvoiceableAwb[]> = {
+export const mockInvoiceSourcesByCustomerId: Record<number, InvoiceableSource[]> = {
   900001: [
     {
       awbNumber: "126-45678901",
@@ -30,12 +30,13 @@ export const mockInvoiceAwbsByCustomerId: Record<number, InvoiceableAwb[]> = {
       id: "awb:mock-awb-mex-1",
       origin: "HKG",
       pieces: 5,
+      reference: "126-45678901",
       shipmentDate: "2026-05-26",
       sourceId: "mock-awb-mex-1",
       sourceType: "awb",
     },
     {
-      awbNumber: "126-45678902",
+      awbNumber: null,
       carrier: "GA",
       chargeableWeight: "52",
       destination: "CGK",
@@ -43,6 +44,7 @@ export const mockInvoiceAwbsByCustomerId: Record<number, InvoiceableAwb[]> = {
       id: "shipment:900200",
       origin: "HKG",
       pieces: 3,
+      reference: "AA26-MEX-00000200-DTD",
       shipmentDate: "2026-05-27",
       sourceId: "900200",
       sourceType: "shipment",
@@ -58,6 +60,7 @@ export const mockInvoiceAwbsByCustomerId: Record<number, InvoiceableAwb[]> = {
       id: "awb:mock-awb-snb-1",
       origin: "SIN",
       pieces: 8,
+      reference: "618-12345670",
       shipmentDate: "2026-01-08",
       sourceId: "mock-awb-snb-1",
       sourceType: "awb",
@@ -71,6 +74,7 @@ export const mockInvoiceAwbsByCustomerId: Record<number, InvoiceableAwb[]> = {
       id: "shipment:900201",
       origin: "SIN",
       pieces: 2,
+      reference: "AA26-SNB-00000201-PTP",
       shipmentDate: "2026-01-09",
       sourceId: "900201",
       sourceType: "shipment",

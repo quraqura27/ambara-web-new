@@ -1,9 +1,9 @@
 import Link from "next/link";
 
-import { getInvoiceableAwbs, getInvoiceCustomerOptions } from "@/actions/invoices";
+import { getInvoiceableSources, getInvoiceCustomerOptions } from "@/actions/invoices";
 import { InvoiceBuilder } from "@/components/invoices/invoice-builder";
 import { Button } from "@/components/ui/core";
-import { mockInvoiceAwbsByCustomerId, mockInvoiceCustomers } from "@/lib/invoices/mock-data";
+import { mockInvoiceCustomers, mockInvoiceSourcesByCustomerId } from "@/lib/invoices/mock-data";
 import { isLocalPortalDevAccessEnabled } from "@/lib/portal-auth";
 
 export const dynamic = "force-dynamic";
@@ -20,16 +20,16 @@ export default async function NewInvoicePage({ searchParams }: NewInvoicePagePro
   const usingMockData = forceMockData || (localDevAccess && dbCustomers.length === 0);
   const customers = usingMockData ? mockInvoiceCustomers : dbCustomers;
   const initialCustomer = customers.find((customer) => customer.invoiceableCount > 0) ?? customers[0];
-  const initialAwbs = usingMockData
-    ? mockInvoiceAwbsByCustomerId[initialCustomer?.id ?? 0] ?? []
-    : initialCustomer?.id ? await getInvoiceableAwbs(initialCustomer.id) : [];
+  const initialSources = usingMockData
+    ? mockInvoiceSourcesByCustomerId[initialCustomer?.id ?? 0] ?? []
+    : initialCustomer?.id ? await getInvoiceableSources(initialCustomer.id) : [];
 
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">New Invoice</h1>
-          <p className="mt-1 text-slate-500">Create a customer invoice from AWB data, service lines, deductions, VAT, and PPh treatment.</p>
+          <p className="mt-1 text-slate-500">Create a customer invoice from shipment-linked or manual service charges, deductions, VAT, and PPh treatment.</p>
         </div>
         <div className="flex flex-wrap gap-3">
           {localDevAccess ? (
@@ -44,9 +44,9 @@ export default async function NewInvoicePage({ searchParams }: NewInvoicePagePro
       {customers.length > 0 || localDevAccess ? (
         <InvoiceBuilder
           customers={customers}
-          initialAwbs={initialAwbs}
-          mockAwbsByCustomerId={usingMockData ? mockInvoiceAwbsByCustomerId : undefined}
+          initialSources={initialSources}
           mockData={usingMockData}
+          mockSourcesByCustomerId={usingMockData ? mockInvoiceSourcesByCustomerId : undefined}
         />
       ) : (
         <div className="rounded-lg border border-white/5 bg-[#12121a]/80 p-10 text-center text-slate-500">

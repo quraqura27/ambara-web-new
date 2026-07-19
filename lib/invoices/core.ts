@@ -19,12 +19,31 @@ export const INVOICE_QR_STAMP_VALIDITY_TEXT =
   "This commercial invoice is system-generated and valid without wet signature.";
 export const INVOICE_QR_STAMP_ISSUER_TEXT = "Issued by Finance Department";
 
+export const invoiceBillingBasisValues = ["per_kg", "flat"] as const;
+
+export type InvoiceBillingBasis = (typeof invoiceBillingBasisValues)[number];
+
+export type InvoiceSourceReference = {
+  sourceId: string;
+  sourceType: "awb" | "shipment";
+};
+
 export type InvoiceLineInput = {
+  billingBasis?: InvoiceBillingBasis | null;
   chargeableWeight?: number | string | null;
   flatAmount?: number | string | null;
   lineTotal?: number | string | null;
   pricePerKg?: number | string | null;
-  type: "awb" | "service";
+  type: "awb" | "charge" | "service";
+  unitRate?: number | string | null;
+};
+
+export type InvoiceDisplayLine = {
+  awbNumber?: string | null;
+  billingBasis?: string | null;
+  description?: string | null;
+  lineType?: string | null;
+  reference?: string | null;
 };
 
 export type InvoiceDeductionInput = {
@@ -144,10 +163,65 @@ export function money(value: number) {
 }
 
 export function lineTotal(line: InvoiceLineInput) {
-  if (line.type === "awb") {
-    return money(numberValue(line.chargeableWeight) * numberValue(line.pricePerKg));
+  const billingBasis = line.billingBasis ?? (line.type === "awb" ? "per_kg" : "flat");
+  if (billingBasis === "per_kg") {
+    return money(
+      numberValue(line.chargeableWeight) * numberValue(line.unitRate ?? line.pricePerKg),
+    );
   }
-  return money(numberValue(line.flatAmount ?? line.lineTotal));
+  return money(numberValue(line.flatAmount ?? line.unitRate ?? line.lineTotal));
+}
+
+export function invoiceLineBillingBasis(line: InvoiceDisplayLine): InvoiceBillingBasis {
+  return line.billingBasis === "per_kg" || line.billingBasis === "flat"
+    ? line.billingBasis
+    : line.lineType === "awb"
+      ? "per_kg"
+      : "flat";
+}
+
+export function invoiceLineReference(line: InvoiceDisplayLine) {
+  return line.reference?.trim() || line.awbNumber?.trim() || "-";
+}
+
+export function invoiceLineService(line: InvoiceDisplayLine) {
+  return line.description?.trim() || (line.lineType === "awb" ? "Air Freight" : "Service");
+}
+
+export function parseInvoiceSourceKey(value: string): InvoiceSourceReference | null {
+  const normalized = value.trim();
+  const match = /^(awb|shipment):(.+)$/.exec(normalized);
+  if (match) {
+    return {
+      sourceId: match[2] ?? "",
+      sourceType: match[1] as InvoiceSourceReference["sourceType"],
+    };
+  }
+  return normalized ? { sourceId: normalized, sourceType: "awb" } : null;
+}
+
+export function uniqueInvoiceSources(sourceKeys: Array<string | null | undefined>) {
+  const sources = new Map<string, InvoiceSourceReference>();
+  for (const sourceKey of sourceKeys) {
+    if (!sourceKey) continue;
+    const source = parseInvoiceSourceKey(sourceKey);
+    if (!source?.sourceId) continue;
+    sources.set(`${source.sourceType}:${source.sourceId}`, source);
+  }
+  return [...sources.values()];
+}
+
+export function resolveInvoiceReference(input: {
+  awbNumber?: string | null;
+  customerReference?: string | null;
+  internalTrackingNumber?: string | null;
+  trackingNumber?: string | null;
+}) {
+  return input.awbNumber?.trim()
+    || input.internalTrackingNumber?.trim()
+    || input.customerReference?.trim()
+    || input.trackingNumber?.trim()
+    || "Unreferenced shipment";
 }
 
 export function calculateInvoiceTotals(input: InvoiceCalculationInput): InvoiceTotals {

@@ -203,6 +203,11 @@ const migration015Indexes = [
   "documents_shipment_type_version_unique_idx",
   "documents_shipment_status_idx",
 ];
+const migration016Columns = [
+  ["invoices", "format_version"],
+  ["invoice_line_items", "billing_basis"],
+  ["invoice_line_items", "reference"],
+];
 
 function checksum(contents) {
   return createHash("sha256").update(contents).digest("hex");
@@ -318,11 +323,19 @@ async function migrationMissingObjects(sql, name) {
     });
   }
 
+  if (name.startsWith("016-")) {
+    return missingSchemaObjects(sql, {
+      columns: migration016Columns,
+      tables: [],
+      indexes: [],
+    });
+  }
+
   return [];
 }
 
 function hasSchemaObjectCheck(name) {
-  return ["006-", "007-", "008-", "009-", "014-", "015-"].some((prefix) =>
+  return ["006-", "007-", "008-", "009-", "014-", "015-", "016-"].some((prefix) =>
     name.startsWith(prefix),
   );
 }
