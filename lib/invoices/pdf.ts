@@ -386,7 +386,6 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
       drawCell(page, header, x, y, width, 22, bold, 8.2, "center");
       x += width;
     });
-    y -= 22;
   }
   function ensureSpace(required: number, repeatTableHeader = false, minBottomY = 150) {
     if (y - required > minBottomY) return;
@@ -417,6 +416,7 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
         8 + Math.max(detailLines.length, referenceLines.length, serviceLines.length) * 10,
       );
       ensureSpace(rowHeight, true);
+      const rowY = y - rowHeight;
       const rate = billingBasis === "per_kg" ? line.pricePerKg : line.flatAmount ?? line.lineTotal;
       const values = [
         String(index + 1),
@@ -430,17 +430,17 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
       let x = margin;
       values.forEach((value, colIndex) => {
         if (colIndex === 1) {
-          drawMultilineCell(page, referenceLines, x, y, columns[colIndex]!, rowHeight, regular, 7.2);
+          drawMultilineCell(page, referenceLines, x, rowY, columns[colIndex]!, rowHeight, regular, 7.2);
         } else if (colIndex === 2) {
-          drawMultilineCell(page, detailLines, x, y, columns[colIndex]!, rowHeight, regular, 7.6);
+          drawMultilineCell(page, detailLines, x, rowY, columns[colIndex]!, rowHeight, regular, 7.6);
         } else if (colIndex === 3) {
-          drawMultilineCell(page, serviceLines, x, y, columns[colIndex]!, rowHeight, regular, 7.6);
+          drawMultilineCell(page, serviceLines, x, rowY, columns[colIndex]!, rowHeight, regular, 7.6);
         } else {
           drawCell(
             page,
             value,
             x,
-            y,
+            rowY,
             columns[colIndex]!,
             rowHeight,
             regular,
@@ -450,19 +450,20 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
         }
         x += columns[colIndex]!;
       });
-      y -= rowHeight;
+      y = rowY;
       return;
     }
 
     ensureSpace(22, true);
+    const rowY = y - 22;
     if (line.lineType !== "awb") {
       const descriptionX = margin + columns[0]!;
       const descriptionWidth = tableColumnWidth(columns, 1, 9);
       const amountX = margin + tableColumnWidth(columns, 0, 9);
-      drawCell(page, String(index + 1), margin, y, columns[0]!, 22, regular, 8.5, "center");
-      drawCell(page, line.description || "Service", descriptionX, y, descriptionWidth, 22, italic, 8.5);
-      drawCell(page, formatCurrencyCell(line.lineTotal, currency), amountX, y, columns[9]!, 22, regular, 8.5, "right");
-      y -= 22;
+      drawCell(page, String(index + 1), margin, rowY, columns[0]!, 22, regular, 8.5, "center");
+      drawCell(page, line.description || "Service", descriptionX, rowY, descriptionWidth, 22, italic, 8.5);
+      drawCell(page, formatCurrencyCell(line.lineTotal, currency), amountX, rowY, columns[9]!, 22, regular, 8.5, "right");
+      y = rowY;
       return;
     }
 
@@ -484,7 +485,7 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
         page,
         String(value),
         x,
-        y,
+        rowY,
         columns[colIndex]!,
         22,
         regular,
@@ -497,34 +498,35 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
       );
       x += columns[colIndex]!;
     });
-    y -= 22;
+    y = rowY;
   });
 
   for (const deduction of input.deductions) {
     ensureSpace(22, true);
+    const rowY = y - 22;
     const descriptionX = margin + columns[0]!;
     const descriptionWidth = tableColumnWidth(columns, 1, columns.length - 1);
     const amountX = margin + tableColumnWidth(columns, 0, columns.length - 1);
-    drawCell(page, "", margin, y, columns[0]!, 22, regular, 8.5, "center");
-    drawCell(page, deduction.description, descriptionX, y, descriptionWidth, 22, italic, 8.5);
-    drawCell(page, formatCurrencyCell(deduction.amount, currency, true), amountX, y, columns[columns.length - 1]!, 22, regular, 8.5, "right");
-    y -= 22;
+    drawCell(page, "", margin, rowY, columns[0]!, 22, regular, 8.5, "center");
+    drawCell(page, deduction.description, descriptionX, rowY, descriptionWidth, 22, italic, 8.5);
+    drawCell(page, formatCurrencyCell(deduction.amount, currency, true), amountX, rowY, columns[columns.length - 1]!, 22, regular, 8.5, "right");
+    y = rowY;
   }
 
   ensureSpace(88);
+  y -= 20;
   drawSummaryRow(page, "Subtotal", input.invoice.subtotal, y, currency, fonts, false, false, columns);
-  y -= 20;
   if (numberValue(input.invoice.vatAmount) > 0) {
-    drawSummaryRow(page, "VAT 1.1%", input.invoice.vatAmount, y, currency, fonts, false, false, columns);
     y -= 20;
+    drawSummaryRow(page, "VAT 1.1%", input.invoice.vatAmount, y, currency, fonts, false, false, columns);
   }
-  drawSummaryRow(page, "Total Due", input.invoice.amountDue, y, currency, fonts, true, false, columns);
   y -= 20;
+  drawSummaryRow(page, "Total Due", input.invoice.amountDue, y, currency, fonts, true, false, columns);
   if (numberValue(input.invoice.pphAmount) > 0) {
+    y -= 20;
     drawSummaryRow(page, "PPh 23 (2%)", input.invoice.pphAmount, y, currency, fonts, false, true, columns);
     y -= 20;
     drawSummaryRow(page, "Net Payable", input.invoice.netPayable, y, currency, fonts, true, false, columns);
-    y -= 20;
   }
 
   y -= 28;

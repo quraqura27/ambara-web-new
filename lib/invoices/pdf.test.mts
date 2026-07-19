@@ -4,6 +4,7 @@ import path from "node:path";
 import test from "node:test";
 
 import { PDFDocument } from "pdf-lib";
+import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 
 import { generateInvoicePdf } from "./pdf.ts";
 
@@ -163,7 +164,7 @@ test("generates a one-page flexible invoice with repeated shipment services", as
   const pdf = await generateInvoicePdf({
     deductions: [],
     invoice: {
-      amountDue: 750_000,
+      amountDue: 5_300_000,
       bankAccount: "ocbc",
       currency: "IDR",
       customerAddressSnapshot: "TEST ONLY",
@@ -174,71 +175,90 @@ test("generates a one-page flexible invoice with repeated shipment services", as
       formatVersion: 2,
       invoiceDate: "2026-07-06",
       invoiceNumber: "AAG/010/TST/26",
-      netPayable: 750_000,
+      netPayable: 5_300_000,
       paymentTerms: "CASH",
       period: null,
       pphAmount: 0,
       status: "sent",
-      subtotal: 750_000,
-      total: 750_000,
+      subtotal: 5_300_000,
+      total: 5_300_000,
       vatAmount: 0,
     },
     lines: [
+      {
+        awbNumber: "975-12345675",
+        billingBasis: "per_kg",
+        chargeableWeight: 100,
+        description: "Air Freight",
+        destination: "Denpasar",
+        flightNumber: "QZ0123",
+        flatAmount: null,
+        id: "charge-1",
+        lineTotal: 5_000_000,
+        lineType: "awb",
+        origin: "Jakarta",
+        pieces: 10,
+        pricePerKg: 50_000,
+        reference: "975-12345675",
+        shipmentDate: "2026-07-19",
+      },
       {
         awbNumber: null,
         billingBasis: "per_kg",
         chargeableWeight: 100,
         description: "Regulated Agent Service",
-        destination: "CGK",
-        flightNumber: null,
-        flatAmount: null,
-        id: "charge-1",
-        lineTotal: 250_000,
-        lineType: "service",
-        origin: "HKG",
-        pieces: 5,
-        pricePerKg: 2500,
-        reference: "AA26-TST-00000001-PTP",
-        shipmentDate: "2026-07-05",
-      },
-      {
-        awbNumber: null,
-        billingBasis: "per_kg",
-        chargeableWeight: 100,
-        description: "Handling Service",
-        destination: "CGK",
+        destination: null,
         flightNumber: null,
         flatAmount: null,
         id: "charge-2",
-        lineTotal: 300_000,
+        lineTotal: 150_000,
         lineType: "service",
-        origin: "HKG",
-        pieces: 5,
-        pricePerKg: 3000,
-        reference: "AA26-TST-00000001-PTP",
-        shipmentDate: "2026-07-05",
+        origin: null,
+        pieces: null,
+        pricePerKg: 1500,
+        reference: "975-12345675",
+        shipmentDate: null,
       },
       {
         awbNumber: null,
         billingBasis: "flat",
         chargeableWeight: null,
-        description: "Documentation Service",
+        description: "PEB",
         destination: null,
         flightNumber: null,
-        flatAmount: 200_000,
+        flatAmount: 150_000,
         id: "charge-3",
-        lineTotal: 200_000,
+        lineTotal: 150_000,
         lineType: "service",
         origin: null,
         pieces: null,
         pricePerKg: null,
-        reference: "MANUAL-REF-001",
+        reference: "975-12345675",
         shipmentDate: null,
       },
     ],
     verificationUrl: "https://www.ambaraartha.com/invoice/verify/test-token",
   });
   const document = await PDFDocument.load(pdf);
+  const parsedPdf = await getDocument({
+    data: new Uint8Array(pdf),
+    disableFontFace: true,
+    useSystemFonts: true,
+  }).promise;
+  const parsedPage = await parsedPdf.getPage(1);
+  const textContent = await parsedPage.getTextContent();
+  const textItems = textContent.items.filter(
+    (item): item is Extract<(typeof textContent.items)[number], { str: string }> => "str" in item,
+  );
+  const headerReference = textItems.find((item) => item.str === "Reference");
+  const firstLineReference = textItems.find((item) => item.str === "975-12345675");
+
+  assert.ok(headerReference && firstLineReference);
+  assert.ok(
+    headerReference.transform[5]! - firstLineReference.transform[5]! >= 18,
+    "the first flexible invoice row must render fully below the table header",
+  );
+  await parsedPdf.destroy();
 
   if (process.env.INVOICE_PDF_FIXTURE_DIR) {
     await mkdir(process.env.INVOICE_PDF_FIXTURE_DIR, { recursive: true });
@@ -297,6 +317,14 @@ test("paginates flexible invoice rows with long service descriptions", async () 
     verificationUrl: "https://www.ambaraartha.com/invoice/verify/test-token",
   });
   const document = await PDFDocument.load(pdf);
+
+  if (process.env.INVOICE_PDF_FIXTURE_DIR) {
+    await mkdir(process.env.INVOICE_PDF_FIXTURE_DIR, { recursive: true });
+    await writeFile(
+      path.join(process.env.INVOICE_PDF_FIXTURE_DIR, "long-flexible-service-invoice.pdf"),
+      pdf,
+    );
+  }
 
   assert.ok(document.getPageCount() > 1);
 });
