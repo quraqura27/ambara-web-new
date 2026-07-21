@@ -98,14 +98,6 @@ const nextConfig = {
   async rewrites() {
     return [
       {
-        source: "/en",
-        destination: "/index.html",
-      },
-      {
-        source: "/en/",
-        destination: "/index.html",
-      },
-      {
         source: "/en/index.html",
         destination: "/index.html",
       },
