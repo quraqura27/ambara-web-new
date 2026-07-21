@@ -9,26 +9,51 @@ export async function GET() {
 
   const html = source
     .replace(
-      '<div class="stat-number" id="stat-ontime">98.5%</div>',
+      /<div class="stat-number" id="stat-ontime">[^<]*<\/div>/,
       '<div class="stat-number" id="stat-ontime">99.6%</div>',
+    )
+    .replace(
+      /<script src="\/app\.js\?v=[^"]+"><\/script>/,
+      '<script src="/app.js?v=2.5"></script>',
     )
     .replace(
       "</body>",
       `<script>
-        document.addEventListener('DOMContentLoaded', function () {
-          var onTimeRate = document.getElementById('stat-ontime');
-          if (onTimeRate) onTimeRate.textContent = '99.6%';
+        (function () {
+          function applyPerformanceStats() {
+            var onTimeRate = document.getElementById('stat-ontime');
+            if (onTimeRate) onTimeRate.textContent = '99.6%';
 
-          var remark = document.querySelector('.stats-remark');
-          if (remark) remark.textContent = 'Operational Performance -- 2026 YTD';
-        });
+            var statsGrid = document.querySelector('.grid-4');
+            if (!statsGrid) return;
+
+            var remark = document.querySelector('.stats-remark');
+            if (!remark) {
+              remark = document.createElement('div');
+              remark.className = 'stats-remark animate-on-scroll';
+              remark.style.marginTop = '28px';
+              remark.style.textAlign = 'center';
+              remark.style.fontSize = '0.8125rem';
+              remark.style.color = 'var(--text-muted)';
+              statsGrid.insertAdjacentElement('afterend', remark);
+            }
+            remark.textContent = 'Operational Performance -- 2026 YTD';
+          }
+
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', applyPerformanceStats);
+          } else {
+            applyPerformanceStats();
+          }
+          window.setTimeout(applyPerformanceStats, 100);
+        })();
       </script>\n</body>`,
     );
 
   return new Response(html, {
     headers: {
       "Content-Type": "text/html; charset=utf-8",
-      "Cache-Control": "public, max-age=0, s-maxage=3600",
+      "Cache-Control": "no-store, max-age=0",
     },
   });
 }
