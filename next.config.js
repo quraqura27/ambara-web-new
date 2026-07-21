@@ -110,14 +110,6 @@ const nextConfig = {
         destination: "/:path*.html",
       },
       {
-        source: "/id",
-        destination: "/id/index.html",
-      },
-      {
-        source: "/id/",
-        destination: "/id/index.html",
-      },
-      {
         source: "/id/blog/:slug",
         destination: "/id/blog/:slug.html",
       },
