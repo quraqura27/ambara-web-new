@@ -8,7 +8,7 @@
   "scripts": {
     "airlines:refresh": "node scripts/refresh-iata-member-airlines.mjs",
     "dev": "next dev",
-    "build": "node scripts/patch-homepage-performance.mjs && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "migrate": "node scripts/migrate.cjs",
