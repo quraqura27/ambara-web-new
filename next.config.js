@@ -96,36 +96,41 @@ const nextConfig = {
     ];
   },
   async rewrites() {
-    return [
-      {
-        source: "/en",
-        destination: "/homepage-en",
-      },
-      {
-        source: "/en/",
-        destination: "/homepage-en",
-      },
-      {
-        source: "/en/index.html",
-        destination: "/index.html",
-      },
-      {
-        source: "/en/blog/:slug",
-        destination: "/blog/:slug.html",
-      },
-      {
-        source: "/en/:path+",
-        destination: "/:path*.html",
-      },
-      {
-        source: "/id/blog/:slug",
-        destination: "/id/blog/:slug.html",
-      },
-      {
-        source: "/id/:path+",
-        destination: "/id/:path*.html",
-      },
-    ];
+    return {
+      beforeFiles: [
+        {
+          source: "/en",
+          destination: "/homepage-en",
+        },
+        {
+          source: "/en/",
+          destination: "/homepage-en",
+        },
+      ],
+      afterFiles: [
+        {
+          source: "/en/index.html",
+          destination: "/index.html",
+        },
+        {
+          source: "/en/blog/:slug",
+          destination: "/blog/:slug.html",
+        },
+        {
+          source: "/en/:path+",
+          destination: "/:path*.html",
+        },
+        {
+          source: "/id/blog/:slug",
+          destination: "/id/blog/:slug.html",
+        },
+        {
+          source: "/id/:path+",
+          destination: "/id/:path*.html",
+        },
+      ],
+      fallback: [],
+    };
   },
   experimental: {
     serverActions: {
