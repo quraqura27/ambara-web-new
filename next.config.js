@@ -96,41 +96,44 @@ const nextConfig = {
     ];
   },
   async rewrites() {
-    return {
-      beforeFiles: [
-        {
-          source: "/en",
-          destination: "/homepage-en",
-        },
-        {
-          source: "/en/",
-          destination: "/homepage-en",
-        },
-      ],
-      afterFiles: [
-        {
-          source: "/en/index.html",
-          destination: "/index.html",
-        },
-        {
-          source: "/en/blog/:slug",
-          destination: "/blog/:slug.html",
-        },
-        {
-          source: "/en/:path+",
-          destination: "/:path*.html",
-        },
-        {
-          source: "/id/blog/:slug",
-          destination: "/id/blog/:slug.html",
-        },
-        {
-          source: "/id/:path+",
-          destination: "/id/:path*.html",
-        },
-      ],
-      fallback: [],
-    };
+    return [
+      {
+        source: "/en",
+        destination: "/index.html",
+      },
+      {
+        source: "/en/",
+        destination: "/index.html",
+      },
+      {
+        source: "/en/index.html",
+        destination: "/index.html",
+      },
+      {
+        source: "/en/blog/:slug",
+        destination: "/blog/:slug.html",
+      },
+      {
+        source: "/en/:path+",
+        destination: "/:path*.html",
+      },
+      {
+        source: "/id",
+        destination: "/id/index.html",
+      },
+      {
+        source: "/id/",
+        destination: "/id/index.html",
+      },
+      {
+        source: "/id/blog/:slug",
+        destination: "/id/blog/:slug.html",
+      },
+      {
+        source: "/id/:path+",
+        destination: "/id/:path*.html",
+      },
+    ];
   },
   experimental: {
     serverActions: {

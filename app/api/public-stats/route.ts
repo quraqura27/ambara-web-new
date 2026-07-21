@@ -7,7 +7,7 @@ import { shipments } from "@/lib/db/schema";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const ON_TIME_RATE = 99.2;
+const ON_TIME_RATE = 99.6;
 const COUNTRIES_SERVED = 52;
 
 function numericValue(value: string | number | null | undefined) {

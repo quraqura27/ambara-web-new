@@ -101,7 +101,7 @@ AMBARA.getFooter = () => {
 
 (function initHomepageStatsFromPortal() {
   const FALLBACK_TONS_SHIPPED = 121;
-  const FALLBACK_ON_TIME_RATE = 99.2;
+  const FALLBACK_ON_TIME_RATE = 99.6;
   const FALLBACK_COUNTRIES_SERVED = 52;
   function getLang() { return typeof AMBARA?.getLang === 'function' ? AMBARA.getLang() : 'en'; }
   function setText(id, value) { const el = document.getElementById(id); if (el) el.textContent = value; }
@@ -109,15 +109,15 @@ AMBARA.getFooter = () => {
   function formatPercent(value) { return `${Number(value).toFixed(1).replace('.', getLang() === 'id' ? ',' : '.')}%`; }
   function updateRemark() {
     const remark = document.querySelector('.stats-remark');
-    if (!remark) return;
-    remark.textContent = getLang() === 'id' ? 'Berdasarkan dataset rata-rata bulanan.' : 'Based on average monthly dataset.';
+    if (!remark || getLang() === 'en') return;
+    remark.textContent = 'Berdasarkan dataset rata-rata bulanan.';
   }
   function applyStats(stats = {}) {
     const tonsShipped = Number.isFinite(Number(stats.tonsShipped)) ? Number(stats.tonsShipped) : FALLBACK_TONS_SHIPPED;
     const onTimeRate = Number.isFinite(Number(stats.onTimeRate)) ? Number(stats.onTimeRate) : FALLBACK_ON_TIME_RATE;
     const countriesServed = Number.isFinite(Number(stats.countriesServed)) ? Number(stats.countriesServed) : FALLBACK_COUNTRIES_SERVED;
     setText('stat-tonnage', `${formatInteger(Math.round(tonsShipped))} T`);
-    setText('stat-ontime', formatPercent(onTimeRate));
+    if (getLang() !== 'en') setText('stat-ontime', formatPercent(onTimeRate));
     setText('stat-countries', formatInteger(countriesServed));
     updateRemark();
   }
