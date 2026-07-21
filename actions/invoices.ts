@@ -29,6 +29,7 @@ import {
   normalizeInvoiceStatus,
   numberValue,
   parseInvoiceSourceKey,
+  resolveInvoicePaymentTerms,
   resolveInvoiceReference,
   type InvoiceBillingBasis,
   type InvoiceCurrency,
@@ -888,7 +889,16 @@ export async function finalizeInvoiceFromForm(
       vatEnabled,
     });
 
-    const invoiceDate = dateText(formData.get("invoiceDate")) ?? new Date().toISOString().slice(0, 10);
+    const invoiceDate = dateText(formData.get("invoiceDate"));
+    if (!invoiceDate) {
+      throw new Error("Choose a valid invoice date.");
+    }
+    const resolvedPaymentTerms = resolveInvoicePaymentTerms({
+      customDueDate: dateText(formData.get("dueDate")),
+      customLabel: text(formData.get("customPaymentTerms")),
+      invoiceDate,
+      paymentTermCode: text(formData.get("paymentTermCode")),
+    });
     const showPaymentTerms = !pphEnabled && booleanField(formData.get("showPaymentTerms"));
     const invoiceYear = Number.parseInt(invoiceDate.slice(0, 4), 10);
     const customerCode = normalizeCustomerCode(customer.invoiceCode ?? "");
@@ -926,7 +936,7 @@ export async function finalizeInvoiceFromForm(
         customerNameSnapshot: customerName(customer),
         customerNpwpSnapshot: customer.npwp,
         depositAmount: String(totals.depositAmount),
-        dueDate: dateText(formData.get("dueDate")),
+        dueDate: resolvedPaymentTerms.dueDate,
         formatVersion: 2,
         generatedAt: now,
         generatedBy: user.id,
@@ -934,7 +944,7 @@ export async function finalizeInvoiceFromForm(
         invoiceNumber,
         netAmount: String(totals.netAmount),
         netPayable: String(totals.netPayable),
-        paymentTerms: text(formData.get("paymentTerms")) || "CASH",
+        paymentTerms: resolvedPaymentTerms.paymentTerms,
         period: text(formData.get("period")) || null,
         pphAmount: String(totals.pphAmount),
         pphBaseAmount: String(totals.pphBaseAmount),

@@ -13,10 +13,14 @@ import {
 import { Button, Card, Input, cn } from "@/components/ui/core";
 import {
   calculateInvoiceTotals,
+  dateInputFromDate,
   FULL_PAYMENT_TERMS_TEXT,
   formatCurrencyAmount,
+  invoiceDueDateForPaymentTerm,
+  invoicePaymentTermOptions,
   lineTotal,
   type InvoiceBillingBasis,
+  type InvoicePaymentTermCode,
   terbilangRupiah,
 } from "@/lib/invoices/core";
 
@@ -52,13 +56,7 @@ const servicePresets = [
 ] as const;
 
 function todayDate() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function addDays(dateInput: string, days: number) {
-  const date = new Date(`${dateInput}T00:00:00`);
-  date.setDate(date.getDate() + days);
-  return date.toISOString().slice(0, 10);
+  return dateInputFromDate(new Date());
 }
 
 function displayDate(value: string | null) {
@@ -92,9 +90,10 @@ export function InvoiceBuilder({
   const [chargeLines, setChargeLines] = useState<ChargeLine[]>([]);
   const [deductions, setDeductions] = useState<ManualLine[]>([]);
   const [currency, setCurrency] = useState("IDR");
-  const [invoiceDate, setInvoiceDate] = useState(todayDate());
-  const [dueDate, setDueDate] = useState(addDays(todayDate(), 14));
-  const [paymentTerms, setPaymentTerms] = useState("CASH");
+  const [invoiceDate, setInvoiceDate] = useState(todayDate);
+  const [customDueDate, setCustomDueDate] = useState(invoiceDate);
+  const [customPaymentTerms, setCustomPaymentTerms] = useState("");
+  const [paymentTermCode, setPaymentTermCode] = useState<InvoicePaymentTermCode>("cash");
   const [bankAccount, setBankAccount] = useState("OCBC");
   const [vatEnabled, setVatEnabled] = useState(false);
   const [pphEnabled, setPphEnabled] = useState(false);
@@ -104,6 +103,11 @@ export function InvoiceBuilder({
   const selectedCustomer = customers.find((customer) => String(customer.id) === selectedCustomerId) ?? null;
   const selectedCustomerCode = selectedCustomer?.code ?? "";
   const sourceById = useMemo(() => new Map(sources.map((source) => [source.id, source])), [sources]);
+  const dueDate = invoiceDueDateForPaymentTerm({
+    customDueDate,
+    invoiceDate,
+    paymentTermCode,
+  }) ?? "";
 
   const lineInputs = chargeLines.map((line) => {
     const source = line.sourceKey ? sourceById.get(line.sourceKey) : null;
@@ -140,6 +144,21 @@ export function InvoiceBuilder({
     getInvoiceableSources(customerId)
       .then((rows) => setSources(rows))
       .finally(() => setSourceLoading(false));
+  }
+
+  function updateInvoiceDate(value: string) {
+    setInvoiceDate(value);
+    if (paymentTermCode === "custom" && value && customDueDate < value) {
+      setCustomDueDate(value);
+    }
+  }
+
+  function updatePaymentTerm(value: string) {
+    const nextCode = value as InvoicePaymentTermCode;
+    if (nextCode === "custom" && customDueDate < invoiceDate) {
+      setCustomDueDate(invoiceDate);
+    }
+    setPaymentTermCode(nextCode);
   }
 
   function addSourceCharge(sourceKey: string) {
@@ -207,6 +226,7 @@ export function InvoiceBuilder({
       <input name="deductions" type="hidden" value={JSON.stringify(deductions)} />
       <input name="vatEnabled" type="hidden" value={vatEnabled ? "true" : "false"} />
       <input name="pphEnabled" type="hidden" value={pphEnabled ? "true" : "false"} />
+      <input name="paymentTermCode" type="hidden" value={paymentTermCode} />
       <input name="showPaymentTerms" type="hidden" value={!pphEnabled && showPaymentTerms ? "true" : "false"} />
       <datalist id="invoice-service-presets">
         {servicePresets.map((preset) => <option key={preset} value={preset} />)}
@@ -267,15 +287,36 @@ export function InvoiceBuilder({
         <Card className="p-5">
           <h2 className="mb-5 text-lg font-semibold">Invoice details</h2>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <label><span className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Date</span><Input name="invoiceDate" onChange={(event) => setInvoiceDate(event.target.value)} type="date" value={invoiceDate} /></label>
-            <label><span className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Due date</span><Input name="dueDate" onChange={(event) => setDueDate(event.target.value)} type="date" value={dueDate} /></label>
+            <label><span className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Date</span><Input name="invoiceDate" onChange={(event) => updateInvoiceDate(event.target.value)} required type="date" value={invoiceDate} /></label>
+            <label>
+              <span className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Payment terms</span>
+              <select className="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-4 py-2 text-sm" onChange={(event) => updatePaymentTerm(event.target.value)} value={paymentTermCode}>
+                {invoicePaymentTermOptions.map((option) => <option key={option.code} value={option.code}>{option.label}</option>)}
+              </select>
+            </label>
+            <label>
+              <span className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Due date</span>
+              <Input
+                aria-describedby="invoice-due-date-help"
+                min={paymentTermCode === "custom" ? invoiceDate : undefined}
+                name="dueDate"
+                onChange={(event) => setCustomDueDate(event.target.value)}
+                readOnly={paymentTermCode !== "custom"}
+                required
+                type="date"
+                value={dueDate}
+              />
+              <span className="mt-2 block text-xs text-slate-500" id="invoice-due-date-help">
+                {paymentTermCode === "custom" ? "Choose the agreed due date." : "Calculated from the invoice date and payment terms."}
+              </span>
+            </label>
             <label>
               <span className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Currency</span>
               <select className="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-4 py-2 text-sm" name="currency" onChange={(event) => setCurrency(event.target.value)} value={currency}>
                 <option value="IDR">IDR</option><option value="USD">USD</option><option value="JPY">JPY</option>
               </select>
             </label>
-            <label><span className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Payment terms</span><Input name="paymentTerms" onChange={(event) => setPaymentTerms(event.target.value)} value={paymentTerms} /></label>
+            {paymentTermCode === "custom" ? <label><span className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Custom terms label</span><Input maxLength={100} name="customPaymentTerms" onChange={(event) => setCustomPaymentTerms(event.target.value)} placeholder="e.g. Payment on delivery" required value={customPaymentTerms} /></label> : null}
             <label>
               <span className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Bank account</span>
               <select className="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-4 py-2 text-sm" name="bankAccount" onChange={(event) => setBankAccount(event.target.value)} value={bankAccount}>

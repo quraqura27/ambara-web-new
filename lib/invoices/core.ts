@@ -2,6 +2,16 @@ export const invoiceCurrencies = ["IDR", "USD", "JPY"] as const;
 
 export type InvoiceCurrency = (typeof invoiceCurrencies)[number];
 
+export const invoicePaymentTermOptions = [
+  { code: "cash", days: 0, label: "CASH" },
+  { code: "net_7", days: 7, label: "NET 7" },
+  { code: "net_14", days: 14, label: "NET 14" },
+  { code: "net_30", days: 30, label: "NET 30" },
+  { code: "custom", days: null, label: "CUSTOM" },
+] as const;
+
+export type InvoicePaymentTermCode = (typeof invoicePaymentTermOptions)[number]["code"];
+
 export const invoiceStoredStatuses = ["draft", "sent", "paid", "archived", "voided"] as const;
 
 export type InvoiceStoredStatus = (typeof invoiceStoredStatuses)[number];
@@ -107,6 +117,82 @@ export function shouldPrintTermsOfPayment(input: {
 
 function isOneOf<T extends readonly string[]>(values: T, value: string): value is T[number] {
   return (values as readonly string[]).includes(value);
+}
+
+function isDateInput(value: string | null | undefined): value is string {
+  if (!value) return false;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return false;
+  const year = Number.parseInt(match[1], 10);
+  const month = Number.parseInt(match[2], 10);
+  const day = Number.parseInt(match[3], 10);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year
+    && date.getUTCMonth() === month - 1
+    && date.getUTCDate() === day;
+}
+
+function addCalendarDays(dateInput: string, days: number) {
+  const [year, month, day] = dateInput.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+export function isInvoicePaymentTermCode(value: unknown): value is InvoicePaymentTermCode {
+  return typeof value === "string"
+    && invoicePaymentTermOptions.some((option) => option.code === value);
+}
+
+export function invoiceDueDateForPaymentTerm(input: {
+  customDueDate?: string | null;
+  invoiceDate: string;
+  paymentTermCode: InvoicePaymentTermCode;
+}) {
+  if (!isDateInput(input.invoiceDate)) return null;
+  const option = invoicePaymentTermOptions.find(({ code }) => code === input.paymentTermCode);
+  if (!option || option.days === null) {
+    return isDateInput(input.customDueDate) ? input.customDueDate : null;
+  }
+  return addCalendarDays(input.invoiceDate, option.days);
+}
+
+export function resolveInvoicePaymentTerms(input: {
+  customDueDate?: string | null;
+  customLabel?: string | null;
+  invoiceDate: string;
+  paymentTermCode: unknown;
+}) {
+  if (!isDateInput(input.invoiceDate)) {
+    throw new Error("Choose a valid invoice date.");
+  }
+  if (!isInvoicePaymentTermCode(input.paymentTermCode)) {
+    throw new Error("Choose a valid payment term.");
+  }
+
+  const dueDate = invoiceDueDateForPaymentTerm({
+    customDueDate: input.customDueDate,
+    invoiceDate: input.invoiceDate,
+    paymentTermCode: input.paymentTermCode,
+  });
+  if (!dueDate) {
+    throw new Error("Choose a valid custom due date.");
+  }
+  if (dueDate < input.invoiceDate) {
+    throw new Error("Due date cannot be earlier than the invoice date.");
+  }
+
+  const option = invoicePaymentTermOptions.find(({ code }) => code === input.paymentTermCode);
+  const customLabel = input.customLabel?.trim() ?? "";
+  const paymentTerms = input.paymentTermCode === "custom" ? customLabel : option?.label ?? "";
+  if (!paymentTerms) {
+    throw new Error("Enter a custom payment terms label.");
+  }
+  if (paymentTerms.length > 100) {
+    throw new Error("Payment terms must be 100 characters or fewer.");
+  }
+
+  return { dueDate, paymentTerms };
 }
 
 export function normalizeInvoiceStatus(value: unknown): InvoiceStoredStatus {

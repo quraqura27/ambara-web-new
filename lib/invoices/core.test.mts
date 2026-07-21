@@ -11,6 +11,7 @@ import {
   invoiceLineBillingBasis,
   invoiceLineReference,
   invoiceLineService,
+  invoiceDueDateForPaymentTerm,
   INVOICE_QR_STAMP_ISSUER_TEXT,
   INVOICE_QR_STAMP_TITLE,
   INVOICE_QR_STAMP_VALIDITY_TEXT,
@@ -21,6 +22,7 @@ import {
   normalizeInvoiceStatus,
   parseInvoiceSourceKey,
   resolveInvoiceReference,
+  resolveInvoicePaymentTerms,
   shouldPrintTermsOfPayment,
   terbilangRupiah,
   uniqueInvoiceSources,
@@ -104,6 +106,55 @@ test("prints terms of payment only for full-payment invoices when enabled", () =
   assert.equal(shouldPrintTermsOfPayment({ pphAmount: 0, showPaymentTerms: true }), true);
   assert.equal(shouldPrintTermsOfPayment({ pphAmount: 14_892, showPaymentTerms: true }), false);
   assert.equal(shouldPrintTermsOfPayment({ pphAmount: 0, showPaymentTerms: false }), false);
+});
+
+test("derives due dates from linked payment term presets", () => {
+  assert.equal(invoiceDueDateForPaymentTerm({ invoiceDate: "2026-07-22", paymentTermCode: "cash" }), "2026-07-22");
+  assert.equal(invoiceDueDateForPaymentTerm({ invoiceDate: "2026-07-22", paymentTermCode: "net_7" }), "2026-07-29");
+  assert.equal(invoiceDueDateForPaymentTerm({ invoiceDate: "2026-07-22", paymentTermCode: "net_14" }), "2026-08-05");
+  assert.equal(invoiceDueDateForPaymentTerm({ invoiceDate: "2026-12-20", paymentTermCode: "net_30" }), "2027-01-19");
+  assert.equal(invoiceDueDateForPaymentTerm({ invoiceDate: "2028-02-28", paymentTermCode: "net_7" }), "2028-03-06");
+});
+
+test("resolves custom payment terms and rejects contradictory dates", () => {
+  assert.deepEqual(
+    resolveInvoicePaymentTerms({
+      customDueDate: "2026-08-10",
+      customLabel: "Payment on delivery",
+      invoiceDate: "2026-07-22",
+      paymentTermCode: "custom",
+    }),
+    { dueDate: "2026-08-10", paymentTerms: "Payment on delivery" },
+  );
+  assert.throws(
+    () => resolveInvoicePaymentTerms({
+      customDueDate: "2026-07-21",
+      customLabel: "Payment on delivery",
+      invoiceDate: "2026-07-22",
+      paymentTermCode: "custom",
+    }),
+    /cannot be earlier/,
+  );
+  assert.throws(
+    () => resolveInvoicePaymentTerms({
+      customDueDate: "2026-08-10",
+      customLabel: "",
+      invoiceDate: "2026-07-22",
+      paymentTermCode: "custom",
+    }),
+    /custom payment terms label/,
+  );
+});
+
+test("server resolution ignores submitted due dates for standard terms", () => {
+  assert.deepEqual(
+    resolveInvoicePaymentTerms({
+      customDueDate: "2099-01-01",
+      invoiceDate: "2026-07-22",
+      paymentTermCode: "cash",
+    }),
+    { dueDate: "2026-07-22", paymentTerms: "CASH" },
+  );
 });
 
 test("uses formal QR stamp wording", () => {
