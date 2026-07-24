@@ -569,6 +569,29 @@ export const invoiceSequences = pgTable('invoice_sequences', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+export const invoicePayments = pgTable('invoice_payments', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  invoiceId: uuid('invoice_id').notNull().references(() => invoices.id),
+  amount: numeric('amount', { precision: 18, scale: 2 }).notNull(),
+  paymentDate: date('payment_date'),
+  reference: text('reference'),
+  note: text('note'),
+  recordedBy: integer('recorded_by').references(() => staffAccounts.id),
+  source: text('source').notNull().default('portal'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  voidedAt: timestamp('voided_at', { withTimezone: true }),
+  voidedBy: integer('voided_by').references(() => staffAccounts.id),
+  voidReason: text('void_reason'),
+}, (table) => [
+  index('invoice_payments_invoice_date_idx').on(table.invoiceId, table.paymentDate, table.createdAt),
+  index('invoice_payments_active_invoice_idx')
+    .on(table.invoiceId)
+    .where(sql`${table.voidedAt} is null`),
+  uniqueIndex('invoice_payments_legacy_invoice_unique_idx')
+    .on(table.invoiceId)
+    .where(sql`${table.source} = 'legacy_backfill'`),
+]);
+
 export const quoteRequests = pgTable('quote_requests', {
   id: serial('id').primaryKey(),
   referenceNumber: text('reference_number').notNull(),

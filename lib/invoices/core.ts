@@ -16,9 +16,21 @@ export const invoiceStoredStatuses = ["draft", "sent", "paid", "archived", "void
 
 export type InvoiceStoredStatus = (typeof invoiceStoredStatuses)[number];
 
-export const invoiceEffectiveStatuses = [...invoiceStoredStatuses, "overdue"] as const;
+export const invoicePaymentStates = ["unpaid", "partial", "paid"] as const;
+
+export type InvoicePaymentState = (typeof invoicePaymentStates)[number];
+
+export const invoiceEffectiveStatuses = [...invoiceStoredStatuses, "partially_paid", "overdue"] as const;
 
 export type InvoiceEffectiveStatus = (typeof invoiceEffectiveStatuses)[number];
+
+export type InvoicePaymentSummary = {
+  amountPaid: number;
+  lastPaymentDate: string | null;
+  outstanding: number;
+  paymentCount: number;
+  paymentState: InvoicePaymentState;
+};
 
 export const FULL_PAYMENT_TERMS_TEXT =
   "Payment should be made in full amount as stated in the invoice. Any bank charges or withholding tax shall be borne by the customer unless agreed otherwise.";
@@ -217,19 +229,95 @@ export function dateInputFromDate(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
+export function parseInvoicePaymentAmount(value: string) {
+  const normalized = value.trim();
+  if (!/^\d{1,16}(?:\.\d{1,2})?$/.test(normalized) || numberValue(normalized) <= 0) {
+    throw new Error("Payment amount must be positive with no more than two decimal places.");
+  }
+  return normalized;
+}
+
+export function parseInvoicePaymentDate(
+  value: string,
+  today = dateInputFromDate(new Date()),
+) {
+  const normalized = value.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+    throw new Error("Choose a valid payment date.");
+  }
+  const parsed = new Date(`${normalized}T00:00:00.000Z`);
+  if (!Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== normalized) {
+    throw new Error("Choose a valid payment date.");
+  }
+  if (normalized > today) {
+    throw new Error("Payment date cannot be in the future.");
+  }
+  return normalized;
+}
+
 export function invoiceEffectiveStatus(
   input: {
     dueDate?: string | null;
     paidAt?: Date | string | null;
+    paymentState?: InvoicePaymentState;
     status?: string | null;
   },
   today = dateInputFromDate(new Date()),
 ): InvoiceEffectiveStatus {
   const status = normalizeInvoiceStatus(input.status);
+  if (status === "sent" && input.paymentState === "paid") return "paid";
+  if (status === "sent" && input.paymentState === "partial") return "partially_paid";
   if (status === "sent" && !input.paidAt && input.dueDate && input.dueDate < today) {
     return "overdue";
   }
   return status;
+}
+
+export function summarizeInvoicePayments(input: {
+  lastPaymentDate?: string | null;
+  netPayable?: number | string | null;
+  paidAmount?: number | string | null;
+  paymentCount?: number | string | null;
+  status?: string | null;
+}): InvoicePaymentSummary {
+  const netPayable = Math.max(0, money(numberValue(input.netPayable)));
+  let amountPaid = Math.max(0, money(numberValue(input.paidAmount)));
+  const status = normalizeInvoiceStatus(input.status);
+
+  // Migration 017 backfills paid invoices. This fallback keeps historical paid
+  // records correct if a zero-row legacy anomaly is encountered.
+  if (status === "paid" && amountPaid === 0 && netPayable > 0) {
+    amountPaid = netPayable;
+  }
+
+  const outstanding = Math.max(0, money(netPayable - amountPaid));
+  const paymentState: InvoicePaymentState =
+    status === "paid" || (netPayable > 0 && outstanding === 0)
+      ? "paid"
+      : amountPaid > 0
+        ? "partial"
+        : "unpaid";
+
+  return {
+    amountPaid,
+    lastPaymentDate: input.lastPaymentDate || null,
+    outstanding,
+    paymentCount: Math.max(0, Math.trunc(numberValue(input.paymentCount))),
+    paymentState,
+  };
+}
+
+export function invoiceOutstandingIsOverdue(
+  input: {
+    dueDate?: string | null;
+    outstanding?: number | string | null;
+    status?: string | null;
+  },
+  today = dateInputFromDate(new Date()),
+) {
+  return normalizeInvoiceStatus(input.status) === "sent"
+    && numberValue(input.outstanding) > 0
+    && Boolean(input.dueDate && input.dueDate < today);
 }
 
 export function invoiceStatusLabel(status: InvoiceEffectiveStatus | InvoiceStoredStatus | string) {

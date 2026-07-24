@@ -9,6 +9,7 @@ import {
 
 const rows: InvoiceCollectionSourceRow[] = [
   {
+    collectedThisMonth: 0,
     currency: "IDR",
     customerCode: "ABC",
     customerName: "PT Alpha",
@@ -16,13 +17,17 @@ const rows: InvoiceCollectionSourceRow[] = [
     id: "inv-overdue",
     invoiceDate: "2026-06-20",
     invoiceNumber: "AAG/001/ABC/26",
+    lastPaymentDate: null,
     netPayable: "1000000",
+    paidAmount: "0",
     paidAt: null,
+    paymentCount: 0,
     paymentTerms: "CASH",
     sentAt: "2026-06-20T00:00:00.000Z",
     status: "sent",
   },
   {
+    collectedThisMonth: "500000",
     currency: "IDR",
     customerCode: "ABC",
     customerName: "PT Alpha",
@@ -30,13 +35,17 @@ const rows: InvoiceCollectionSourceRow[] = [
     id: "inv-due-soon",
     invoiceDate: "2026-07-01",
     invoiceNumber: "AAG/002/ABC/26",
+    lastPaymentDate: "2026-07-05",
     netPayable: "2500000",
+    paidAmount: "500000",
     paidAt: null,
+    paymentCount: 1,
     paymentTerms: "NET 14",
     sentAt: "2026-07-01T00:00:00.000Z",
     status: "sent",
   },
   {
+    collectedThisMonth: 0,
     currency: "USD",
     customerCode: "ZED",
     customerName: "Zed Logistics",
@@ -44,13 +53,17 @@ const rows: InvoiceCollectionSourceRow[] = [
     id: "inv-usd",
     invoiceDate: "2026-07-03",
     invoiceNumber: "AAG/003/ZED/26",
+    lastPaymentDate: null,
     netPayable: "500",
+    paidAmount: "0",
     paidAt: null,
+    paymentCount: 0,
     paymentTerms: "NET 30",
     sentAt: "2026-07-03T00:00:00.000Z",
     status: "sent",
   },
   {
+    collectedThisMonth: "700000",
     currency: "IDR",
     customerCode: "ABC",
     customerName: "PT Alpha",
@@ -58,13 +71,17 @@ const rows: InvoiceCollectionSourceRow[] = [
     id: "inv-paid",
     invoiceDate: "2026-06-01",
     invoiceNumber: "AAG/004/ABC/26",
+    lastPaymentDate: "2026-07-05",
     netPayable: "700000",
+    paidAmount: "700000",
     paidAt: "2026-07-05T00:00:00.000Z",
+    paymentCount: 1,
     paymentTerms: "CASH",
     sentAt: "2026-06-01T00:00:00.000Z",
     status: "paid",
   },
   {
+    collectedThisMonth: 0,
     currency: "IDR",
     customerCode: "ABC",
     customerName: "PT Alpha",
@@ -72,8 +89,11 @@ const rows: InvoiceCollectionSourceRow[] = [
     id: "inv-draft",
     invoiceDate: "2026-07-01",
     invoiceNumber: null,
+    lastPaymentDate: null,
     netPayable: "900000",
+    paidAmount: "0",
     paidAt: null,
+    paymentCount: 0,
     paymentTerms: "CASH",
     sentAt: null,
     status: "draft",
@@ -94,10 +114,10 @@ test("builds collections summaries without mixing currencies", () => {
 
   const idr = dashboard.summaries.find((summary) => summary.currency === "IDR");
   assert.ok(idr);
-  assert.equal(idr.outstanding, 3_500_000);
+  assert.equal(idr.outstanding, 3_000_000);
   assert.equal(idr.overdue, 1_000_000);
-  assert.equal(idr.dueSoon14, 2_500_000);
-  assert.equal(idr.paidThisMonth, 700_000);
+  assert.equal(idr.dueSoon14, 2_000_000);
+  assert.equal(idr.collectedThisMonth, 1_200_000);
   assert.equal(idr.unpaidCount, 2);
 
   const usd = dashboard.summaries.find((summary) => summary.currency === "USD");
@@ -118,6 +138,9 @@ test("orders follow-up rows by overdue first then nearest due date", () => {
   );
   assert.equal(dashboard.followUpRows[0]?.effectiveStatus, "overdue");
   assert.equal(dashboard.followUpRows[0]?.daysDelta, -5);
+  assert.equal(dashboard.followUpRows[1]?.effectiveStatus, "partially_paid");
+  assert.equal(dashboard.followUpRows[1]?.amountPaid, 500_000);
+  assert.equal(dashboard.followUpRows[1]?.outstanding, 2_000_000);
 });
 
 test("filters collections by due window, customer, and currency", () => {

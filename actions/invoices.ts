@@ -4,6 +4,7 @@ import { randomUUID } from "crypto";
 
 import { and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
+import { alias } from "drizzle-orm/pg-core";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -14,23 +15,30 @@ import {
   invoiceAuditLog,
   invoiceDeductions,
   invoiceLineItems,
+  invoicePayments,
   invoices,
   mawbDocuments,
   mawbShipmentLinks,
   shipmentFlightLegs,
   shipments,
+  staffAccounts,
 } from "@/lib/db/schema";
 import {
   calculateInvoiceTotals,
+  dateInputFromDate,
   formatInvoiceNumber,
   invoiceEffectiveStatus,
   invoiceLineBillingBasis,
+  invoiceOutstandingIsOverdue,
   normalizeCustomerCode,
   normalizeInvoiceStatus,
   numberValue,
+  parseInvoicePaymentAmount,
+  parseInvoicePaymentDate,
   parseInvoiceSourceKey,
   resolveInvoicePaymentTerms,
   resolveInvoiceReference,
+  summarizeInvoicePayments,
   type InvoiceBillingBasis,
   type InvoiceCurrency,
   uniqueInvoiceSources,
@@ -166,6 +174,37 @@ function dateOnly(value: Date | string | null | undefined) {
   const normalized = value.trim();
   return /^\d{4}-\d{2}-\d{2}/.test(normalized) ? normalized.slice(0, 10) : null;
 }
+
+const activePaymentAmountSql = sql<string>`
+  coalesce((
+    select sum(payment.amount)
+    from invoice_payments payment
+    where payment.invoice_id = ${invoices.id}
+      and payment.voided_at is null
+  ), 0)
+`;
+
+const activePaymentCountSql = sql<number>`
+  (
+    select count(*)::int
+    from invoice_payments payment
+    where payment.invoice_id = ${invoices.id}
+      and payment.voided_at is null
+  )
+`;
+
+const lastPaymentDateSql = sql<string | null>`
+  (
+    select payment.payment_date
+    from invoice_payments payment
+    where payment.invoice_id = ${invoices.id}
+      and payment.voided_at is null
+    order by payment.created_at desc, payment.id desc
+    limit 1
+  )
+`;
+
+const paymentVoidStaffAccounts = alias(staffAccounts, "payment_void_staff_accounts");
 
 async function getShipmentFlightNumberMap(shipmentIds: number[]) {
   const flightNumberByShipmentId = new Map<number, string | null>();
@@ -463,8 +502,11 @@ export async function getInvoicesPage(options: { page?: number; search?: string 
     id: string;
     invoiceDate: string | null;
     invoiceNumber: string | null;
+    lastPaymentDate: string | null;
     netPayable: string | null;
+    paidAmount: string;
     paidAt: Date | null;
+    paymentCount: number;
     status: string | null;
   }>;
   let countRows: Array<{ count: number }>;
@@ -481,8 +523,11 @@ export async function getInvoicesPage(options: { page?: number; search?: string 
           id: invoices.id,
           invoiceDate: invoices.invoiceDate,
           invoiceNumber: invoices.invoiceNumber,
+          lastPaymentDate: lastPaymentDateSql,
           netPayable: invoices.netPayable,
+          paidAmount: activePaymentAmountSql,
           paidAt: invoices.paidAt,
+          paymentCount: activePaymentCountSql,
           status: invoices.status,
         })
         .from(invoices)
@@ -507,10 +552,19 @@ export async function getInvoicesPage(options: { page?: number; search?: string 
   return {
     page,
     pageSize,
-    rows: rows.map((row) => ({
-      ...row,
-      effectiveStatus: invoiceEffectiveStatus(row),
-    })),
+    rows: rows.map((row) => {
+      const paymentSummary = summarizeInvoicePayments(row);
+      return {
+        ...row,
+        ...paymentSummary,
+        effectiveStatus: invoiceEffectiveStatus({ ...row, paymentState: paymentSummary.paymentState }),
+        isOverdue: invoiceOutstandingIsOverdue({
+          dueDate: row.dueDate,
+          outstanding: paymentSummary.outstanding,
+          status: row.status,
+        }),
+      };
+    }),
     total,
     totalPages: Math.max(1, Math.ceil(total / pageSize)),
   };
@@ -521,10 +575,22 @@ export async function getInvoiceCollectionsDashboard(filters: InvoiceCollectionF
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const monthStartDate = dateInputFromDate(monthStart);
+  const nextMonthStartDate = dateInputFromDate(nextMonthStart);
+  const collectedThisMonthSql = sql<string>`
+    coalesce((
+      select sum(payment.amount)
+      from invoice_payments payment
+      where payment.invoice_id = ${invoices.id}
+        and payment.voided_at is null
+        and payment.payment_date >= ${monthStartDate}
+        and payment.payment_date < ${nextMonthStartDate}
+    ), 0)
+  `;
   const conditions = [
     sql`(
-      (coalesce(${invoices.status}, 'sent') = 'sent' and ${invoices.paidAt} is null)
-      or (${invoices.paidAt} >= ${monthStart} and ${invoices.paidAt} < ${nextMonthStart})
+      coalesce(${invoices.status}, 'sent') = 'sent'
+      or ${collectedThisMonthSql} > 0
     )`,
   ];
 
@@ -546,6 +612,7 @@ export async function getInvoiceCollectionsDashboard(filters: InvoiceCollectionF
   try {
     rows = await db
       .select({
+        collectedThisMonth: collectedThisMonthSql,
         currency: invoices.currency,
         customerCode: invoices.customerCode,
         customerName: invoices.customerNameSnapshot,
@@ -553,8 +620,11 @@ export async function getInvoiceCollectionsDashboard(filters: InvoiceCollectionF
         id: invoices.id,
         invoiceDate: invoices.invoiceDate,
         invoiceNumber: invoices.invoiceNumber,
+        lastPaymentDate: lastPaymentDateSql,
         netPayable: invoices.netPayable,
+        paidAmount: activePaymentAmountSql,
         paidAt: invoices.paidAt,
+        paymentCount: activePaymentCountSql,
         paymentTerms: invoices.paymentTerms,
         sentAt: invoices.sentAt,
         status: invoices.status,
@@ -582,7 +652,7 @@ export async function getInvoiceDetail(id: string) {
   const [invoice] = await db.select().from(invoices).where(eq(invoices.id, id)).limit(1);
   if (!invoice) return null;
 
-  const [lines, deductions] = await Promise.all([
+  const [lines, deductions, payments] = await Promise.all([
     db
       .select()
       .from(invoiceLineItems)
@@ -593,9 +663,39 @@ export async function getInvoiceDetail(id: string) {
       .from(invoiceDeductions)
       .where(eq(invoiceDeductions.invoiceId, id))
       .orderBy(invoiceDeductions.sortOrder),
+    db
+      .select({
+        amount: invoicePayments.amount,
+        createdAt: invoicePayments.createdAt,
+        id: invoicePayments.id,
+        note: invoicePayments.note,
+        paymentDate: invoicePayments.paymentDate,
+        recordedBy: invoicePayments.recordedBy,
+        recordedByName: staffAccounts.fullName,
+        reference: invoicePayments.reference,
+        source: invoicePayments.source,
+        voidedAt: invoicePayments.voidedAt,
+        voidedBy: invoicePayments.voidedBy,
+        voidedByName: paymentVoidStaffAccounts.fullName,
+        voidReason: invoicePayments.voidReason,
+      })
+      .from(invoicePayments)
+      .leftJoin(staffAccounts, eq(invoicePayments.recordedBy, staffAccounts.id))
+      .leftJoin(paymentVoidStaffAccounts, eq(invoicePayments.voidedBy, paymentVoidStaffAccounts.id))
+      .where(eq(invoicePayments.invoiceId, id))
+      .orderBy(desc(invoicePayments.createdAt), desc(invoicePayments.id)),
   ]);
 
-  return { deductions, invoice, lines };
+  const activePayments = payments.filter((payment) => !payment.voidedAt);
+  const paymentSummary = summarizeInvoicePayments({
+    lastPaymentDate: activePayments[0]?.paymentDate,
+    netPayable: invoice.netPayable,
+    paidAmount: activePayments.reduce((total, payment) => total + numberValue(payment.amount), 0),
+    paymentCount: activePayments.length,
+    status: invoice.status,
+  });
+
+  return { deductions, invoice, lines, payments, paymentSummary };
 }
 
 export async function getPublicInvoiceVerification(token: string) {
@@ -608,7 +708,9 @@ export async function getPublicInvoiceVerification(token: string) {
         customerName: invoices.customerNameSnapshot,
         invoiceDate: invoices.invoiceDate,
         invoiceNumber: invoices.invoiceNumber,
+        lastPaymentDate: lastPaymentDateSql,
         netPayable: invoices.netPayable,
+        paidAmount: activePaymentAmountSql,
         paidAt: invoices.paidAt,
         status: invoices.status,
         total: invoices.total,
@@ -621,7 +723,22 @@ export async function getPublicInvoiceVerification(token: string) {
     return null;
   }
 
-  return invoice ? { ...invoice, effectiveStatus: invoiceEffectiveStatus(invoice) } : null;
+  if (!invoice) return null;
+  const paymentSummary = summarizeInvoicePayments(invoice);
+  return {
+    checksum: invoice.checksum,
+    currency: invoice.currency,
+    customerName: invoice.customerName,
+    effectiveStatus: invoiceEffectiveStatus({
+      paidAt: invoice.paidAt,
+      paymentState: paymentSummary.paymentState,
+      status: invoice.status,
+    }),
+    invoiceDate: invoice.invoiceDate,
+    invoiceNumber: invoice.invoiceNumber,
+    netPayable: invoice.netPayable,
+    total: invoice.total,
+  };
 }
 
 async function allocateInvoiceSequence(year: number) {
@@ -1124,10 +1241,11 @@ export async function markDraftInvoiceSentFromForm(id: string, formData: FormDat
   revalidatePath(`/invoices/${id}`);
 }
 
-export async function markInvoicePaidFromForm(id: string, formData: FormData) {
+export async function recordInvoicePaymentFromForm(id: string, formData: FormData) {
   const user = await requireInvoiceUser();
-  const confirmed = text(formData.get("confirmed"));
-  if (confirmed !== "yes") throw new Error("Paid confirmation is required.");
+  if (text(formData.get("confirmed")) !== "yes") {
+    throw new Error("Payment confirmation is required.");
+  }
 
   const [invoice] = await db
     .select({ status: invoices.status })
@@ -1137,32 +1255,142 @@ export async function markInvoicePaidFromForm(id: string, formData: FormData) {
 
   if (!invoice) throw new Error("Invoice not found.");
   const status = normalizeInvoiceStatus(invoice.status);
-  if (status === "draft") throw new Error("Send the invoice before marking it paid.");
-  if (status === "voided") throw new Error("Voided invoices cannot be marked paid.");
-  if (status === "archived") throw new Error("Archived invoices cannot be marked paid.");
+  if (status === "draft") throw new Error("Send the invoice before recording a payment.");
+  if (status === "paid") throw new Error("This invoice is already fully paid.");
+  if (status === "voided") throw new Error("Voided invoices cannot receive payments.");
+  if (status === "archived") throw new Error("Archived invoices cannot receive payments.");
 
-  const paidDate = dateText(formData.get("paidAt"));
-  const paidAt = paidDate ? new Date(`${paidDate}T00:00:00`) : new Date();
-  const paymentReference = text(formData.get("paymentReference")) || null;
+  const amount = parseInvoicePaymentAmount(text(formData.get("amount")));
+  const paymentDate = parseInvoicePaymentDate(text(formData.get("paymentDate")));
+  const paymentReference = text(formData.get("paymentReference"));
+  const note = text(formData.get("note"));
   if (!paymentReference) throw new Error("Payment reference is required.");
+  if (paymentReference.length > 200) throw new Error("Payment reference must be 200 characters or fewer.");
+  if (note.length > 500) throw new Error("Payment note must be 500 characters or fewer.");
 
-  await db.batch([
-    db
-      .update(invoices)
-      .set({ paidAt, paymentReference, status: "paid" })
-      .where(eq(invoices.id, id)),
-    db.insert(invoiceAuditLog).values({
-      action: "invoice.paid",
-      entityId: id,
-      entityType: "invoice",
-      metadata: { paidAt: paidAt.toISOString(), paymentReference },
-      performedBy: user.id,
-    }),
-  ]);
+  const paymentId = randomUUID();
+  const result = await db.execute<{ inserted: boolean }>(sql`
+    with inserted_payment as (
+      insert into invoice_payments (
+        id,
+        invoice_id,
+        amount,
+        payment_date,
+        reference,
+        note,
+        recorded_by,
+        source,
+        created_at
+      )
+      select
+        ${paymentId},
+        invoice.id,
+        ${amount}::numeric,
+        ${paymentDate}::date,
+        ${paymentReference},
+        ${note || null},
+        ${user.id},
+        'portal',
+        now()
+      from invoices invoice
+      where invoice.id = ${id}
+        and invoice.status = 'sent'
+      returning id, amount, payment_date, reference
+    ), inserted_audit as (
+      insert into invoice_audit_log (
+        action,
+        entity_type,
+        entity_id,
+        performed_by,
+        performed_at,
+        metadata
+      )
+      select
+        'invoice.payment_recorded',
+        'invoice',
+        ${id},
+        ${user.id},
+        now(),
+        ${JSON.stringify({
+          amount,
+          paymentDate,
+          paymentId,
+          paymentReference,
+        })}::jsonb
+      from inserted_payment
+      returning id
+    )
+    select exists(select 1 from inserted_payment) as inserted
+  `);
+
+  if (!result.rows[0]?.inserted) {
+    throw new Error("Only sent invoices with an outstanding balance can receive payments.");
+  }
 
   revalidatePath("/invoices");
   revalidatePath("/invoices/collections");
   revalidatePath(`/invoices/${id}`);
+}
+
+export async function voidInvoicePaymentFromForm(
+  invoiceId: string,
+  paymentId: string,
+  formData: FormData,
+) {
+  const user = await requireInvoiceUser();
+  if (text(formData.get("confirmed")) !== "yes") {
+    throw new Error("Payment void confirmation is required.");
+  }
+  const reason = text(formData.get("reason"));
+  if (!reason) throw new Error("Payment void reason is required.");
+  if (reason.length > 500) throw new Error("Payment void reason must be 500 characters or fewer.");
+
+  const result = await db.execute<{ voided: boolean }>(sql`
+    with voided_payment as (
+      update invoice_payments payment
+      set
+        voided_at = now(),
+        voided_by = ${user.id},
+        void_reason = ${reason}
+      where payment.id = ${paymentId}
+        and payment.invoice_id = ${invoiceId}
+        and payment.voided_at is null
+      returning payment.id, payment.amount, payment.payment_date, payment.reference
+    ), inserted_audit as (
+      insert into invoice_audit_log (
+        action,
+        entity_type,
+        entity_id,
+        performed_by,
+        performed_at,
+        metadata
+      )
+      select
+        'invoice.payment_voided',
+        'invoice',
+        ${invoiceId},
+        ${user.id},
+        now(),
+        jsonb_build_object(
+          'amount', voided_payment.amount,
+          'paymentDate', voided_payment.payment_date,
+          'paymentId', voided_payment.id,
+          'paymentReference', voided_payment.reference,
+          'reason', ${reason}
+        )
+      from voided_payment
+      returning id
+    )
+    select exists(select 1 from voided_payment) as voided
+  `);
+
+  if (!result.rows[0]?.voided) {
+    throw new Error("Payment is already voided or does not belong to this invoice.");
+  }
+
+  revalidatePath("/invoices");
+  revalidatePath("/invoices/collections");
+  revalidatePath(`/invoices/${invoiceId}`);
 }
 
 export async function archiveInvoiceFromForm(id: string, formData: FormData) {
@@ -1207,6 +1435,14 @@ export async function voidInvoiceFromForm(id: string, formData: FormData) {
   if (!invoice) throw new Error("Invoice not found.");
   if (confirmed !== "yes" || text(formData.get("confirmationCode")) !== (invoice.invoiceNumber || id)) throw new Error("Type the exact invoice identifier to void it.");
   if (normalizeInvoiceStatus(invoice.status) === "voided") throw new Error("Invoice is already voided.");
+  const [activePayment] = await db
+    .select({ id: invoicePayments.id })
+    .from(invoicePayments)
+    .where(and(eq(invoicePayments.invoiceId, id), sql`${invoicePayments.voidedAt} is null`))
+    .limit(1);
+  if (activePayment) {
+    throw new Error("Void active payments before voiding this invoice.");
+  }
 
   const lineRows = await db
     .select({ awbId: invoiceLineItems.awbId, shipmentId: invoiceLineItems.shipmentId })

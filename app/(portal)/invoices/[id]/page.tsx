@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Archive, CheckCircle2, Download, Printer, QrCode, Send, XCircle } from "lucide-react";
+import { Archive, Ban, CheckCircle2, Download, Printer, QrCode, Send, XCircle } from "lucide-react";
 
 import {
   archiveInvoiceFromForm,
   getInvoiceDetail,
-  markInvoicePaidFromForm,
   markDraftInvoiceSentFromForm,
+  recordInvoicePaymentFromForm,
+  voidInvoicePaymentFromForm,
   voidInvoiceFromForm,
 } from "@/actions/invoices";
 import { Button, Card } from "@/components/ui/core";
@@ -20,6 +21,7 @@ import {
   invoiceStatusLabel,
   normalizeInvoiceStatus,
 } from "@/lib/invoices/core";
+import { formatWibDateTime } from "@/lib/time/wib";
 
 type InvoiceDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -32,16 +34,17 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
   const detail = await getInvoiceDetail(id);
   if (!detail) notFound();
 
-  const { deductions, invoice, lines } = detail;
+  const { deductions, invoice, lines, payments, paymentSummary } = detail;
   const archiveAction = archiveInvoiceFromForm.bind(null, invoice.id);
-  const paidAction = markInvoicePaidFromForm.bind(null, invoice.id);
+  const paymentAction = recordInvoicePaymentFromForm.bind(null, invoice.id);
   const sendAction = markDraftInvoiceSentFromForm.bind(null, invoice.id);
   const voidAction = voidInvoiceFromForm.bind(null, invoice.id);
   const currency = invoice.currency || "IDR";
   const storedStatus = normalizeInvoiceStatus(invoice.status);
-  const effectiveStatus = invoiceEffectiveStatus(invoice);
+  const effectiveStatus = invoiceEffectiveStatus({ ...invoice, paymentState: paymentSummary.paymentState });
   const invoiceDisplayNumber = invoice.invoiceNumber || "DRAFT";
   const confirmationIdentifier = invoice.invoiceNumber || invoice.id;
+  const today = new Date().toISOString().slice(0, 10);
 
   return (
     <div className="space-y-8">
@@ -142,6 +145,14 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
                 <span>Net payable</span>
                 <span>{currency} {formatCurrencyAmount(invoice.netPayable, currency)}</span>
               </div>
+              <div className="flex justify-between rounded-lg bg-emerald-500/10 p-3 font-semibold text-emerald-100">
+                <span>Paid</span>
+                <span>{currency} {formatCurrencyAmount(paymentSummary.amountPaid, currency)}</span>
+              </div>
+              <div className="flex justify-between rounded-lg bg-amber-500/10 p-3 font-bold text-amber-100">
+                <span>Outstanding</span>
+                <span>{currency} {formatCurrencyAmount(paymentSummary.outstanding, currency)}</span>
+              </div>
             </div>
           </Card>
 
@@ -155,6 +166,51 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
                     <span>-{currency} {formatCurrencyAmount(deduction.amount, currency)}</span>
                   </div>
                 ))}
+              </div>
+            </Card>
+          ) : null}
+
+          {payments.length > 0 ? (
+            <Card className="p-5">
+              <div className="mb-4">
+                <h2 className="text-lg font-semibold">Payment history</h2>
+                <p className="mt-1 text-xs text-slate-500">Payment entries are append-only. Void an incorrect entry and record its replacement.</p>
+              </div>
+              <div className="space-y-4">
+                {payments.map((payment) => {
+                  const voidPaymentAction = voidInvoicePaymentFromForm.bind(null, invoice.id, payment.id);
+                  return (
+                    <div className="rounded-lg border border-white/5 bg-slate-950/40 p-4" key={payment.id}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-mono text-xs text-slate-500">{payment.paymentDate || "Legacy date unavailable"}</p>
+                          <p className="mt-1 text-sm font-semibold text-white">{currency} {formatCurrencyAmount(payment.amount, currency)}</p>
+                        </div>
+                        {payment.voidedAt ? <span className="rounded-md border border-rose-500/25 bg-rose-500/10 px-2 py-1 text-[11px] font-semibold text-rose-200">Voided</span> : <span className="rounded-md border border-emerald-500/25 bg-emerald-500/10 px-2 py-1 text-[11px] font-semibold text-emerald-200">Active</span>}
+                      </div>
+                      <dl className="mt-3 space-y-2 text-xs">
+                        <div className="flex justify-between gap-3"><dt className="text-slate-600">Reference</dt><dd className="text-right text-slate-300">{payment.reference || "Legacy record"}</dd></div>
+                        <div className="flex justify-between gap-3"><dt className="text-slate-600">Recorded by</dt><dd className="text-right text-slate-300">{payment.recordedByName || (payment.source === "legacy_backfill" ? "Legacy backfill" : "Staff account unavailable")}</dd></div>
+                        <div className="flex justify-between gap-3"><dt className="text-slate-600">Recorded at</dt><dd className="text-right text-slate-300">{formatWibDateTime(payment.createdAt)}</dd></div>
+                        {payment.note ? <div><dt className="text-slate-600">Note</dt><dd className="mt-1 text-slate-300">{payment.note}</dd></div> : null}
+                        {payment.voidedAt ? <div className="flex justify-between gap-3"><dt className="text-rose-300">Voided by</dt><dd className="text-right text-rose-100">{payment.voidedByName || (payment.voidedBy ? `Staff #${payment.voidedBy}` : "Staff account unavailable")} / {formatWibDateTime(payment.voidedAt)}</dd></div> : null}
+                        {payment.voidReason ? <div><dt className="text-rose-300">Void reason</dt><dd className="mt-1 text-rose-100">{payment.voidReason}</dd></div> : null}
+                      </dl>
+                      {!payment.voidedAt ? (
+                        <form action={voidPaymentAction} className="mt-4 space-y-3">
+                          <label className="block space-y-1">
+                            <span className="text-xs font-medium text-slate-400">Void reason</span>
+                            <input className="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-2 text-xs" maxLength={500} name="reason" placeholder="Reason for voiding this payment" required />
+                          </label>
+                          <ConfirmSubmitButton confirmLabel="Void payment" description="The entry remains in payment history and the invoice balance is recalculated." title="Void this payment?">
+                            <Ban className="h-4 w-4" />
+                            Void payment
+                          </ConfirmSubmitButton>
+                        </form>
+                      ) : null}
+                    </div>
+                  );
+                })}
               </div>
             </Card>
           ) : null}
@@ -186,25 +242,52 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
             </Card>
           ) : null}
 
-          {storedStatus === "sent" ? (
+          {storedStatus === "sent" && paymentSummary.outstanding > 0 ? (
             <Card className="p-5">
-              <h2 className="mb-3 text-sm font-semibold text-emerald-200">Mark paid</h2>
-              <form action={paidAction} className="space-y-3">
-                <input
-                  className="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-4 py-2 text-sm"
-                  defaultValue={new Date().toISOString().slice(0, 10)}
-                  name="paidAt"
-                  type="date"
-                />
-                <input
-                  className="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-4 py-2 text-sm"
-                  name="paymentReference"
-                  placeholder="Payment reference"
-                  required
-                />
-                <ConfirmSubmitButton confirmLabel="Mark paid" description="Record the entered payment date and reference in the invoice audit trail." title="Confirm payment?" variant="secondary">
+              <h2 className="mb-2 text-sm font-semibold text-emerald-200">Record payment</h2>
+              <p className="mb-3 text-xs leading-5 text-slate-500">The outstanding balance is prefilled. Enter a lower amount for a partial payment.</p>
+              <form action={paymentAction} className="space-y-3">
+                <label className="block space-y-1">
+                  <span className="text-xs font-medium text-slate-400">Amount ({currency})</span>
+                  <input
+                    className="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-4 py-2 text-sm"
+                    defaultValue={paymentSummary.outstanding.toFixed(2)}
+                    max={paymentSummary.outstanding.toFixed(2)}
+                    min="0.01"
+                    name="amount"
+                    required
+                    step="0.01"
+                    type="number"
+                  />
+                </label>
+                <label className="block space-y-1">
+                  <span className="text-xs font-medium text-slate-400">Payment date</span>
+                  <input
+                    className="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-4 py-2 text-sm"
+                    defaultValue={today}
+                    max={today}
+                    name="paymentDate"
+                    required
+                    type="date"
+                  />
+                </label>
+                <label className="block space-y-1">
+                  <span className="text-xs font-medium text-slate-400">Payment reference</span>
+                  <input
+                    className="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-4 py-2 text-sm"
+                    maxLength={200}
+                    name="paymentReference"
+                    placeholder="Bank transfer or receipt reference"
+                    required
+                  />
+                </label>
+                <label className="block space-y-1">
+                  <span className="text-xs font-medium text-slate-400">Note (optional)</span>
+                  <textarea className="min-h-20 w-full rounded-lg border border-slate-700 bg-slate-900/60 px-4 py-2 text-sm" maxLength={500} name="note" placeholder="Optional internal note" />
+                </label>
+                <ConfirmSubmitButton confirmLabel="Record payment" description="Record this payment in the append-only invoice ledger and recalculate the outstanding balance." title="Confirm payment?" variant="secondary">
                   <CheckCircle2 className="h-4 w-4" />
-                  Mark paid
+                  Record payment
                 </ConfirmSubmitButton>
               </form>
             </Card>
@@ -226,6 +309,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
           {storedStatus !== "voided" ? (
             <Card className="border-red-500/20 p-5">
               <h2 className="mb-3 text-sm font-semibold text-red-200">Void invoice</h2>
+              {paymentSummary.paymentCount > 0 ? <p className="mb-3 text-xs leading-5 text-rose-200">Void every active payment before voiding this invoice.</p> : null}
               <form action={voidAction} className="space-y-3">
                 <input
                   className="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-4 py-2 text-sm"
@@ -233,7 +317,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
                   placeholder="Reason"
                   required
                 />
-                <TypedConfirmSubmitButton confirmLabel="Void invoice" confirmText={confirmationIdentifier} description="Voiding releases linked billing lines but preserves the invoice, lines, and audit history." title="Void invoice?">
+                <TypedConfirmSubmitButton confirmLabel="Void invoice" confirmText={confirmationIdentifier} description="Voiding releases linked billing lines but preserves the invoice, lines, and audit history." disabled={paymentSummary.paymentCount > 0} title="Void invoice?">
                   <XCircle className="h-4 w-4" />
                   Void and release lines
                 </TypedConfirmSubmitButton>

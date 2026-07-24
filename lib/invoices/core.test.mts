@@ -8,6 +8,7 @@ import {
   formatInvoiceNumber,
   invoiceBlocksLineReuse,
   invoiceEffectiveStatus,
+  invoiceOutstandingIsOverdue,
   invoiceLineBillingBasis,
   invoiceLineReference,
   invoiceLineService,
@@ -21,9 +22,12 @@ import {
   normalizeCustomerCode,
   normalizeInvoiceStatus,
   parseInvoiceSourceKey,
+  parseInvoicePaymentAmount,
+  parseInvoicePaymentDate,
   resolveInvoiceReference,
   resolveInvoicePaymentTerms,
   shouldPrintTermsOfPayment,
+  summarizeInvoicePayments,
   terbilangRupiah,
   uniqueInvoiceSources,
 } from "./core.ts";
@@ -187,7 +191,151 @@ test("normalizes stored invoice statuses and computes overdue display status", (
     invoiceEffectiveStatus({ dueDate: "2026-07-03", paidAt: null, status: "draft" }, "2026-07-04"),
     "draft",
   );
+  assert.equal(
+    invoiceEffectiveStatus({
+      dueDate: "2026-07-03",
+      paidAt: null,
+      paymentState: "partial",
+      status: "sent",
+    }, "2026-07-04"),
+    "partially_paid",
+  );
   assert.equal(invoiceStatusLabel("overdue"), "Overdue");
+});
+
+test("derives unpaid, partial, and paid balances from active payment totals", () => {
+  assert.deepEqual(
+    summarizeInvoicePayments({
+      lastPaymentDate: null,
+      netPayable: "1000.00",
+      paidAmount: "0",
+      paymentCount: 0,
+      status: "sent",
+    }),
+    {
+      amountPaid: 0,
+      lastPaymentDate: null,
+      outstanding: 1000,
+      paymentCount: 0,
+      paymentState: "unpaid",
+    },
+  );
+
+  assert.deepEqual(
+    summarizeInvoicePayments({
+      lastPaymentDate: "2026-07-20",
+      netPayable: "1000.00",
+      paidAmount: "250.25",
+      paymentCount: "2",
+      status: "sent",
+    }),
+    {
+      amountPaid: 250.25,
+      lastPaymentDate: "2026-07-20",
+      outstanding: 749.75,
+      paymentCount: 2,
+      paymentState: "partial",
+    },
+  );
+
+  assert.deepEqual(
+    summarizeInvoicePayments({
+      lastPaymentDate: "2026-07-21",
+      netPayable: "1000.00",
+      paidAmount: "1000.00",
+      paymentCount: 3,
+      status: "paid",
+    }),
+    {
+      amountPaid: 1000,
+      lastPaymentDate: "2026-07-21",
+      outstanding: 0,
+      paymentCount: 3,
+      paymentState: "paid",
+    },
+  );
+});
+
+test("restores the balance when a voided payment is excluded from active totals", () => {
+  const beforeVoid = summarizeInvoicePayments({
+    netPayable: "1000.00",
+    paidAmount: "1000.00",
+    paymentCount: 2,
+    status: "paid",
+  });
+  const afterVoid = summarizeInvoicePayments({
+    netPayable: "1000.00",
+    paidAmount: "400.00",
+    paymentCount: 1,
+    status: "sent",
+  });
+
+  assert.equal(beforeVoid.paymentState, "paid");
+  assert.equal(beforeVoid.outstanding, 0);
+  assert.equal(afterVoid.paymentState, "partial");
+  assert.equal(afterVoid.outstanding, 600);
+});
+
+test("keeps a legacy paid invoice settled if its backfill row is unavailable", () => {
+  assert.deepEqual(
+    summarizeInvoicePayments({
+      netPayable: "850.50",
+      paidAmount: "0",
+      paymentCount: 0,
+      status: "paid",
+    }),
+    {
+      amountPaid: 850.5,
+      lastPaymentDate: null,
+      outstanding: 0,
+      paymentCount: 0,
+      paymentState: "paid",
+    },
+  );
+});
+
+test("marks an outstanding partial balance overdue without changing its payment state", () => {
+  const payment = summarizeInvoicePayments({
+    netPayable: "1000",
+    paidAmount: "300",
+    paymentCount: 1,
+    status: "sent",
+  });
+
+  assert.equal(payment.paymentState, "partial");
+  assert.equal(
+    invoiceOutstandingIsOverdue({
+      dueDate: "2026-07-03",
+      outstanding: payment.outstanding,
+      status: "sent",
+    }, "2026-07-04"),
+    true,
+  );
+  assert.equal(
+    invoiceOutstandingIsOverdue({
+      dueDate: "2026-07-03",
+      outstanding: 0,
+      status: "paid",
+    }, "2026-07-04"),
+    false,
+  );
+});
+
+test("validates positive payment amounts with at most two decimal places", () => {
+  assert.equal(parseInvoicePaymentAmount("0.01"), "0.01");
+  assert.equal(parseInvoicePaymentAmount(" 1000.50 "), "1000.50");
+  assert.throws(() => parseInvoicePaymentAmount("0"), /must be positive/);
+  assert.throws(() => parseInvoicePaymentAmount("-1"), /must be positive/);
+  assert.throws(() => parseInvoicePaymentAmount("1.001"), /two decimal places/);
+  assert.throws(() => parseInvoicePaymentAmount("10000000000000000.00"), /two decimal places/);
+});
+
+test("rejects invalid and future payment dates", () => {
+  assert.equal(parseInvoicePaymentDate("2026-07-23", "2026-07-24"), "2026-07-23");
+  assert.equal(parseInvoicePaymentDate("2026-07-24", "2026-07-24"), "2026-07-24");
+  assert.throws(() => parseInvoicePaymentDate("2026-02-30", "2026-07-24"), /valid payment date/);
+  assert.throws(() => parseInvoicePaymentDate("24-07-2026", "2026-07-24"), /valid payment date/);
+  assert.throws(() => parseInvoicePaymentDate("2026-07-25", "2026-07-24"), /future/);
 });
 
 test("only voided invoices release line reuse", () => {

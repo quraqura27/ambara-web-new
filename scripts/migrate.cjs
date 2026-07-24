@@ -208,6 +208,25 @@ const migration016Columns = [
   ["invoice_line_items", "billing_basis"],
   ["invoice_line_items", "reference"],
 ];
+const migration017Columns = [
+  ["invoice_payments", "invoice_id"],
+  ["invoice_payments", "amount"],
+  ["invoice_payments", "payment_date"],
+  ["invoice_payments", "reference"],
+  ["invoice_payments", "note"],
+  ["invoice_payments", "recorded_by"],
+  ["invoice_payments", "source"],
+  ["invoice_payments", "created_at"],
+  ["invoice_payments", "voided_at"],
+  ["invoice_payments", "voided_by"],
+  ["invoice_payments", "void_reason"],
+];
+const migration017Tables = ["invoice_payments"];
+const migration017Indexes = [
+  "invoice_payments_invoice_date_idx",
+  "invoice_payments_active_invoice_idx",
+  "invoice_payments_legacy_invoice_unique_idx",
+];
 
 function checksum(contents) {
   return createHash("sha256").update(contents).digest("hex");
@@ -331,11 +350,19 @@ async function migrationMissingObjects(sql, name) {
     });
   }
 
+  if (name.startsWith("017-")) {
+    return missingSchemaObjects(sql, {
+      columns: migration017Columns,
+      tables: migration017Tables,
+      indexes: migration017Indexes,
+    });
+  }
+
   return [];
 }
 
 function hasSchemaObjectCheck(name) {
-  return ["006-", "007-", "008-", "009-", "014-", "015-", "016-"].some((prefix) =>
+  return ["006-", "007-", "008-", "009-", "014-", "015-", "016-", "017-"].some((prefix) =>
     name.startsWith(prefix),
   );
 }

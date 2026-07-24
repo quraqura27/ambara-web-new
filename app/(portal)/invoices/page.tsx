@@ -58,15 +58,15 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
         <div className="divide-y divide-white/5 md:hidden">
           {result.rows.map((invoice) => (
             <Link className="block space-y-4 p-5 transition hover:bg-white/[0.02]" href={`/invoices/${invoice.id}`} key={invoice.id}>
-              <div className="flex items-start justify-between gap-3"><p className="font-mono text-sm text-blue-200">{invoice.invoiceNumber || "DRAFT"}</p><StatusBadge status={invoice.effectiveStatus} /></div>
+              <div className="flex items-start justify-between gap-3"><p className="font-mono text-sm text-blue-200">{invoice.invoiceNumber || "DRAFT"}</p><div className="flex flex-wrap justify-end gap-2"><StatusBadge status={invoice.effectiveStatus} />{invoice.isOverdue && invoice.effectiveStatus === "partially_paid" ? <StatusBadge status="overdue" /> : null}</div></div>
               <div><p className="truncate text-sm font-medium text-white">{invoice.customerName || "Customer snapshot unavailable"}</p><p className="mt-1 text-xs text-slate-500">{invoice.invoiceDate || "N/A"}</p></div>
-              <p className="text-right text-sm font-semibold">{invoice.currency || "IDR"} {formatCurrencyAmount(invoice.netPayable, invoice.currency || "IDR")}</p>
+              <div className="grid grid-cols-3 gap-3 text-xs"><div><p className="text-slate-600">Net payable</p><p className="mt-1 font-semibold text-white">{invoice.currency || "IDR"} {formatCurrencyAmount(invoice.netPayable, invoice.currency || "IDR")}</p></div><div className="text-right"><p className="text-slate-600">Paid</p><p className="mt-1 font-semibold text-emerald-200">{formatCurrencyAmount(invoice.amountPaid, invoice.currency || "IDR")}</p></div><div className="text-right"><p className="text-slate-600">Outstanding</p><p className="mt-1 font-semibold text-amber-100">{formatCurrencyAmount(invoice.outstanding, invoice.currency || "IDR")}</p></div></div>
             </Link>
           ))}
           {result.rows.length === 0 ? <div className="p-10 text-center text-sm text-slate-500"><ReceiptText className="mx-auto mb-3 h-10 w-10 text-slate-700" />No invoices found.</div> : null}
         </div>
         <div className="hidden overflow-x-auto md:block">
-          <table className="w-full min-w-[840px] text-left">
+          <table className="w-full min-w-[1080px] text-left">
             <thead className="bg-[#12121a] text-[10px] font-bold uppercase tracking-widest text-slate-500">
               <tr>
                 <th className="px-5 py-4">Invoice</th>
@@ -74,6 +74,8 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
                 <th className="px-5 py-4">Date</th>
                 <th className="px-5 py-4">Status</th>
                 <th className="px-5 py-4 text-right">Net payable</th>
+                <th className="px-5 py-4 text-right">Paid</th>
+                <th className="px-5 py-4 text-right">Outstanding</th>
                 <th className="px-5 py-4 text-right">Action</th>
               </tr>
             </thead>
@@ -83,15 +85,21 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
                   <td className="px-5 py-4 font-mono text-sm text-blue-200">{invoice.invoiceNumber || "DRAFT"}</td>
                   <td className="px-5 py-4 text-sm">{invoice.customerName || "Customer snapshot unavailable"}</td>
                   <td className="px-5 py-4 text-xs text-slate-500">{invoice.invoiceDate || "N/A"}</td>
-                  <td className="px-5 py-4"><StatusBadge label={invoiceStatusLabel(invoice.effectiveStatus)} status={invoice.effectiveStatus} /></td>
+                  <td className="px-5 py-4"><div className="flex flex-wrap gap-2"><StatusBadge label={invoiceStatusLabel(invoice.effectiveStatus)} status={invoice.effectiveStatus} />{invoice.isOverdue && invoice.effectiveStatus === "partially_paid" ? <StatusBadge status="overdue" /> : null}</div></td>
                   <td className="px-5 py-4 text-right text-sm font-semibold">
                     {invoice.currency || "IDR"} {formatCurrencyAmount(invoice.netPayable, invoice.currency || "IDR")}
+                  </td>
+                  <td className="px-5 py-4 text-right text-sm font-semibold text-emerald-200">
+                    {invoice.currency || "IDR"} {formatCurrencyAmount(invoice.amountPaid, invoice.currency || "IDR")}
+                  </td>
+                  <td className="px-5 py-4 text-right text-sm font-semibold text-amber-100">
+                    {invoice.currency || "IDR"} {formatCurrencyAmount(invoice.outstanding, invoice.currency || "IDR")}
                   </td>
                   <td className="px-5 py-4 text-right"><Link href={`/invoices/${invoice.id}`}><Button variant="secondary">Open</Button></Link></td>
                 </tr>
               ))}
               {result.rows.length === 0 ? (
-                <tr><td className="py-14 text-center text-slate-500" colSpan={6}><ReceiptText className="mx-auto mb-3 h-10 w-10 text-slate-700" />No invoices found.</td></tr>
+                <tr><td className="py-14 text-center text-slate-500" colSpan={8}><ReceiptText className="mx-auto mb-3 h-10 w-10 text-slate-700" />No invoices found.</td></tr>
               ) : null}
             </tbody>
           </table>

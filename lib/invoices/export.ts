@@ -25,7 +25,7 @@ export type InvoiceExportPphFilter = (typeof invoiceExportPphFilters)[number];
 export const invoiceExportVatFilters = ["all", "with_vat", "without_vat"] as const;
 export type InvoiceExportVatFilter = (typeof invoiceExportVatFilters)[number];
 
-export const invoiceExportPaymentFilters = ["all", "paid", "unpaid"] as const;
+export const invoiceExportPaymentFilters = ["all", "paid", "unpaid", "partial"] as const;
 export type InvoiceExportPaymentFilter = (typeof invoiceExportPaymentFilters)[number];
 
 export const invoiceExportMaxRows = 5_000;
@@ -212,6 +212,13 @@ export const invoiceSummaryColumns: InvoiceExportColumn[] = [
   { header: "Due Date", key: "due_date" },
   { header: "Sent At", key: "sent_at" },
   { header: "Paid At", key: "paid_at" },
+  { header: "Payment State", key: "payment_state" },
+  { header: "Amount Paid", key: "amount_paid" },
+  { header: "Outstanding Balance", key: "outstanding_balance" },
+  { header: "Payment Count", key: "payment_count" },
+  { header: "Last Payment Date", key: "last_payment_date" },
+  { header: "Payment References", key: "payment_references" },
+  { header: "Is Overdue", key: "is_overdue" },
   { header: "Currency", key: "currency" },
   { header: "Subtotal", key: "subtotal" },
   { header: "Deductions", key: "deductions" },
@@ -237,6 +244,13 @@ export const invoiceLineColumns: InvoiceExportColumn[] = [
   { header: "Due Date", key: "due_date" },
   { header: "Sent At", key: "sent_at" },
   { header: "Paid At", key: "paid_at" },
+  { header: "Payment State", key: "payment_state" },
+  { header: "Amount Paid", key: "amount_paid" },
+  { header: "Outstanding Balance", key: "outstanding_balance" },
+  { header: "Payment Count", key: "payment_count" },
+  { header: "Last Payment Date", key: "last_payment_date" },
+  { header: "Payment References", key: "payment_references" },
+  { header: "Is Overdue", key: "is_overdue" },
   { header: "Line Type", key: "line_type" },
   { header: "AWB Number", key: "awb_number" },
   { header: "Shipment Date", key: "shipment_date" },

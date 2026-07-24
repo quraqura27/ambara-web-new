@@ -12,7 +12,7 @@ function inferTone(status: string): keyof typeof tones {
   const value = status.trim().toLowerCase();
   if (["delivered", "completed", "ready", "won", "paid", "active"].includes(value)) return "positive";
   if (["exception", "delivery_issue", "cancelled", "voided", "lost", "blocked", "overdue"].includes(value)) return "danger";
-  if (["in_transit", "departed_origin", "customs", "arrived_destination", "out_for_delivery", "in_review", "on_hold"].includes(value)) return "warning";
+  if (["in_transit", "departed_origin", "customs", "arrived_destination", "out_for_delivery", "in_review", "on_hold", "partially_paid"].includes(value)) return "warning";
   if (["pending", "received", "processed", "new", "qualified", "quoted", "open", "in_progress"].includes(value)) return "info";
   return "neutral";
 }

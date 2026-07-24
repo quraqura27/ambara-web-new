@@ -37,11 +37,28 @@ test("rejects invalid invoice export filters", () => {
   assert.ok(result.errors.includes("From date must be before or equal to to date."));
 });
 
+test("accepts partial and keeps unpaid as the outstanding-balance filter", () => {
+  const partial = parseInvoiceExportFilters(
+    new URLSearchParams({ payment: "partial" }),
+    new Date(2026, 5, 15, 12),
+  );
+  const unpaid = parseInvoiceExportFilters(
+    new URLSearchParams({ payment: "unpaid" }),
+    new Date(2026, 5, 15, 12),
+  );
+
+  assert.deepEqual(partial.errors, []);
+  assert.equal(partial.filters.payment, "partial");
+  assert.deepEqual(unpaid.errors, []);
+  assert.equal(unpaid.filters.payment, "unpaid");
+});
+
 test("builds invoice summary CSV with safe escaping", () => {
   const csv = buildInvoiceExportCsv(
     { scope: "summary" },
     [
       {
+        amount_paid: "3000000",
         bank_account: "OCBC",
         currency: "IDR",
         customer_code: "MEX",
@@ -53,10 +70,16 @@ test("builds invoice summary CSV with safe escaping", () => {
         generated_by: "Finance",
         invoice_date: "2026-07-04",
         invoice_number: "AAG/004/MEX/26",
+        is_overdue: "no",
+        last_payment_date: "2026-07-04",
         net_amount: "14200000",
         net_payable: "14072200",
+        outstanding_balance: "11072200",
         paid_at: "",
+        payment_count: "1",
         payment_reference: "=IMPORTDATA(\"https://example.com\")",
+        payment_references: "TRX-100",
+        payment_state: "partial",
         payment_terms: "CASH",
         pph_amount: "284000",
         sent_at: "2026-07-04T00:00:00.000Z",
@@ -69,6 +92,8 @@ test("builds invoice summary CSV with safe escaping", () => {
   );
 
   assert.match(csv, /^Invoice Number,Stored Status,Effective Status,/);
+  assert.match(csv, /Payment State,Amount Paid,Outstanding Balance,Payment Count,Last Payment Date,Payment References,Is Overdue/);
+  assert.match(csv, /partial,3000000,11072200,1,2026-07-04,TRX-100,no/);
   assert.match(csv, /"ACME, Indonesia"/);
   assert.match(csv, /'=IMPORTDATA\(""https:\/\/example\.com""\)/);
 });
@@ -78,6 +103,7 @@ test("builds invoice line CSV with flight and service fields", () => {
     { scope: "lines" },
     [
       {
+        amount_paid: "3000000",
         awb_number: "618-55511153",
         chargeable_weight: "2000",
         currency: "IDR",
@@ -89,10 +115,16 @@ test("builds invoice line CSV with flight and service fields", () => {
         flight_number: "SQ951/SQ878",
         invoice_date: "2026-07-04",
         invoice_number: "AAG/004/MEX/26",
+        is_overdue: "no",
+        last_payment_date: "2026-07-04",
         line_total: "14000000",
         line_type: "awb",
         origin: "Jakarta",
+        outstanding_balance: "11000000",
         paid_at: "",
+        payment_count: "1",
+        payment_references: "TRX-100",
+        payment_state: "partial",
         pieces: 50,
         price_per_kg: "7000",
         sent_at: "2026-07-04T00:00:00.000Z",
@@ -104,6 +136,7 @@ test("builds invoice line CSV with flight and service fields", () => {
   );
 
   assert.match(csv, /^Invoice Number,Stored Status,Effective Status,/);
+  assert.match(csv, /partial,3000000,11000000,1,2026-07-04,TRX-100,no/);
   assert.match(csv, /SQ951\/SQ878/);
   assert.match(csv, /618-55511153/);
 });

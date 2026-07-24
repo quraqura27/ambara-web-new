@@ -50,8 +50,9 @@ const vatLabels: Record<InvoiceExportVatFilter, string> = {
 
 const paymentLabels: Record<InvoiceExportPaymentFilter, string> = {
   all: "Paid and unpaid",
+  partial: "Partially paid only",
   paid: "Paid only",
-  unpaid: "Unpaid only",
+  unpaid: "Outstanding (unpaid + partial)",
 };
 
 function statusLabel(status: InvoiceExportStatus) {

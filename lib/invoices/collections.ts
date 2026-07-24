@@ -2,9 +2,12 @@ import {
   dateInputFromDate,
   invoiceCurrencies,
   invoiceEffectiveStatus,
+  invoiceOutstandingIsOverdue,
   normalizeInvoiceStatus,
   numberValue,
+  summarizeInvoicePayments,
   type InvoiceCurrency,
+  type InvoicePaymentState,
 } from "./core.ts";
 
 export const invoiceCollectionDueWindows = ["all", "overdue", "due_7", "due_14", "due_30"] as const;
@@ -20,6 +23,7 @@ export type InvoiceCollectionFilters = {
 };
 
 export type InvoiceCollectionSourceRow = {
+  collectedThisMonth: number | string | null;
   currency: string | null;
   customerCode: string | null;
   customerName: string | null;
@@ -27,33 +31,38 @@ export type InvoiceCollectionSourceRow = {
   id: string;
   invoiceDate: string | null;
   invoiceNumber: string | null;
+  lastPaymentDate: string | null;
   netPayable: number | string | null;
+  paidAmount: number | string | null;
   paidAt: Date | string | null;
+  paymentCount: number | string | null;
   paymentTerms: string | null;
   sentAt: Date | string | null;
   status: string | null;
 };
 
 export type InvoiceCollectionCurrencySummary = {
+  collectedThisMonth: number;
   currency: string;
   dueSoon14: number;
   overdue: number;
-  paidThisMonth: number;
   unpaidCount: number;
   outstanding: number;
 };
 
 export type InvoiceCollectionFollowUpRow = {
+  amountPaid: number;
   currency: string;
   customerCode: string;
   customerName: string;
   daysDelta: number | null;
   dueDate: string | null;
-  effectiveStatus: "sent" | "overdue";
+  effectiveStatus: "sent" | "partially_paid" | "overdue";
   id: string;
   invoiceDate: string | null;
   invoiceNumber: string;
-  netPayable: number;
+  outstanding: number;
+  paymentState: InvoicePaymentState;
   paymentTerms: string;
 };
 
@@ -110,19 +119,18 @@ function dateDaysDelta(dateInput: string | null, today: string) {
   return Math.round((dueUtc - todayUtc) / 86_400_000);
 }
 
-function timestampTime(value: Date | string | null | undefined) {
-  if (!value) return null;
-  const time = value instanceof Date ? value.getTime() : new Date(value).getTime();
-  return Number.isFinite(time) ? time : null;
-}
-
-function isPaidThisMonth(row: InvoiceCollectionSourceRow, monthStart: Date, nextMonthStart: Date) {
-  const paidTime = timestampTime(row.paidAt);
-  return paidTime !== null && paidTime >= monthStart.getTime() && paidTime < nextMonthStart.getTime();
+function rowPaymentSummary(row: InvoiceCollectionSourceRow) {
+  return summarizeInvoicePayments({
+    lastPaymentDate: row.lastPaymentDate,
+    netPayable: row.netPayable,
+    paidAmount: row.paidAmount,
+    paymentCount: row.paymentCount,
+    status: row.status,
+  });
 }
 
 function activeUnpaid(row: InvoiceCollectionSourceRow) {
-  return normalizeInvoiceStatus(row.status) === "sent" && !row.paidAt;
+  return normalizeInvoiceStatus(row.status) === "sent" && rowPaymentSummary(row).outstanding > 0;
 }
 
 function rowCurrency(row: InvoiceCollectionSourceRow) {
@@ -173,8 +181,6 @@ export function buildInvoiceCollectionsDashboard(
   now = new Date(),
 ): InvoiceCollectionsDashboard {
   const today = dateInputFromDate(now);
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
   const scopedRows = rows.filter(
     (row) =>
       (filters.currency === "all" || rowCurrency(row) === filters.currency) &&
@@ -187,14 +193,14 @@ export function buildInvoiceCollectionsDashboard(
   for (const row of unpaidRows) {
     const currency = rowCurrency(row);
     const summary = summariesByCurrency.get(currency) ?? {
+      collectedThisMonth: 0,
       currency,
       dueSoon14: 0,
       overdue: 0,
-      paidThisMonth: 0,
       unpaidCount: 0,
       outstanding: 0,
     };
-    const amount = numberValue(row.netPayable);
+    const amount = rowPaymentSummary(row).outstanding;
     summary.outstanding += amount;
     summary.unpaidCount += 1;
     if (row.dueDate && row.dueDate < today) summary.overdue += amount;
@@ -204,28 +210,37 @@ export function buildInvoiceCollectionsDashboard(
     summariesByCurrency.set(currency, summary);
   }
 
-  for (const row of scopedRows.filter((candidate) => isPaidThisMonth(candidate, monthStart, nextMonthStart))) {
+  for (const row of scopedRows.filter((candidate) => numberValue(candidate.collectedThisMonth) > 0)) {
     const currency = rowCurrency(row);
     const summary = summariesByCurrency.get(currency) ?? {
+      collectedThisMonth: 0,
       currency,
       dueSoon14: 0,
       overdue: 0,
-      paidThisMonth: 0,
       unpaidCount: 0,
       outstanding: 0,
     };
-    summary.paidThisMonth += numberValue(row.netPayable);
+    summary.collectedThisMonth += numberValue(row.collectedThisMonth);
     summariesByCurrency.set(currency, summary);
   }
 
   const followUpRows = visibleUnpaidRows
     .map<InvoiceCollectionFollowUpRow>((row) => {
-      const effectiveStatus = invoiceEffectiveStatus({
+      const paymentSummary = rowPaymentSummary(row);
+      const effectiveStatus = invoiceOutstandingIsOverdue({
         dueDate: row.dueDate,
-        paidAt: row.paidAt,
+        outstanding: paymentSummary.outstanding,
         status: row.status,
-      }) === "overdue" ? "overdue" : "sent";
+      }, today)
+        ? "overdue"
+        : invoiceEffectiveStatus({
+          dueDate: row.dueDate,
+          paidAt: row.paidAt,
+          paymentState: paymentSummary.paymentState,
+          status: row.status,
+        }, today) as "sent" | "partially_paid";
       return {
+        amountPaid: paymentSummary.amountPaid,
         currency: rowCurrency(row),
         customerCode: rowCustomerCode(row),
         customerName: rowCustomerName(row),
@@ -235,14 +250,18 @@ export function buildInvoiceCollectionsDashboard(
         id: row.id,
         invoiceDate: row.invoiceDate,
         invoiceNumber: row.invoiceNumber || "DRAFT",
-        netPayable: numberValue(row.netPayable),
+        outstanding: paymentSummary.outstanding,
+        paymentState: paymentSummary.paymentState,
         paymentTerms: row.paymentTerms || "CASH",
       };
     })
     .sort((a, b) => {
-      if (a.effectiveStatus !== b.effectiveStatus) return a.effectiveStatus === "overdue" ? -1 : 1;
+      if (a.effectiveStatus !== b.effectiveStatus) {
+        if (a.effectiveStatus === "overdue") return -1;
+        if (b.effectiveStatus === "overdue") return 1;
+      }
       if (a.dueDate !== b.dueDate) return (a.dueDate || "9999-12-31").localeCompare(b.dueDate || "9999-12-31");
-      return b.netPayable - a.netPayable;
+      return b.outstanding - a.outstanding;
     });
 
   const balancesByCustomer = new Map<string, InvoiceCollectionCustomerBalance>();
@@ -261,7 +280,7 @@ export function buildInvoiceCollectionsDashboard(
       overdueCount: 0,
     };
     balance.invoiceCount += 1;
-    balance.outstanding += numberValue(row.netPayable);
+    balance.outstanding += rowPaymentSummary(row).outstanding;
     if (row.dueDate && row.dueDate < today) balance.overdueCount += 1;
     if (row.dueDate && (!balance.oldestDueDate || row.dueDate < balance.oldestDueDate)) {
       balance.oldestDueDate = row.dueDate;

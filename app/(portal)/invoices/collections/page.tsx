@@ -187,11 +187,11 @@ export default async function InvoiceCollectionsPage({ searchParams }: InvoiceCo
                   <dd className="mt-1"><KpiValue currency={summary.currency} value={summary.dueSoon14} /></dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-slate-500">Paid this month</dt>
-                  <dd className="mt-1"><KpiValue currency={summary.currency} value={summary.paidThisMonth} /></dd>
+                  <dt className="text-xs text-slate-500">Collected this month</dt>
+                  <dd className="mt-1"><KpiValue currency={summary.currency} value={summary.collectedThisMonth} /></dd>
                 </div>
               </dl>
-              <p className="mt-4 text-sm text-slate-400">{summary.unpaidCount.toLocaleString()} active unpaid invoices</p>
+              <p className="mt-4 text-sm text-slate-400">{summary.unpaidCount.toLocaleString()} active outstanding invoices</p>
             </Card>
           ))}
         </div>
@@ -214,8 +214,8 @@ export default async function InvoiceCollectionsPage({ searchParams }: InvoiceCo
         <div className="divide-y divide-white/5 md:hidden">
           {dashboard.followUpRows.map((invoice) => (
             <Link className="block space-y-4 p-5 transition hover:bg-white/[0.02]" href={`/invoices/${invoice.id}`} key={invoice.id}>
-              <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="font-mono text-sm text-blue-200">{invoice.invoiceNumber}</p><p className="mt-1 truncate text-sm font-medium text-white">{invoice.customerName}</p></div><StatusBadge label={invoiceStatusLabel(invoice.effectiveStatus)} status={invoice.effectiveStatus} /></div>
-              <div className="grid grid-cols-2 gap-3 text-xs"><div><p className="text-slate-600">Due</p><p className="mt-1 text-slate-300">{invoice.dueDate || "-"}</p><p className={invoice.daysDelta !== null && invoice.daysDelta < 0 ? "mt-1 font-semibold text-rose-300" : "mt-1 text-slate-500"}>{dueText(invoice.daysDelta)}</p></div><div className="text-right"><p className="text-slate-600">Net payable</p><p className="mt-1 font-semibold text-white">{money(invoice.currency, invoice.netPayable)}</p><p className="mt-1 text-slate-500">{invoice.paymentTerms}</p></div></div>
+              <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="font-mono text-sm text-blue-200">{invoice.invoiceNumber}</p><p className="mt-1 truncate text-sm font-medium text-white">{invoice.customerName}</p></div><div className="flex flex-wrap justify-end gap-2"><StatusBadge label={invoiceStatusLabel(invoice.effectiveStatus)} status={invoice.effectiveStatus} />{invoice.paymentState === "partial" && invoice.effectiveStatus === "overdue" ? <StatusBadge label="Partially paid" status="partially_paid" /> : null}</div></div>
+              <div className="grid grid-cols-2 gap-3 text-xs"><div><p className="text-slate-600">Due</p><p className="mt-1 text-slate-300">{invoice.dueDate || "-"}</p><p className={invoice.daysDelta !== null && invoice.daysDelta < 0 ? "mt-1 font-semibold text-rose-300" : "mt-1 text-slate-500"}>{dueText(invoice.daysDelta)}</p></div><div className="text-right"><p className="text-slate-600">Outstanding</p><p className="mt-1 font-semibold text-white">{money(invoice.currency, invoice.outstanding)}</p><p className="mt-1 text-slate-500">{invoice.paymentTerms}</p></div></div>
             </Link>
           ))}
           {dashboard.followUpRows.length === 0 ? <p className="p-10 text-center text-sm text-slate-500">No unpaid invoices match the selected window.</p> : null}
@@ -229,7 +229,7 @@ export default async function InvoiceCollectionsPage({ searchParams }: InvoiceCo
                 <th className="px-5 py-4">Due</th>
                 <th className="px-5 py-4">Status</th>
                 <th className="px-5 py-4">Terms</th>
-                <th className="px-5 py-4 text-right">Net payable</th>
+                <th className="px-5 py-4 text-right">Outstanding</th>
                 <th className="px-5 py-4 text-right">Action</th>
               </tr>
             </thead>
@@ -251,11 +251,14 @@ export default async function InvoiceCollectionsPage({ searchParams }: InvoiceCo
                     </p>
                   </td>
                   <td className="px-5 py-4">
-                    <StatusBadge label={invoiceStatusLabel(invoice.effectiveStatus)} status={invoice.effectiveStatus} />
+                    <div className="flex flex-wrap gap-2">
+                      <StatusBadge label={invoiceStatusLabel(invoice.effectiveStatus)} status={invoice.effectiveStatus} />
+                      {invoice.paymentState === "partial" && invoice.effectiveStatus === "overdue" ? <StatusBadge label="Partially paid" status="partially_paid" /> : null}
+                    </div>
                   </td>
                   <td className="px-5 py-4 text-sm text-slate-300">{invoice.paymentTerms}</td>
                   <td className="px-5 py-4 text-right text-sm font-semibold">
-                    {money(invoice.currency, invoice.netPayable)}
+                    {money(invoice.currency, invoice.outstanding)}
                   </td>
                   <td className="px-5 py-4 text-right">
                     <Link href={`/invoices/${invoice.id}`}>
