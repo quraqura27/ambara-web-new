@@ -218,7 +218,23 @@ function initScrollAnimations() {
   window.gtag("config", measurementId);
 })();
 
-// WhatsApp CTA analytics
+// Business conversion analytics
+function trackBusinessEvent(eventName, details = {}) {
+  const payload = {
+    page_path: window.location.pathname,
+    page_title: document.title,
+    ...details
+  };
+
+  if (typeof window.gtag === 'function') {
+    window.gtag('event', eventName, payload);
+    return;
+  }
+
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push({ event: eventName, ...payload });
+}
+
 function getWhatsAppServiceCategory() {
   const bodyCategory = document.body && document.body.getAttribute('data-service-category');
   if (bodyCategory) return bodyCategory;
@@ -263,6 +279,14 @@ function getWhatsAppCtaText(link) {
   return visibleText || link.getAttribute('aria-label') || 'WhatsApp';
 }
 
+function getCtaLocation(link) {
+  const explicitLocation = link.getAttribute('data-cta-location');
+  if (explicitLocation) return explicitLocation;
+  if (link.closest('#navbar-mount, nav')) return 'navigation';
+  if (link.closest('#footer-mount, footer')) return 'footer';
+  return 'content';
+}
+
 function getWhatsAppLinkCategory(link) {
   const linkCategory = link.getAttribute('data-service-category');
   const pageCategory = getWhatsAppServiceCategory();
@@ -271,23 +295,10 @@ function getWhatsAppLinkCategory(link) {
 }
 
 function trackWhatsAppClick(link) {
-  const payload = {
-    page_path: window.location.pathname,
-    page_title: document.title,
-    cta_location: link.getAttribute('data-cta-location') || 'unknown',
+  trackBusinessEvent('click_whatsapp', {
+    cta_location: getCtaLocation(link),
     service_category: getWhatsAppLinkCategory(link),
-    cta_text: getWhatsAppCtaText(link),
-    destination_url: link.href
-  };
-
-  if (typeof window.gtag === 'function') {
-    window.gtag('event', 'whatsapp_click', payload);
-  }
-
-  window.dataLayer = window.dataLayer || [];
-  window.dataLayer.push({
-    event: 'whatsapp_click',
-    ...payload
+    cta_text: getWhatsAppCtaText(link)
   });
 }
 
@@ -299,8 +310,38 @@ function bindWhatsAppTracking(root = document) {
   });
 }
 
+function bindContactTracking(root = document) {
+  const contactLinks = [
+    ['a[href^="mailto:"]', 'click_email'],
+    ['a[href^="tel:"]', 'click_phone']
+  ];
+
+  contactLinks.forEach(([selector, eventName]) => {
+    root.querySelectorAll(selector).forEach(link => {
+      if (link.dataset.contactTracked === 'true') return;
+      link.dataset.contactTracked = 'true';
+      link.addEventListener('click', () => {
+        trackBusinessEvent(eventName, {
+          cta_location: getCtaLocation(link),
+          service_category: getWhatsAppLinkCategory(link),
+          cta_text: getWhatsAppCtaText(link)
+        });
+      });
+    });
+  });
+}
+
+function trackQuoteLead(formLanguage) {
+  trackBusinessEvent('generate_lead', {
+    lead_source: 'quote_form',
+    service_category: 'freight_quote',
+    form_language: formLanguage
+  });
+}
+
 window.trackWhatsAppClick = trackWhatsAppClick;
 window.bindWhatsAppTracking = bindWhatsAppTracking;
+window.trackQuoteLead = trackQuoteLead;
 
 // Tracking form submit
 async function trackShipment(id) {
@@ -559,8 +600,11 @@ document.addEventListener('DOMContentLoaded', () => {
   setActiveNav();
   initScrollAnimations();
   bindWhatsAppTracking();
+  bindContactTracking();
   window.setTimeout(bindWhatsAppTracking, 250);
+  window.setTimeout(bindContactTracking, 250);
   window.setTimeout(bindWhatsAppTracking, 1000);
+  window.setTimeout(bindContactTracking, 1000);
 
   // Lang toggle buttons
   document.querySelectorAll('.lang-toggle button').forEach(btn => {
