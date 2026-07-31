@@ -29,6 +29,7 @@ type InvoicePdfInvoice = {
   customerCode: string | null;
   customerNameSnapshot: string | null;
   customerNpwpSnapshot: string | null;
+  depositAmount: number | string | null;
   dueDate: string | null;
   formatVersion?: number | null;
   invoiceDate: string | null;
@@ -513,16 +514,27 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
     y = rowY;
   }
 
-  ensureSpace(88);
+  const hasVat = numberValue(input.invoice.vatAmount) > 0;
+  const hasDeposit = numberValue(input.invoice.depositAmount) > 0;
+  const hasPph = numberValue(input.invoice.pphAmount) > 0;
+  const summaryRowCount = 2
+    + (hasVat ? 1 : 0)
+    + (hasDeposit ? 1 : 0)
+    + (hasPph ? 2 : 0);
+  ensureSpace(summaryRowCount * 20 + 56);
   y -= 20;
   drawSummaryRow(page, "Subtotal", input.invoice.subtotal, y, currency, fonts, false, false, columns);
-  if (numberValue(input.invoice.vatAmount) > 0) {
+  if (hasVat) {
     y -= 20;
     drawSummaryRow(page, "VAT 1.1%", input.invoice.vatAmount, y, currency, fonts, false, false, columns);
   }
+  if (hasDeposit) {
+    y -= 20;
+    drawSummaryRow(page, "Deposit", input.invoice.depositAmount, y, currency, fonts, false, true, columns);
+  }
   y -= 20;
   drawSummaryRow(page, "Total Due", input.invoice.amountDue, y, currency, fonts, true, false, columns);
-  if (numberValue(input.invoice.pphAmount) > 0) {
+  if (hasPph) {
     y -= 20;
     drawSummaryRow(page, "PPh 23 (2%)", input.invoice.pphAmount, y, currency, fonts, false, true, columns);
     y -= 20;

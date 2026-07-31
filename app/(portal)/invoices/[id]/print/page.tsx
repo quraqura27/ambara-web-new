@@ -134,6 +134,7 @@ export default async function InvoicePrintPage({ params }: InvoicePrintPageProps
             <tfoot>
               <SummaryPrintRow currency={currency} label="Subtotal" labelColSpan={6} value={invoice.subtotal} />
               {numberValue(invoice.vatAmount) > 0 ? <SummaryPrintRow currency={currency} label="VAT 1.1%" labelColSpan={6} value={invoice.vatAmount} /> : null}
+              {numberValue(invoice.depositAmount) > 0 ? <SummaryPrintRow currency={currency} label="Deposit" labelColSpan={6} negative value={invoice.depositAmount} /> : null}
               <SummaryPrintRow currency={currency} label="Total Due" labelColSpan={6} strong value={invoice.amountDue} />
               {numberValue(invoice.pphAmount) > 0 ? <SummaryPrintRow currency={currency} label="PPh 23 (2%)" labelColSpan={6} negative value={invoice.pphAmount} /> : null}
               {numberValue(invoice.pphAmount) > 0 ? <SummaryPrintRow currency={currency} highlight label="Net Payable" labelColSpan={6} strong value={invoice.netPayable} /> : null}
@@ -146,7 +147,14 @@ export default async function InvoicePrintPage({ params }: InvoicePrintPageProps
               {lines.map((line, index) => <tr key={line.id}><td className="border border-black p-1 text-center">{index + 1}</td>{line.lineType === "awb" ? <><td className="border border-black p-1 text-center">{line.origin || "-"}</td><td className="border border-black p-1 text-center">{line.destination || "-"}</td><td className="border border-black p-1 text-center">{displayDate(line.shipmentDate)}</td><td className="border border-black p-1">{line.awbNumber || "-"}</td><td className="border border-black p-1 text-center">{line.flightNumber || "-"}</td><td className="border border-black p-1 text-center">{line.pieces ?? "-"}</td><td className="border border-black p-1 text-right">{line.chargeableWeight || "-"}</td><td className="border border-black p-1 text-right">{formatCurrencyCell(line.pricePerKg, currency)}</td><td className="border border-black p-1 text-right">{formatCurrencyCell(line.lineTotal, currency)}</td></> : <><td className="border border-black p-1 italic" colSpan={8}>{line.description || "Service"}</td><td className="border border-black p-1 text-right">{formatCurrencyCell(line.lineTotal, currency)}</td></>}</tr>)}
               {deductions.map((deduction) => <tr key={deduction.id}><td className="border border-black p-1"></td><td className="border border-black p-1 italic" colSpan={8}>{deduction.description}</td><td className="border border-black p-1 text-right">{formatCurrencyCell(deduction.amount, currency, true)}</td></tr>)}
             </tbody>
-            <tfoot><SummaryPrintRow currency={currency} label="Subtotal" value={invoice.subtotal} />{numberValue(invoice.vatAmount) > 0 ? <SummaryPrintRow currency={currency} label="VAT 1.1%" value={invoice.vatAmount} /> : null}<SummaryPrintRow currency={currency} label="Total Due" strong value={invoice.amountDue} />{numberValue(invoice.pphAmount) > 0 ? <SummaryPrintRow currency={currency} label="PPh 23 (2%)" negative value={invoice.pphAmount} /> : null}{numberValue(invoice.pphAmount) > 0 ? <SummaryPrintRow currency={currency} highlight label="Net Payable" strong value={invoice.netPayable} /> : null}</tfoot>
+            <tfoot>
+              <SummaryPrintRow currency={currency} label="Subtotal" value={invoice.subtotal} />
+              {numberValue(invoice.vatAmount) > 0 ? <SummaryPrintRow currency={currency} label="VAT 1.1%" value={invoice.vatAmount} /> : null}
+              {numberValue(invoice.depositAmount) > 0 ? <SummaryPrintRow currency={currency} label="Deposit" negative value={invoice.depositAmount} /> : null}
+              <SummaryPrintRow currency={currency} label="Total Due" strong value={invoice.amountDue} />
+              {numberValue(invoice.pphAmount) > 0 ? <SummaryPrintRow currency={currency} label="PPh 23 (2%)" negative value={invoice.pphAmount} /> : null}
+              {numberValue(invoice.pphAmount) > 0 ? <SummaryPrintRow currency={currency} highlight label="Net Payable" strong value={invoice.netPayable} /> : null}
+            </tfoot>
           </table>
         )}
 

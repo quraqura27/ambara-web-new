@@ -19,6 +19,7 @@ import {
   invoiceLineReference,
   invoiceLineService,
   invoiceStatusLabel,
+  numberValue,
   normalizeInvoiceStatus,
 } from "@/lib/invoices/core";
 import { formatWibDateTime } from "@/lib/time/wib";
@@ -139,6 +140,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
               <TotalRow currency={currency} label="Deductions" negative value={invoice.totalPengurangan} />
               <TotalRow currency={currency} label="Net amount" value={invoice.netAmount} />
               <TotalRow currency={currency} label="VAT" value={invoice.vatAmount} />
+              {numberValue(invoice.depositAmount) > 0 ? <TotalRow currency={currency} label="Deposit" negative value={invoice.depositAmount} /> : null}
               <TotalRow currency={currency} label="Total due" value={invoice.amountDue} />
               <TotalRow currency={currency} label="PPh 23 withholding" negative value={invoice.pphAmount} />
               <div className="flex justify-between rounded-lg bg-blue-500/15 p-3 font-bold text-blue-100">
