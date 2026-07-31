@@ -66,3 +66,39 @@ Next priority:
 - Retry the four GA4 CSV attachments and classify traffic quality once extraction succeeds.
 - After Batch 1 is merged and data accumulates, confirm `click_whatsapp`, `click_email`, `click_phone`, and `generate_lead` appear in GA4.
 - Review the quotation funnel and commercial landing pages using the first readable report set.
+
+## Batch 3 — Quotation funnel resilience and localization
+
+Status: ready for review
+
+Evidence:
+
+- The connected Gmail attachment extractor continued to reject all four scheduled GA4 CSV files, so no private report values or traffic classifications were used.
+- The Indonesian quotation page still presented most headings, labels, choices, status messages, and the submit action in English.
+- Both quotation forms used fixed multi-column inline layouts on small screens and did not expose submission status through an ARIA live region.
+- Form errors displayed an API-provided message as HTML, while a failed request offered no direct WhatsApp fallback.
+
+Implemented:
+
+- Fully localized the Indonesian quotation page metadata, headings, fields, choices, button states, and success/error feedback.
+- Stacked form grids on screens up to 640px wide.
+- Added standard autocomplete hints for name, company, email, and telephone fields.
+- Added live, focusable submission status and preserved user-entered data after errors.
+- Added email and WhatsApp recovery paths for failed submissions.
+- Escaped the server-provided quote reference before rendering it.
+- Merged the latest `main` changes into the sprint branch; the intervening invoice changes did not overlap with sprint files.
+
+Verification:
+
+- Quotation-page source assertions: passed.
+- Extracted inline JavaScript syntax checks: passed.
+- ESLint: passed.
+- Merged invoice regression tests: 9 passed.
+- Next.js production build and TypeScript: passed.
+- Browser automation was unavailable in the run environment; the draft preview remains the visual review surface.
+
+Next priority:
+
+- Retry GA4 CSV extraction and classify traffic once the connector accepts the attachments.
+- Confirm the refreshed draft branch is mergeable and its preview is healthy.
+- Use the first readable landing-page and event reports to choose the next commercial-page optimization.
