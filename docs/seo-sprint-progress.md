@@ -102,3 +102,36 @@ Next priority:
 - Retry GA4 CSV extraction and classify traffic once the connector accepts the attachments.
 - Confirm the refreshed draft branch is mergeable and its preview is healthy.
 - Use the first readable landing-page and event reports to choose the next commercial-page optimization.
+
+## Batch 4 — Sitemap coverage and automated SEO checks
+
+Status: ready for review
+
+Evidence:
+
+- No newer weekly GA4 report set had arrived at the time of this batch.
+- The existing Gmail attachment extractor still rejected the newest available CSV when retried, so no traffic values or classifications were inferred.
+- Repository audit found 73 canonical indexable public pages but only 42 sitemap URLs.
+- Nine high-intent English articles already used by this sprint were canonical and indexable but absent from the sitemap.
+- Existing indexable pages passed title, meta-description, canonical, duplicate-canonical, and static JSON-LD parsing checks.
+
+Implemented:
+
+- Added the nine priority AWB, customs, DG, PPJK, document-readiness, arrival-handling, and quotation-checklist articles to the sitemap.
+- Added `npm run seo:audit` to validate public-page titles, descriptions, canonicals, duplicate canonicals, sitemap targets, and static JSON-LD syntax.
+- Kept remaining legacy canonical pages out of the sitemap pending content-quality review instead of bulk-submitting them.
+
+Verification:
+
+- Automated SEO audit: passed across 79 HTML files, 73 canonical indexable pages, and 51 sitemap URLs.
+- Sitemap duplicate and expected-count assertions: passed.
+- ESLint: passed.
+- Invoice regression tests: 9 passed.
+- Next.js production build and TypeScript: passed.
+- Browser automation was unavailable in the run environment; the draft preview remains the visual review surface.
+
+Next priority:
+
+- Read the next complete GA4 email set after it arrives and classify traffic quality.
+- Review omitted legacy articles for duplication, language mismatch, and content quality before considering additional sitemap inclusion.
+- Use readable landing-page data to prioritize the next commercial service page.

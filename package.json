@@ -9,6 +9,7 @@
     "airlines:refresh": "node scripts/refresh-iata-member-airlines.mjs",
     "dev": "next dev",
     "build": "next build",
+    "seo:audit": "node scripts/audit-public-seo.mjs",
     "start": "next start",
     "lint": "eslint",
     "migrate": "node scripts/migrate.cjs",
