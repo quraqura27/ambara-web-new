@@ -15,7 +15,7 @@ export default function PortalError({ error, reset }: { error: Error & { digest?
       <div aria-live="assertive" className="w-full rounded-lg border border-rose-500/20 bg-rose-500/[0.05] p-6 text-center" role="alert">
         <AlertTriangle className="mx-auto h-8 w-8 text-rose-300" />
         <h1 className="mt-4 text-lg font-semibold text-white">This portal view could not load</h1>
-        <p className="mt-2 text-sm leading-6 text-slate-400">The request failed without applying any pending form change. Retry after the database connection recovers.</p>
+        <p className="mt-2 text-sm leading-6 text-slate-400">An unexpected server error prevented this request from completing. Retry, and share the reference below if the problem continues.</p>
         <Button className="mt-5 gap-2" onClick={reset} type="button" variant="secondary"><RotateCcw className="h-4 w-4" /> Retry</Button>
         {error.digest ? <p className="mt-4 font-mono text-[10px] text-slate-600">Reference {error.digest}</p> : null}
       </div>

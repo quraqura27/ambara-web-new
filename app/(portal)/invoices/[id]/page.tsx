@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Archive, Ban, CheckCircle2, Download, Printer, QrCode, Send, XCircle } from "lucide-react";
+import { Archive, Ban, CheckCircle2, Download, Pencil, Printer, QrCode, Send, XCircle } from "lucide-react";
 
 import {
   archiveInvoiceFromForm,
@@ -19,6 +19,7 @@ import {
   invoiceLineReference,
   invoiceLineService,
   invoiceStatusLabel,
+  normalizeCustomerCode,
   numberValue,
   normalizeInvoiceStatus,
 } from "@/lib/invoices/core";
@@ -46,6 +47,24 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
   const invoiceDisplayNumber = invoice.invoiceNumber || "DRAFT";
   const confirmationIdentifier = invoice.invoiceNumber || invoice.id;
   const today = new Date().toISOString().slice(0, 10);
+  const invalidDraftLineIndex = storedStatus === "draft"
+    ? lines.findIndex((line) => {
+        const billingBasis = invoiceLineBillingBasis(line);
+        return billingBasis === "per_kg"
+          ? numberValue(line.chargeableWeight) <= 0 || numberValue(line.pricePerKg) <= 0
+          : numberValue(line.flatAmount ?? line.lineTotal) <= 0;
+      })
+    : -1;
+  const invalidDraftLine = invalidDraftLineIndex >= 0 ? lines[invalidDraftLineIndex] : null;
+  const draftSendIssue = storedStatus !== "draft"
+    ? null
+    : lines.length === 0
+      ? "Add at least one charge before marking this invoice sent."
+      : invalidDraftLine
+        ? `Charge ${invalidDraftLineIndex + 1} (${invoiceLineService(invalidDraftLine)}) needs a positive quantity and rate. Edit the draft before marking it sent.`
+        : !normalizeCustomerCode(invoice.customerCode ?? "")
+          ? "Set this customer's 3-letter invoice code before marking this invoice sent."
+          : null;
 
   return (
     <div className="space-y-8">
@@ -77,7 +96,11 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
                 Print / Save PDF
               </a>
             </>
-          ) : null}
+          ) : (
+            <Link href={`/invoices/${invoice.id}/edit`}>
+              <Button className="gap-2" variant="secondary"><Pencil className="h-4 w-4" /> Edit draft</Button>
+            </Link>
+          )}
           <Link href="/invoices"><Button variant="secondary">Back</Button></Link>
         </div>
       </div>
@@ -235,8 +258,14 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
             <Card className="p-5">
               <h2 className="mb-2 text-sm font-semibold text-blue-200">Mark as sent</h2>
               <p className="mb-3 text-xs leading-5 text-slate-500">Assigns the final number and records dispatch. Email delivery remains external.</p>
+              {draftSendIssue ? (
+                <div className="mb-3 rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-xs leading-5 text-amber-100" role="alert">
+                  <p>{draftSendIssue}</p>
+                  <Link className="mt-2 inline-block font-semibold text-blue-200 hover:text-blue-100" href={`/invoices/${invoice.id}/edit`}>Edit draft charges</Link>
+                </div>
+              ) : null}
               <form action={sendAction} className="space-y-3">
-                <TypedConfirmSubmitButton confirmLabel="Mark sent" confirmText="MARK SENT" description="This records the invoice as sent and enables its public verification. It does not send an email." title="Record invoice dispatch?">
+                <TypedConfirmSubmitButton confirmLabel="Mark sent" confirmText="MARK SENT" description="This records the invoice as sent and enables its public verification. It does not send an email." disabled={Boolean(draftSendIssue)} title="Record invoice dispatch?">
                   <Send className="h-4 w-4" />
                   Assign number and mark sent
                 </TypedConfirmSubmitButton>
