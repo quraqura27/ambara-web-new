@@ -135,3 +135,37 @@ Next priority:
 - Read the next complete GA4 email set after it arrives and classify traffic quality.
 - Review omitted legacy articles for duplication, language mismatch, and content quality before considering additional sitemap inclusion.
 - Use readable landing-page data to prioritize the next commercial service page.
+
+## Batch 5 — Hreflang regression protection
+
+Status: ready for review
+
+Evidence:
+
+- The second weekly GA4 email set arrived, but the connected extractor rejected all four new CSV attachments; no week-over-week values or traffic classifications were inferred.
+- A complete repository scan found no broken or non-reciprocal hreflang pairs in the current public pages.
+- The existing automated SEO audit did not yet enforce that valid hreflang state.
+
+Implemented:
+
+- Extended `npm run seo:audit` to validate each indexable page's `html lang` attribute.
+- Added checks that hreflang and x-default targets resolve to canonical, indexable public pages.
+- Added language-declaration checks for each EN/ID target.
+- Added reciprocal-link validation for language alternates.
+- Left legacy page content unchanged because the mechanical audit found no hreflang defect and GA4 evidence remains unreadable.
+
+Verification:
+
+- Enhanced SEO audit: passed across 79 HTML files, including 190 hreflang links.
+- Sitemap, canonical, metadata, and static JSON-LD checks: passed.
+- ESLint: passed.
+- Invoice regression tests: 9 passed.
+- Next.js production build and TypeScript: passed.
+- Vercel reports the current draft preview deployment as successful.
+- Direct browser rendering remained unavailable: the local browser CLI was absent, and the Vercel preview requires SSO in this environment.
+
+Next priority:
+
+- Retry the second GA4 report set and complete the week-over-week traffic-quality analysis once extraction works.
+- Review the deployed draft preview for the quote funnel, contextual article CTAs, and sitemap availability.
+- Hold further legacy-content indexing changes until landing-page evidence is readable.
