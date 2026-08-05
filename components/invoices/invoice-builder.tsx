@@ -94,7 +94,7 @@ export function InvoiceBuilder({
   const [customDueDate, setCustomDueDate] = useState(invoiceDate);
   const [customPaymentTerms, setCustomPaymentTerms] = useState("");
   const [paymentTermCode, setPaymentTermCode] = useState<InvoicePaymentTermCode>("cash");
-  const [bankAccount, setBankAccount] = useState("OCBC");
+  const [bankAccount, setBankAccount] = useState("MANDIRI");
   const [vatEnabled, setVatEnabled] = useState(false);
   const [pphEnabled, setPphEnabled] = useState(false);
   const [showPaymentTerms, setShowPaymentTerms] = useState(true);
@@ -320,7 +320,7 @@ export function InvoiceBuilder({
             <label>
               <span className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Bank account</span>
               <select className="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-4 py-2 text-sm" name="bankAccount" onChange={(event) => setBankAccount(event.target.value)} value={bankAccount}>
-                <option value="OCBC">Bank OCBC</option><option value="BCA">Bank BCA</option><option value="MANDIRI">Bank Mandiri</option>
+                <option value="MANDIRI">Bank Mandiri</option><option value="OCBC">Bank OCBC</option><option value="BCA">Bank BCA</option>
               </select>
             </label>
             <label><span className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Period</span><Input name="period" placeholder="Optional" /></label>
