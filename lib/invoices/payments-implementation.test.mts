@@ -3,6 +3,10 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const actions = readFileSync(new URL("../../actions/invoices.ts", import.meta.url), "utf8");
+const confirmationControls = readFileSync(
+  new URL("../../components/portal/confirm-submit-button.tsx", import.meta.url),
+  "utf8",
+);
 const core = readFileSync(new URL("./core.ts", import.meta.url), "utf8");
 const pdfRoute = readFileSync(
   new URL("../../app/(portal)/invoices/[id]/pdf/route.ts", import.meta.url),
@@ -34,6 +38,15 @@ test("recording and voiding a payment atomically write their invoice audit event
     /with voided_payment as \([\s\S]*update invoice_payments payment[\s\S]*inserted_audit as \([\s\S]*'invoice\.payment_voided'/i,
   );
   assert.match(actions, /voided_at = now\(\),[\s\S]*voided_by = \$\{user\.id\},[\s\S]*void_reason = \$\{reason\}/);
+  assert.match(actions, /'reason', \$\{reason\}::text/);
+});
+
+test("confirmation controls submit current hidden values before closing their dialogs", () => {
+  assert.doesNotMatch(confirmationControls, /requestAnimationFrame/);
+  assert.equal(
+    confirmationControls.match(/target\.requestSubmit\(\);\s+(?:setForm\(null\)|close\(\));/g)?.length,
+    3,
+  );
 });
 
 test("payment mutations revalidate list, detail, and collections views", () => {

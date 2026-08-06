@@ -1611,7 +1611,7 @@ export async function voidInvoicePaymentFromForm(
           'paymentDate', voided_payment.payment_date,
           'paymentId', voided_payment.id,
           'paymentReference', voided_payment.reference,
-          'reason', ${reason}
+          'reason', ${reason}::text
         )
       from voided_payment
       returning id
