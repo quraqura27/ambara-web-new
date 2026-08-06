@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { ClipboardList, FileText, Package, Search, Users } from "lucide-react";
+import { Building2, CircleDollarSign, ClipboardList, FileText, Package, Search, Target, UserRound, Users } from "lucide-react";
 
 import { searchPortal } from "@/actions/portal-search";
 import { Button, Card } from "@/components/ui/core";
+import { CrmStatusBadge } from "@/components/crm/crm-ui";
 
 type SearchPageProps = {
   searchParams: Promise<{ q?: string }>;
@@ -11,7 +12,8 @@ type SearchPageProps = {
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   const query = (await searchParams).q?.trim() ?? "";
   const results = await searchPortal(query);
-  const total = results.shipments.length + results.customers.length + results.batches.length + results.mawbs.length;
+  const total = results.shipments.length + results.customers.length + results.batches.length + results.mawbs.length
+    + results.crmLeads.length + results.crmCompanies.length + results.crmContacts.length + results.crmOpportunities.length;
 
   return (
     <div className="space-y-8">
@@ -26,7 +28,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         <Card className="p-10 text-center">
           <Search className="mx-auto h-10 w-10 text-slate-700" />
           <p className="mt-4 font-semibold">No matching portal records</p>
-          <p className="mt-1 text-sm text-slate-500">Check the tracking number, reference, name, AWB, or batch code.</p>
+          <p className="mt-1 text-sm text-slate-500">Check the tracking number, CRM company or contact, reference, name, AWB, or batch code.</p>
         </Card>
       ) : null}
 
@@ -52,6 +54,81 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                   </Link>
                 ) : null}
               </Card>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {results.crmLeads.length > 0 ? (
+        <section className="space-y-3">
+          <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-slate-500">
+            <Target className="h-4 w-4" /> CRM Leads
+          </h2>
+          <div className="grid gap-3 md:grid-cols-2">
+            {results.crmLeads.map((lead) => (
+              <Link href={`/crm/leads/${lead.id}`} key={lead.id}>
+                <Card className="h-full p-5 transition hover:border-blue-500/30">
+                  <div className="flex items-start justify-between gap-3"><p className="font-semibold text-white">{lead.title}</p><CrmStatusBadge status={lead.status} /></div>
+                  <p className="mt-2 text-sm text-slate-300">{lead.companyName || lead.contactName || lead.source.replace(/_/g, " ")}</p>
+                  <p className="mt-1 text-xs text-slate-500">{lead.origin || "Origin TBD"} → {lead.destination || "Destination TBD"} / {lead.ownerName}</p>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {results.crmOpportunities.length > 0 ? (
+        <section className="space-y-3">
+          <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-slate-500">
+            <CircleDollarSign className="h-4 w-4" /> CRM Opportunities
+          </h2>
+          <div className="grid gap-3 md:grid-cols-2">
+            {results.crmOpportunities.map((opportunity) => (
+              <Link href={`/crm/opportunities/${opportunity.id}`} key={opportunity.id}>
+                <Card className="h-full p-5 transition hover:border-blue-500/30">
+                  <div className="flex items-start justify-between gap-3"><p className="font-semibold text-white">{opportunity.title}</p><CrmStatusBadge status={opportunity.stage} /></div>
+                  <p className="mt-2 text-sm text-slate-300">{opportunity.companyName || "Company not linked"}</p>
+                  <p className="mt-1 text-xs text-slate-500">{opportunity.currency} {opportunity.estimatedValue || "value TBD"} / {opportunity.ownerName}</p>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {results.crmCompanies.length > 0 ? (
+        <section className="space-y-3">
+          <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-slate-500">
+            <Building2 className="h-4 w-4" /> CRM Companies
+          </h2>
+          <div className="grid gap-3 md:grid-cols-2">
+            {results.crmCompanies.map((company) => (
+              <Link href={`/crm/companies/${company.id}`} key={company.id}>
+                <Card className="h-full p-5 transition hover:border-blue-500/30">
+                  <p className="font-semibold text-white">{company.displayName || company.legalName}</p>
+                  <p className="mt-1 text-xs text-slate-500">{company.email || "No email"} / {[company.city, company.countryCode].filter(Boolean).join(", ")}</p>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {results.crmContacts.length > 0 ? (
+        <section className="space-y-3">
+          <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-slate-500">
+            <UserRound className="h-4 w-4" /> CRM Contacts
+          </h2>
+          <div className="grid gap-3 md:grid-cols-2">
+            {results.crmContacts.map((contact) => (
+              <Link href={`/crm/contacts/${contact.id}`} key={contact.id}>
+                <Card className="h-full p-5 transition hover:border-blue-500/30">
+                  <p className="font-semibold text-white">{contact.fullName}</p>
+                  <p className="mt-2 text-sm text-slate-300">{contact.companyName || "Company not linked"}</p>
+                  <p className="mt-1 text-xs text-slate-500">{contact.email || contact.whatsapp || contact.phone || "No contact channel"} / {contact.ownerName}</p>
+                </Card>
+              </Link>
             ))}
           </div>
         </section>

@@ -10,6 +10,7 @@ import {
   canRestoreShipment,
   canVoidShipment,
   hasPortalCapability,
+  isAssignableStaffRole,
   normalizePortalRole,
 } from "./portal-roles.ts";
 
@@ -17,7 +18,40 @@ test("normalizes portal roles", () => {
   assert.equal(normalizePortalRole("super_admin"), "superadmin");
   assert.equal(normalizePortalRole("ops"), "operations");
   assert.equal(normalizePortalRole("administrator"), "admin");
+  assert.equal(normalizePortalRole("Sales Manager"), "sales_manager");
+  assert.equal(normalizePortalRole("salesperson"), "sales");
+  assert.equal(normalizePortalRole("cs"), "customer_service");
+  assert.equal(normalizePortalRole("director"), "director");
   assert.equal(normalizePortalRole("unknown"), "viewer");
+});
+
+test("fixed CRM staff roles are assignable without changing legacy roles", () => {
+  for (const role of ["director", "sales_manager", "sales", "customer_service", "operations", "finance", "admin", "viewer", "superadmin"] as const) {
+    assert.equal(isAssignableStaffRole(normalizePortalRole(role)), true);
+  }
+});
+
+test("CRM capability matrix defaults to least privilege", () => {
+  assert.equal(hasPortalCapability({ role: "sales" }, "crm:view"), true);
+  assert.equal(hasPortalCapability({ role: "sales" }, "crm:manage"), true);
+  assert.equal(hasPortalCapability({ role: "sales" }, "crm:all:view"), false);
+  assert.equal(hasPortalCapability({ role: "sales" }, "crm:cost:view"), false);
+  assert.equal(hasPortalCapability({ role: "sales" }, "crm:margin:view"), false);
+  assert.equal(hasPortalCapability({ role: "sales_manager" }, "crm:team:view"), true);
+  assert.equal(hasPortalCapability({ role: "sales_manager" }, "crm:cost:view"), true);
+  assert.equal(hasPortalCapability({ role: "director" }, "crm:all:view"), true);
+  assert.equal(hasPortalCapability({ role: "director" }, "crm:compliance:view"), true);
+  assert.equal(hasPortalCapability({ role: "sales" }, "crm:compliance:view"), false);
+  assert.equal(hasPortalCapability({ role: "finance" }, "crm:view"), false);
+  assert.equal(hasPortalCapability({ role: "finance" }, "crm:cost:view"), false);
+  assert.equal(hasPortalCapability({ role: "finance" }, "crm:manage"), false);
+  assert.equal(hasPortalCapability({ role: "admin" }, "crm:view"), false);
+  assert.equal(hasPortalCapability({ role: "customer_service" }, "crm:all:view"), false);
+  assert.equal(hasPortalCapability({ role: "customer_service" }, "crm:stage:manage"), false);
+  assert.equal(hasPortalCapability({ role: "operations" }, "crm:view"), false);
+  assert.equal(hasPortalCapability({ role: "viewer" }, "crm:view"), false);
+  assert.equal(hasPortalCapability({ role: "unknown" }, "crm:view"), false);
+  assert.equal(hasPortalCapability(null, "crm:view"), false);
 });
 
 test("shipment void and restore capabilities are explicit", () => {
