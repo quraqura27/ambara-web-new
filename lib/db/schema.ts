@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { pgTable, text, serial, timestamp, uuid, integer, numeric, date, boolean, bigint, bigserial, char, index, uniqueIndex, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, text, serial, timestamp, uuid, integer, numeric, date, boolean, bigint, bigserial, char, check, index, uniqueIndex, jsonb } from 'drizzle-orm/pg-core';
 
 export const shipments = pgTable('shipments', {
   id: serial('id').primaryKey(),
@@ -622,6 +622,325 @@ export const quoteRequests = pgTable('quote_requests', {
 }, (table) => [
   uniqueIndex('quote_requests_reference_unique_idx').on(table.referenceNumber),
   index('quote_requests_queue_idx').on(table.status, table.dueAt),
+]);
+
+export const crmTeams = pgTable('crm_teams', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  managerId: integer('manager_id').references(() => staffAccounts.id, { onDelete: 'set null' }),
+  createdBy: integer('created_by').notNull().references(() => staffAccounts.id),
+  updatedBy: integer('updated_by').notNull().references(() => staffAccounts.id),
+  archivedAt: timestamp('archived_at', { withTimezone: true }),
+  archivedBy: integer('archived_by').references(() => staffAccounts.id),
+  archiveReason: text('archive_reason'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex('crm_teams_active_name_unique_idx')
+    .on(sql`lower(btrim(${table.name}))`)
+    .where(sql`${table.archivedAt} is null`),
+  index('crm_teams_manager_idx').on(table.managerId),
+  index('crm_teams_archived_idx').on(table.archivedAt),
+]);
+
+export const crmTeamMembers = pgTable('crm_team_members', {
+  id: serial('id').primaryKey(),
+  teamId: integer('team_id').notNull().references(() => crmTeams.id, { onDelete: 'cascade' }),
+  staffAccountId: integer('staff_account_id').notNull().references(() => staffAccounts.id, { onDelete: 'cascade' }),
+  membershipRole: text('membership_role').notNull().default('member'),
+  createdBy: integer('created_by').notNull().references(() => staffAccounts.id),
+  updatedBy: integer('updated_by').notNull().references(() => staffAccounts.id),
+  archivedAt: timestamp('archived_at', { withTimezone: true }),
+  archivedBy: integer('archived_by').references(() => staffAccounts.id),
+  archiveReason: text('archive_reason'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex('crm_team_members_active_unique_idx')
+    .on(table.teamId, table.staffAccountId)
+    .where(sql`${table.archivedAt} is null`),
+  index('crm_team_members_staff_idx').on(table.staffAccountId, table.archivedAt),
+  check('crm_team_members_role_check', sql`${table.membershipRole} in ('member', 'manager')`),
+]);
+
+export const crmCompanies = pgTable('crm_companies', {
+  id: serial('id').primaryKey(),
+  legacyCustomerId: integer('legacy_customer_id').references(() => customers.id, { onDelete: 'set null' }),
+  legalName: text('legal_name').notNull(),
+  displayName: text('display_name'),
+  normalizedName: text('normalized_name').notNull(),
+  email: text('email'),
+  phone: text('phone'),
+  website: text('website'),
+  taxId: text('tax_id'),
+  nib: text('nib'),
+  industry: text('industry'),
+  addressLine1: text('address_line_1'),
+  addressLine2: text('address_line_2'),
+  city: text('city'),
+  province: text('province'),
+  postalCode: text('postal_code'),
+  countryCode: char('country_code', { length: 2 }).notNull().default('ID'),
+  complianceNotes: text('compliance_notes'),
+  notes: text('notes'),
+  ownerId: integer('owner_id').notNull().references(() => staffAccounts.id),
+  ownerTeamId: integer('owner_team_id').references(() => crmTeams.id, { onDelete: 'set null' }),
+  createdBy: integer('created_by').notNull().references(() => staffAccounts.id),
+  updatedBy: integer('updated_by').notNull().references(() => staffAccounts.id),
+  archivedAt: timestamp('archived_at', { withTimezone: true }),
+  archivedBy: integer('archived_by').references(() => staffAccounts.id),
+  archiveReason: text('archive_reason'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex('crm_companies_legacy_customer_unique_idx')
+    .on(table.legacyCustomerId)
+    .where(sql`${table.legacyCustomerId} is not null`),
+  index('crm_companies_normalized_name_idx').on(table.normalizedName),
+  uniqueIndex('crm_companies_active_name_country_unique_idx')
+    .on(table.normalizedName, table.countryCode)
+    .where(sql`${table.archivedAt} is null`),
+  uniqueIndex('crm_companies_active_tax_id_unique_idx')
+    .on(table.countryCode, sql`lower(btrim(${table.taxId}))`)
+    .where(sql`${table.archivedAt} is null and ${table.taxId} is not null and btrim(${table.taxId}) <> ''`),
+  uniqueIndex('crm_companies_active_nib_unique_idx')
+    .on(table.countryCode, sql`lower(btrim(${table.nib}))`)
+    .where(sql`${table.archivedAt} is null and ${table.nib} is not null and btrim(${table.nib}) <> ''`),
+  index('crm_companies_owner_idx').on(table.ownerId, table.archivedAt),
+  index('crm_companies_team_idx').on(table.ownerTeamId, table.archivedAt),
+  index('crm_companies_email_idx')
+    .on(sql`lower(btrim(${table.email}))`)
+    .where(sql`${table.email} is not null and btrim(${table.email}) <> ''`),
+]);
+
+export const crmCompanyRoles = pgTable('crm_company_roles', {
+  id: serial('id').primaryKey(),
+  companyId: integer('company_id').notNull().references(() => crmCompanies.id, { onDelete: 'cascade' }),
+  role: text('role').notNull(),
+  createdBy: integer('created_by').notNull().references(() => staffAccounts.id),
+  updatedBy: integer('updated_by').notNull().references(() => staffAccounts.id),
+  archivedAt: timestamp('archived_at', { withTimezone: true }),
+  archivedBy: integer('archived_by').references(() => staffAccounts.id),
+  archiveReason: text('archive_reason'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex('crm_company_roles_active_unique_idx')
+    .on(table.companyId, table.role)
+    .where(sql`${table.archivedAt} is null`),
+  index('crm_company_roles_role_idx').on(table.role, table.archivedAt),
+  check('crm_company_roles_role_check', sql`${table.role} in ('prospect', 'customer', 'vendor', 'overseas_agent', 'airline', 'shipping_line', 'trucker', 'customs_broker', 'other')`),
+]);
+
+export const crmContacts = pgTable('crm_contacts', {
+  id: serial('id').primaryKey(),
+  companyId: integer('company_id').references(() => crmCompanies.id, { onDelete: 'set null' }),
+  fullName: text('full_name').notNull(),
+  jobTitle: text('job_title'),
+  email: text('email'),
+  phone: text('phone'),
+  whatsapp: text('whatsapp'),
+  isPrimary: boolean('is_primary').notNull().default(false),
+  notes: text('notes'),
+  ownerId: integer('owner_id').notNull().references(() => staffAccounts.id),
+  ownerTeamId: integer('owner_team_id').references(() => crmTeams.id, { onDelete: 'set null' }),
+  createdBy: integer('created_by').notNull().references(() => staffAccounts.id),
+  updatedBy: integer('updated_by').notNull().references(() => staffAccounts.id),
+  archivedAt: timestamp('archived_at', { withTimezone: true }),
+  archivedBy: integer('archived_by').references(() => staffAccounts.id),
+  archiveReason: text('archive_reason'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index('crm_contacts_company_idx').on(table.companyId, table.archivedAt),
+  index('crm_contacts_owner_idx').on(table.ownerId, table.archivedAt),
+  index('crm_contacts_team_idx').on(table.ownerTeamId, table.archivedAt),
+  index('crm_contacts_email_idx')
+    .on(sql`lower(btrim(${table.email}))`)
+    .where(sql`${table.email} is not null and btrim(${table.email}) <> ''`),
+  uniqueIndex('crm_contacts_active_company_email_unique_idx')
+    .on(table.companyId, sql`lower(btrim(${table.email}))`)
+    .where(sql`${table.archivedAt} is null and ${table.companyId} is not null and ${table.email} is not null and btrim(${table.email}) <> ''`),
+  uniqueIndex('crm_contacts_active_company_phone_unique_idx')
+    .on(table.companyId, sql`btrim(${table.phone})`)
+    .where(sql`${table.archivedAt} is null and ${table.companyId} is not null and ${table.phone} is not null and btrim(${table.phone}) <> ''`),
+  uniqueIndex('crm_contacts_active_company_whatsapp_unique_idx')
+    .on(table.companyId, sql`btrim(${table.whatsapp})`)
+    .where(sql`${table.archivedAt} is null and ${table.companyId} is not null and ${table.whatsapp} is not null and btrim(${table.whatsapp}) <> ''`),
+  uniqueIndex('crm_contacts_active_primary_company_unique_idx')
+    .on(table.companyId)
+    .where(sql`${table.archivedAt} is null and ${table.companyId} is not null and ${table.isPrimary} = true`),
+]);
+
+export const crmLeads = pgTable('crm_leads', {
+  id: serial('id').primaryKey(),
+  sourceQuoteRequestId: integer('source_quote_request_id').references(() => quoteRequests.id, { onDelete: 'set null' }),
+  companyId: integer('company_id').references(() => crmCompanies.id, { onDelete: 'set null' }),
+  contactId: integer('contact_id').references(() => crmContacts.id, { onDelete: 'set null' }),
+  title: text('title').notNull(),
+  source: text('source').notNull().default('manual'),
+  status: text('status').notNull().default('new'),
+  priority: text('priority').notNull().default('normal'),
+  freightType: text('freight_type'),
+  origin: text('origin'),
+  destination: text('destination'),
+  readyDate: date('ready_date'),
+  cargoDescription: text('cargo_description'),
+  commodity: text('commodity'),
+  incoterm: text('incoterm'),
+  numPackages: integer('num_packages'),
+  weightKg: numeric('weight_kg', { precision: 14, scale: 3 }),
+  volumeCbm: numeric('volume_cbm', { precision: 14, scale: 3 }),
+  notes: text('notes'),
+  ownerId: integer('owner_id').notNull().references(() => staffAccounts.id),
+  ownerTeamId: integer('owner_team_id').references(() => crmTeams.id, { onDelete: 'set null' }),
+  nextAction: text('next_action'),
+  actionDueAt: timestamp('action_due_at', { withTimezone: true }),
+  qualifiedAt: timestamp('qualified_at', { withTimezone: true }),
+  disqualifiedAt: timestamp('disqualified_at', { withTimezone: true }),
+  disqualificationReason: text('disqualification_reason'),
+  createdBy: integer('created_by').notNull().references(() => staffAccounts.id),
+  updatedBy: integer('updated_by').notNull().references(() => staffAccounts.id),
+  archivedAt: timestamp('archived_at', { withTimezone: true }),
+  archivedBy: integer('archived_by').references(() => staffAccounts.id),
+  archiveReason: text('archive_reason'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex('crm_leads_source_quote_request_unique_idx')
+    .on(table.sourceQuoteRequestId)
+    .where(sql`${table.sourceQuoteRequestId} is not null`),
+  index('crm_leads_queue_idx').on(table.status, table.priority, table.actionDueAt),
+  index('crm_leads_owner_idx').on(table.ownerId, table.status, table.archivedAt),
+  index('crm_leads_team_idx').on(table.ownerTeamId, table.status, table.archivedAt),
+  index('crm_leads_company_idx').on(table.companyId, table.archivedAt),
+  check('crm_leads_status_check', sql`${table.status} in ('new', 'contacted', 'awaiting_information', 'qualified', 'disqualified', 'converted', 'dormant')`),
+  check('crm_leads_priority_check', sql`${table.priority} in ('low', 'normal', 'high', 'urgent')`),
+]);
+
+export const crmOpportunities = pgTable('crm_opportunities', {
+  id: serial('id').primaryKey(),
+  leadId: integer('lead_id').references(() => crmLeads.id, { onDelete: 'set null' }),
+  companyId: integer('company_id').references(() => crmCompanies.id, { onDelete: 'set null' }),
+  primaryContactId: integer('primary_contact_id').references(() => crmContacts.id, { onDelete: 'set null' }),
+  title: text('title').notNull(),
+  status: text('status').notNull().default('open'),
+  stage: text('stage').notNull().default('qualification'),
+  probability: integer('probability').notNull().default(20),
+  estimatedValue: numeric('estimated_value', { precision: 18, scale: 2 }),
+  currency: char('currency', { length: 3 }).notNull().default('IDR'),
+  expectedCloseDate: date('expected_close_date'),
+  freightType: text('freight_type'),
+  origin: text('origin'),
+  destination: text('destination'),
+  cargoDescription: text('cargo_description'),
+  commodity: text('commodity'),
+  incoterm: text('incoterm'),
+  weightKg: numeric('weight_kg', { precision: 14, scale: 3 }),
+  volumeCbm: numeric('volume_cbm', { precision: 14, scale: 3 }),
+  externalQuotationReference: text('external_quotation_reference'),
+  externalQuotationUrl: text('external_quotation_url'),
+  externalQuotationStatus: text('external_quotation_status').notNull().default('not_started'),
+  notes: text('notes'),
+  ownerId: integer('owner_id').notNull().references(() => staffAccounts.id),
+  ownerTeamId: integer('owner_team_id').references(() => crmTeams.id, { onDelete: 'set null' }),
+  nextAction: text('next_action'),
+  actionDueAt: timestamp('action_due_at', { withTimezone: true }),
+  wonAt: timestamp('won_at', { withTimezone: true }),
+  lostAt: timestamp('lost_at', { withTimezone: true }),
+  lostReason: text('lost_reason'),
+  createdBy: integer('created_by').notNull().references(() => staffAccounts.id),
+  updatedBy: integer('updated_by').notNull().references(() => staffAccounts.id),
+  archivedAt: timestamp('archived_at', { withTimezone: true }),
+  archivedBy: integer('archived_by').references(() => staffAccounts.id),
+  archiveReason: text('archive_reason'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index('crm_opportunities_pipeline_idx').on(table.status, table.stage, table.expectedCloseDate),
+  index('crm_opportunities_owner_idx').on(table.ownerId, table.status, table.archivedAt),
+  index('crm_opportunities_team_idx').on(table.ownerTeamId, table.status, table.archivedAt),
+  index('crm_opportunities_company_idx').on(table.companyId, table.archivedAt),
+  index('crm_opportunities_lead_idx').on(table.leadId),
+  uniqueIndex('crm_opportunities_lead_unique_idx')
+    .on(table.leadId)
+    .where(sql`${table.leadId} is not null`),
+  check('crm_opportunities_status_check', sql`${table.status} in ('open', 'won', 'lost', 'on_hold')`),
+  check('crm_opportunities_stage_check', sql`${table.stage} in ('inquiry_received', 'qualification', 'rate_sourcing', 'costing', 'quotation_draft', 'quotation_sent', 'negotiation', 'verbal_confirmation', 'won', 'lost', 'on_hold')`),
+  check('crm_opportunities_probability_check', sql`${table.probability} between 0 and 100`),
+  check('crm_opportunities_external_quote_status_check', sql`${table.externalQuotationStatus} in ('not_started', 'draft', 'sent', 'accepted', 'rejected', 'expired')`),
+]);
+
+export const crmActivities = pgTable('crm_activities', {
+  id: serial('id').primaryKey(),
+  activityType: text('activity_type').notNull(),
+  subject: text('subject').notNull(),
+  details: text('details'),
+  occurredAt: timestamp('occurred_at', { withTimezone: true }).defaultNow().notNull(),
+  ownerId: integer('owner_id').notNull().references(() => staffAccounts.id),
+  ownerTeamId: integer('owner_team_id').references(() => crmTeams.id, { onDelete: 'set null' }),
+  createdBy: integer('created_by').notNull().references(() => staffAccounts.id),
+  updatedBy: integer('updated_by').notNull().references(() => staffAccounts.id),
+  archivedAt: timestamp('archived_at', { withTimezone: true }),
+  archivedBy: integer('archived_by').references(() => staffAccounts.id),
+  archiveReason: text('archive_reason'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index('crm_activities_timeline_idx').on(table.occurredAt, table.archivedAt),
+  index('crm_activities_owner_idx').on(table.ownerId, table.occurredAt),
+  index('crm_activities_team_idx').on(table.ownerTeamId, table.occurredAt),
+  check('crm_activities_type_check', sql`${table.activityType} in ('note', 'call', 'email', 'meeting', 'whatsapp', 'status_change')`),
+]);
+
+export const crmActivityLinks = pgTable('crm_activity_links', {
+  id: serial('id').primaryKey(),
+  activityId: integer('activity_id').notNull().references(() => crmActivities.id, { onDelete: 'cascade' }),
+  entityType: text('entity_type').notNull(),
+  entityId: text('entity_id').notNull(),
+  createdBy: integer('created_by').notNull().references(() => staffAccounts.id),
+  archivedAt: timestamp('archived_at', { withTimezone: true }),
+  archivedBy: integer('archived_by').references(() => staffAccounts.id),
+  archiveReason: text('archive_reason'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex('crm_activity_links_active_unique_idx')
+    .on(table.activityId, table.entityType, table.entityId)
+    .where(sql`${table.archivedAt} is null`),
+  index('crm_activity_links_entity_idx').on(table.entityType, table.entityId, table.archivedAt),
+  check('crm_activity_links_entity_type_check', sql`${table.entityType} in ('company', 'contact', 'lead', 'opportunity', 'quote_request', 'shipment')`),
+]);
+
+export const crmTasks = pgTable('crm_tasks', {
+  id: serial('id').primaryKey(),
+  subject: text('subject').notNull(),
+  details: text('details'),
+  status: text('status').notNull().default('open'),
+  priority: text('priority').notNull().default('normal'),
+  dueAt: timestamp('due_at', { withTimezone: true }),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+  completedBy: integer('completed_by').references(() => staffAccounts.id),
+  ownerId: integer('owner_id').notNull().references(() => staffAccounts.id),
+  ownerTeamId: integer('owner_team_id').references(() => crmTeams.id, { onDelete: 'set null' }),
+  entityType: text('entity_type'),
+  entityId: text('entity_id'),
+  createdBy: integer('created_by').notNull().references(() => staffAccounts.id),
+  updatedBy: integer('updated_by').notNull().references(() => staffAccounts.id),
+  archivedAt: timestamp('archived_at', { withTimezone: true }),
+  archivedBy: integer('archived_by').references(() => staffAccounts.id),
+  archiveReason: text('archive_reason'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index('crm_tasks_queue_idx').on(table.status, table.dueAt, table.priority),
+  index('crm_tasks_owner_idx').on(table.ownerId, table.status, table.dueAt),
+  index('crm_tasks_team_idx').on(table.ownerTeamId, table.status, table.dueAt),
+  index('crm_tasks_entity_idx').on(table.entityType, table.entityId),
+  check('crm_tasks_status_check', sql`${table.status} in ('open', 'in_progress', 'completed', 'cancelled')`),
+  check('crm_tasks_priority_check', sql`${table.priority} in ('low', 'normal', 'high', 'urgent')`),
+  check('crm_tasks_entity_type_check', sql`${table.entityType} is null or ${table.entityType} in ('company', 'contact', 'lead', 'opportunity', 'quote_request', 'shipment')`),
+  check('crm_tasks_entity_pair_check', sql`(${table.entityType} is null and ${table.entityId} is null) or (${table.entityType} is not null and ${table.entityId} is not null and btrim(${table.entityId}) <> '')`),
 ]);
 
 export const shipmentDocuments = pgTable('documents', {

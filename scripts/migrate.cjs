@@ -227,6 +227,74 @@ const migration017Indexes = [
   "invoice_payments_active_invoice_idx",
   "invoice_payments_legacy_invoice_unique_idx",
 ];
+const migration020Columns = [
+  ["crm_teams", "manager_id"],
+  ["crm_team_members", "staff_account_id"],
+  ["crm_companies", "legacy_customer_id"],
+  ["crm_companies", "normalized_name"],
+  ["crm_companies", "owner_id"],
+  ["crm_company_roles", "role"],
+  ["crm_contacts", "company_id"],
+  ["crm_contacts", "owner_id"],
+  ["crm_leads", "source_quote_request_id"],
+  ["crm_leads", "priority"],
+  ["crm_leads", "owner_id"],
+  ["crm_opportunities", "stage"],
+  ["crm_opportunities", "external_quotation_reference"],
+  ["crm_opportunities", "external_quotation_url"],
+  ["crm_opportunities", "owner_id"],
+  ["crm_activities", "activity_type"],
+  ["crm_activity_links", "entity_type"],
+  ["crm_activity_links", "entity_id"],
+  ["crm_tasks", "status"],
+  ["crm_tasks", "entity_type"],
+  ["crm_tasks", "entity_id"],
+];
+const migration020Tables = [
+  "crm_teams",
+  "crm_team_members",
+  "crm_companies",
+  "crm_company_roles",
+  "crm_contacts",
+  "crm_leads",
+  "crm_opportunities",
+  "crm_activities",
+  "crm_activity_links",
+  "crm_tasks",
+];
+const migration020Indexes = [
+  "crm_teams_active_name_unique_idx",
+  "crm_team_members_active_unique_idx",
+  "crm_team_members_staff_idx",
+  "crm_companies_legacy_customer_unique_idx",
+  "crm_companies_normalized_name_idx",
+  "crm_companies_active_name_country_unique_idx",
+  "crm_companies_active_tax_id_unique_idx",
+  "crm_companies_active_nib_unique_idx",
+  "crm_companies_owner_idx",
+  "crm_companies_team_idx",
+  "crm_contacts_company_idx",
+  "crm_contacts_owner_idx",
+  "crm_contacts_active_company_email_unique_idx",
+  "crm_contacts_active_company_phone_unique_idx",
+  "crm_contacts_active_company_whatsapp_unique_idx",
+  "crm_contacts_active_primary_company_unique_idx",
+  "crm_leads_source_quote_request_unique_idx",
+  "crm_leads_queue_idx",
+  "crm_leads_owner_idx",
+  "crm_leads_team_idx",
+  "crm_opportunities_pipeline_idx",
+  "crm_opportunities_owner_idx",
+  "crm_opportunities_team_idx",
+  "crm_opportunities_lead_unique_idx",
+  "crm_activities_timeline_idx",
+  "crm_activity_links_active_unique_idx",
+  "crm_activity_links_entity_idx",
+  "crm_tasks_queue_idx",
+  "crm_tasks_owner_idx",
+  "crm_tasks_team_idx",
+  "crm_tasks_entity_idx",
+];
 
 function checksum(contents) {
   return createHash("sha256").update(contents).digest("hex");
@@ -358,11 +426,19 @@ async function migrationMissingObjects(sql, name) {
     });
   }
 
+  if (name.startsWith("020-")) {
+    return missingSchemaObjects(sql, {
+      columns: migration020Columns,
+      tables: migration020Tables,
+      indexes: migration020Indexes,
+    });
+  }
+
   return [];
 }
 
 function hasSchemaObjectCheck(name) {
-  return ["006-", "007-", "008-", "009-", "014-", "015-", "016-", "017-"].some((prefix) =>
+  return ["006-", "007-", "008-", "009-", "014-", "015-", "016-", "017-", "020-"].some((prefix) =>
     name.startsWith(prefix),
   );
 }

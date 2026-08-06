@@ -3,20 +3,22 @@
 import { and, desc, ilike, isNull, or } from "drizzle-orm";
 
 import { db } from "@/lib/db";
+import { getCrmCompanies, getCrmContacts, getCrmLeads, getCrmOpportunities } from "@/lib/crm/data";
 import { customers, deliveryBatches, mawbDocuments, shipments } from "@/lib/db/schema";
 import { canUseMawbWorkflow } from "@/lib/mawbs/core";
 import { requirePortalUser } from "@/lib/portal-auth";
-import { hasPortalCapability } from "@/lib/portal-roles";
+import { canViewCrm, hasPortalCapability } from "@/lib/portal-roles";
 
 export async function searchPortal(query: string) {
   const user = await requirePortalUser();
   const canUseMawbs = canUseMawbWorkflow(user);
   const canViewDelivery = hasPortalCapability(user, "delivery:view");
+  const canSearchCrm = canViewCrm(user);
   const search = query.trim();
-  if (!search) return { batches: [], canUseMawbs, customers: [], mawbs: [], shipments: [] };
+  if (!search) return { batches: [], canUseMawbs, crmCompanies: [], crmContacts: [], crmLeads: [], crmOpportunities: [], customers: [], mawbs: [], shipments: [] };
   const pattern = `%${search}%`;
 
-  const [shipmentRows, customerRows, batchRows, mawbRows] = await Promise.all([
+  const [shipmentRows, customerRows, batchRows, mawbRows, crmRows] = await Promise.all([
     db
       .select({
         customerName: shipments.customerName,
@@ -104,7 +106,25 @@ export async function searchPortal(query: string) {
           .orderBy(desc(mawbDocuments.createdAt))
           .limit(8)
       : Promise.resolve([]),
+    canSearchCrm
+      ? Promise.all([
+          getCrmLeads({ limit: 6, search }),
+          getCrmCompanies({ limit: 6, search }),
+          getCrmOpportunities({ limit: 6, search }),
+          getCrmContacts({ limit: 6, search }),
+        ])
+      : Promise.resolve(null),
   ]);
 
-  return { batches: batchRows, canUseMawbs, customers: customerRows, mawbs: mawbRows, shipments: shipmentRows };
+  return {
+    batches: batchRows,
+    canUseMawbs,
+    crmCompanies: crmRows?.[1].rows ?? [],
+    crmContacts: crmRows?.[3].rows ?? [],
+    crmLeads: crmRows?.[0].rows ?? [],
+    crmOpportunities: crmRows?.[2].rows ?? [],
+    customers: customerRows,
+    mawbs: mawbRows,
+    shipments: shipmentRows,
+  };
 }

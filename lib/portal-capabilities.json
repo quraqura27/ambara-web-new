@@ -92,6 +92,40 @@
     "document:view",
     "document:manage",
     "staff:manage",
-    "session:revoke"
+    "session:revoke",
+    "crm:view",
+    "crm:manage",
+    "crm:assign",
+    "crm:archive",
+    "crm:restore",
+    "crm:team:view",
+    "crm:team:manage",
+    "crm:all:view",
+    "crm:all:manage",
+    "crm:cost:view",
+    "crm:margin:view",
+    "crm:compliance:view",
+    "crm:quote-request:convert",
+    "crm:stage:manage"
+  ],
+  "director": [
+    "portal:view", "dashboard:view", "shipment:view", "customer:view", "quote:view", "document:view",
+    "crm:view", "crm:manage", "crm:assign", "crm:archive", "crm:restore",
+    "crm:team:view", "crm:team:manage", "crm:all:view", "crm:all:manage",
+    "crm:cost:view", "crm:margin:view", "crm:compliance:view", "crm:quote-request:convert", "crm:stage:manage"
+  ],
+  "sales_manager": [
+    "portal:view", "dashboard:view", "shipment:view", "customer:view", "quote:view", "quote:manage", "document:view",
+    "crm:view", "crm:manage", "crm:assign", "crm:archive", "crm:restore",
+    "crm:team:view", "crm:team:manage", "crm:cost:view", "crm:margin:view",
+    "crm:quote-request:convert", "crm:stage:manage"
+  ],
+  "sales": [
+    "portal:view", "dashboard:view", "shipment:view", "customer:view", "quote:view", "document:view",
+    "crm:view", "crm:manage", "crm:quote-request:convert", "crm:stage:manage"
+  ],
+  "customer_service": [
+    "portal:view", "dashboard:view", "shipment:view", "customer:view", "quote:view", "document:view",
+    "crm:view", "crm:manage"
   ]
 }
