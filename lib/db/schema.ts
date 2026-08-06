@@ -661,7 +661,7 @@ export const crmTeamMembers = pgTable('crm_team_members', {
     .on(table.teamId, table.staffAccountId)
     .where(sql`${table.archivedAt} is null`),
   index('crm_team_members_staff_idx').on(table.staffAccountId, table.archivedAt),
-  check('crm_team_members_role_check', sql`${table.membershipRole} in ('member', 'manager')`),
+  check('crm_team_members_membership_role_check', sql`${table.membershipRole} in ('member', 'manager')`),
 ]);
 
 export const crmCompanies = pgTable('crm_companies', {
@@ -869,7 +869,7 @@ export const crmOpportunities = pgTable('crm_opportunities', {
   check('crm_opportunities_status_check', sql`${table.status} in ('open', 'won', 'lost', 'on_hold')`),
   check('crm_opportunities_stage_check', sql`${table.stage} in ('inquiry_received', 'qualification', 'rate_sourcing', 'costing', 'quotation_draft', 'quotation_sent', 'negotiation', 'verbal_confirmation', 'won', 'lost', 'on_hold')`),
   check('crm_opportunities_probability_check', sql`${table.probability} between 0 and 100`),
-  check('crm_opportunities_external_quote_status_check', sql`${table.externalQuotationStatus} in ('not_started', 'draft', 'sent', 'accepted', 'rejected', 'expired')`),
+  check('crm_opportunities_external_quotation_status_check', sql`${table.externalQuotationStatus} in ('not_started', 'draft', 'sent', 'accepted', 'rejected', 'expired')`),
 ]);
 
 export const crmActivities = pgTable('crm_activities', {
@@ -891,7 +891,7 @@ export const crmActivities = pgTable('crm_activities', {
   index('crm_activities_timeline_idx').on(table.occurredAt, table.archivedAt),
   index('crm_activities_owner_idx').on(table.ownerId, table.occurredAt),
   index('crm_activities_team_idx').on(table.ownerTeamId, table.occurredAt),
-  check('crm_activities_type_check', sql`${table.activityType} in ('note', 'call', 'email', 'meeting', 'whatsapp', 'status_change')`),
+  check('crm_activities_activity_type_check', sql`${table.activityType} in ('note', 'call', 'email', 'meeting', 'whatsapp', 'status_change')`),
 ]);
 
 export const crmActivityLinks = pgTable('crm_activity_links', {

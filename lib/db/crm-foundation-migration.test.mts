@@ -1,6 +1,15 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import test from "node:test";
+
+const require = createRequire(import.meta.url);
+const {
+  migration020Columns,
+  migration020Constraints,
+  migration020Indexes,
+  migration020Tables,
+} = require("../../scripts/migrate.cjs");
 
 const migration = readFileSync(
   new URL("../../migrations/020-crm-commercial-foundation.sql", import.meta.url),
@@ -41,12 +50,40 @@ test("migration 020 expands fixed roles without allocating migration 018", () =>
   assert.doesNotMatch(migration, /migration 018|018-/i);
 });
 
-test("migration runner verifies CRM tables, critical columns, and indexes", () => {
+test("migration runner verifies the complete CRM object manifest", () => {
   assert.match(runner, /migration020Columns/);
   assert.match(runner, /migration020Tables/);
   assert.match(runner, /migration020Indexes/);
+  assert.match(runner, /migration020Constraints/);
+  assert.match(runner, /migration020RoleConstraintMissing/);
   assert.match(runner, /name\.startsWith\("020-"\)/);
   assert.match(runner, /"020-"/);
+  assert.equal(migration020Tables.length, 10);
+  assert.equal(migration020Columns.length, 190);
+  assert.equal(migration020Indexes.length, 43);
+  assert.equal(migration020Constraints.length, 79);
+  assert.equal(
+    new Set(migration020Columns.map(([table, column]: [string, string]) => `${table}.${column}`)).size,
+    migration020Columns.length,
+  );
+  assert.equal(new Set(migration020Indexes).size, migration020Indexes.length);
+  assert.equal(
+    new Set(
+      migration020Constraints.map(
+        ([table, constraint]: [string, string]) => `${table}.${constraint}`,
+      ),
+    ).size,
+    migration020Constraints.length,
+  );
+});
+
+test("Drizzle check names match migration 020 constraint names", () => {
+  assert.match(schema, /crm_team_members_membership_role_check/);
+  assert.match(schema, /crm_opportunities_external_quotation_status_check/);
+  assert.match(schema, /crm_activities_activity_type_check/);
+  assert.doesNotMatch(schema, /crm_team_members_role_check/);
+  assert.doesNotMatch(schema, /crm_opportunities_external_quote_status_check/);
+  assert.doesNotMatch(schema, /crm_activities_type_check/);
 });
 
 test("CRM mutations delegate to the authorized server-only data layer", () => {
