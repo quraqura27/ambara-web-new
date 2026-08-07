@@ -339,9 +339,19 @@ function trackQuoteLead(formLanguage) {
   });
 }
 
+function trackContactLead(formLanguage) {
+  trackBusinessEvent('generate_lead', {
+    lead_source: 'contact_form',
+    service_category: 'general_inquiry',
+    form_language: formLanguage
+  });
+}
+
 window.trackWhatsAppClick = trackWhatsAppClick;
 window.bindWhatsAppTracking = bindWhatsAppTracking;
+window.bindContactTracking = bindContactTracking;
 window.trackQuoteLead = trackQuoteLead;
+window.trackContactLead = trackContactLead;
 
 // Tracking form submit
 async function trackShipment(id) {

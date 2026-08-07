@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
+  Activity,
+  Building2,
   ChevronRight,
   CircleDollarSign,
   ClipboardList,
@@ -12,6 +14,7 @@ import {
   FileSpreadsheet,
   FileText,
   Home,
+  LayoutDashboard,
   ListTodo,
   LogOut,
   Menu,
@@ -19,6 +22,7 @@ import {
   Package,
   Search,
   Shield,
+  Target,
   Upload,
   UserPlus,
   Users,
@@ -106,6 +110,10 @@ function Breadcrumbs({ pathname }: { pathname: string }) {
     "bulk-import": "Bulk Import",
     created: "Created",
     customers: "Customers",
+    activities: "Activities",
+    companies: "Companies",
+    contacts: "Contacts",
+    crm: "CRM",
     dashboard: "Home",
     "delivery-batches": "Delivery",
     edit: "Edit",
@@ -113,12 +121,16 @@ function Breadcrumbs({ pathname }: { pathname: string }) {
     collections: "Collections",
     invoices: "Invoices",
     mawbs: "MAWB",
+    leads: "Leads",
     operations: "Operations",
+    opportunities: "Opportunities",
     documents: "Documents",
     quotes: "Quotes",
+    pipeline: "Pipeline",
     new: "New",
     search: "Search",
     shipments: "Shipments",
+    tasks: "Tasks",
   };
 
   return (
@@ -168,6 +180,21 @@ export function PortalShell({
         { href: "/search", icon: Search, label: "Find and Track", mobileSafe: true },
       ],
     },
+    ...(can("crm:view")
+      ? [{
+          label: "Commercial CRM",
+          items: [
+            { href: "/crm", icon: LayoutDashboard, label: "CRM Overview", mobileSafe: true },
+            { href: "/crm/leads", icon: Target, label: "Leads", mobileSafe: true },
+            { href: "/crm/pipeline", icon: CircleDollarSign, label: "Sales Pipeline", mobileSafe: true },
+            { href: "/crm/opportunities", icon: CircleDollarSign, label: "Opportunity Table", secondary: true },
+            { href: "/crm/companies", icon: Building2, label: "Companies", mobileSafe: true },
+            { href: "/crm/contacts", icon: Users, label: "Contacts", mobileSafe: true },
+            { href: "/crm/activities", icon: Activity, label: "Activities", mobileSafe: true },
+            { href: "/crm/tasks", icon: ListTodo, label: "Tasks", mobileSafe: true },
+          ],
+        }]
+      : []),
     {
       label: "Records",
       items: [
@@ -275,7 +302,7 @@ export function PortalShell({
                 aria-label="Search portal"
                 className="w-full rounded-full border border-slate-700 bg-slate-900/60 py-2 pl-10 pr-4 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
                 name="q"
-                placeholder="Tracking, customer, AWB, reference, batch..."
+                placeholder="Tracking, CRM, customer, AWB, reference..."
               />
             </form>
             <form action={signOut}>

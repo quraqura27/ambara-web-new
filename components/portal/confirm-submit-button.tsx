@@ -111,8 +111,8 @@ export function ConfirmSubmitButton({
             <Button onClick={() => {
               const target = form;
               if (confirmedRef.current) confirmedRef.current.value = "yes";
+              target.requestSubmit();
               setForm(null);
-              window.requestAnimationFrame(() => target.requestSubmit());
             }} type="button" variant={variant}>{confirmLabel}</Button>
           </div>
         </ConfirmationDialog>
@@ -151,8 +151,8 @@ export function TypedConfirmSubmitButton({
             <Button disabled={typed !== confirmText} onClick={() => {
               const target = form;
               if (confirmedRef.current) confirmedRef.current.value = "yes";
-              setForm(null);
-              window.requestAnimationFrame(() => target.requestSubmit());
+              target.requestSubmit();
+              close();
             }} type="button" variant={variant}>{confirmLabel}</Button>
           </div>
         </ConfirmationDialog>
@@ -183,8 +183,8 @@ export function SelectionConfirmSubmitButton({
             <Button disabled={selectedCount === 0} onClick={() => {
               const target = form;
               if (confirmedRef.current) confirmedRef.current.value = "yes";
+              target.requestSubmit();
               setForm(null);
-              window.requestAnimationFrame(() => target.requestSubmit());
             }} type="button">Update {selectedCount} shipments</Button>
           </div>
         </ConfirmationDialog>

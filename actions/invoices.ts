@@ -86,6 +86,29 @@ export type InvoiceActionState = {
   formError?: string;
 };
 
+export type InvoiceDraftChargeEditorData = {
+  currency: string;
+  customerName: string;
+  id: string;
+  lines: Array<{
+    billingBasis: InvoiceBillingBasis;
+    chargeableWeight: string;
+    description: string;
+    id: string;
+    linkedSource: boolean;
+    reference: string;
+    unitRate: string;
+  }>;
+};
+
+type SubmittedDraftChargeEdit = {
+  billingBasis: InvoiceBillingBasis;
+  chargeableWeight?: number | string | null;
+  description: string;
+  id: string;
+  unitRate: number | string;
+};
+
 type SubmittedChargeLine = {
   billingBasis: InvoiceBillingBasis;
   description: string;
@@ -698,6 +721,35 @@ export async function getInvoiceDetail(id: string) {
   return { deductions, invoice, lines, payments, paymentSummary };
 }
 
+export async function getInvoiceDraftChargeEditorData(
+  id: string,
+): Promise<InvoiceDraftChargeEditorData | null> {
+  const detail = await getInvoiceDetail(id);
+  if (!detail || normalizeInvoiceStatus(detail.invoice.status) !== "draft") return null;
+
+  return {
+    currency: detail.invoice.currency || "IDR",
+    customerName: detail.invoice.customerNameSnapshot || "Invoice",
+    id,
+    lines: detail.lines.map((line) => {
+      const billingBasis = invoiceLineBillingBasis(line);
+      return {
+        billingBasis,
+        chargeableWeight: String(line.chargeableWeight ?? ""),
+        description: line.description || "Service",
+        id: line.id,
+        linkedSource: Boolean(line.awbId || line.shipmentId),
+        reference: line.reference || line.awbNumber || "-",
+        unitRate: String(
+          billingBasis === "per_kg"
+            ? line.pricePerKg ?? "0"
+            : line.flatAmount ?? line.lineTotal ?? "0",
+        ),
+      };
+    }),
+  };
+}
+
 export async function getPublicInvoiceVerification(token: string) {
   let invoice;
   try {
@@ -1151,6 +1203,189 @@ export async function finalizeInvoiceFromForm(
   redirect(`/invoices/${invoiceId}`);
 }
 
+export async function updateInvoiceDraftChargesFromForm(
+  id: string,
+  _previousState: InvoiceActionState,
+  formData: FormData,
+): Promise<InvoiceActionState> {
+  const user = await requireInvoiceUser();
+
+  try {
+    const edits = parseJsonArray<SubmittedDraftChargeEdit>(
+      formData.get("chargeLines"),
+      "Draft charge",
+    );
+    const [invoice] = await db
+      .select({
+        depositAmount: invoices.depositAmount,
+        id: invoices.id,
+        pphEnabled: invoices.pphEnabled,
+        pphRate: invoices.pphRate,
+        status: invoices.status,
+        vatEnabled: invoices.vatEnabled,
+        vatRate: invoices.vatRate,
+      })
+      .from(invoices)
+      .where(eq(invoices.id, id))
+      .limit(1);
+    if (!invoice) throw new Error("Invoice not found.");
+    if (normalizeInvoiceStatus(invoice.status) !== "draft") {
+      throw new Error("Only draft invoices can be edited.");
+    }
+
+    const [currentLines, deductions] = await Promise.all([
+      db
+        .select()
+        .from(invoiceLineItems)
+        .where(eq(invoiceLineItems.invoiceId, id))
+        .orderBy(invoiceLineItems.sortOrder),
+      db
+        .select({ amount: invoiceDeductions.amount })
+        .from(invoiceDeductions)
+        .where(eq(invoiceDeductions.invoiceId, id)),
+    ]);
+    if (currentLines.length === 0) throw new Error("This draft has no charge lines to edit.");
+    if (edits.length !== currentLines.length) {
+      throw new Error("Draft charge lines changed. Reload the editor and try again.");
+    }
+
+    const editsById = new Map(edits.map((edit) => [edit.id, edit]));
+    if (editsById.size !== currentLines.length || currentLines.some((line) => !editsById.has(line.id))) {
+      throw new Error("Draft charge lines changed. Reload the editor and try again.");
+    }
+
+    const updatedLines = currentLines.map((line, index) => {
+      const edit = editsById.get(line.id)!;
+      const currentBillingBasis = invoiceLineBillingBasis(line);
+      const billingBasis = edit.billingBasis === "per_kg" || edit.billingBasis === "flat"
+        ? edit.billingBasis
+        : null;
+      const description = String(edit.description ?? "").trim();
+      const unitRateText = String(edit.unitRate ?? "").trim();
+      const weightText = String(edit.chargeableWeight ?? "").trim();
+      if (!billingBasis) throw new Error(`Charge ${index + 1} has an invalid billing basis.`);
+      if (!description) throw new Error(`Charge ${index + 1} requires a service description.`);
+      if (!/^\d+(?:\.\d{1,6})?$/.test(unitRateText)) {
+        throw new Error(`Charge ${index + 1} rate must be zero or a positive number.`);
+      }
+      const unitRate = Number(unitRateText);
+      const linkedSource = Boolean(line.awbId || line.shipmentId);
+      if (linkedSource && billingBasis !== currentBillingBasis) {
+        throw new Error(`Charge ${index + 1} billing basis is fixed by its linked shipment.`);
+      }
+      let chargeableWeight = numberValue(line.chargeableWeight);
+      if (billingBasis === "per_kg" && !linkedSource) {
+        if (!/^\d+(?:\.\d{1,6})?$/.test(weightText) || Number(weightText) <= 0) {
+          throw new Error(`Charge ${index + 1} requires a positive chargeable weight.`);
+        }
+        chargeableWeight = Number(weightText);
+      }
+      if (billingBasis === "per_kg" && linkedSource && chargeableWeight <= 0) {
+        throw new Error(`Charge ${index + 1} has no usable shipment weight.`);
+      }
+
+      return {
+        ...line,
+        billingBasis,
+        chargeableWeight: billingBasis === "per_kg" ? chargeableWeight : null,
+        description,
+        flatAmount: billingBasis === "flat" ? unitRate : null,
+        lineTotal: billingBasis === "per_kg" ? chargeableWeight * unitRate : unitRate,
+        pricePerKg: billingBasis === "per_kg" ? unitRate : null,
+      };
+    });
+
+    const totals = calculateInvoiceTotals({
+      deductions,
+      depositAmount: invoice.depositAmount,
+      lines: updatedLines.map((line) => ({
+        billingBasis: line.billingBasis,
+        chargeableWeight: line.chargeableWeight,
+        flatAmount: line.flatAmount,
+        lineTotal: line.lineTotal,
+        pricePerKg: line.pricePerKg,
+        type: "charge" as const,
+      })),
+      pphEnabled: invoice.pphEnabled === true,
+      pphRate: invoice.pphRate,
+      vatEnabled: invoice.vatEnabled === true,
+      vatRate: invoice.vatRate,
+    });
+    const now = new Date();
+    const draftStillExists = sql`exists (
+      select 1 from ${invoices} editable_invoice
+      where editable_invoice.id = ${id} and editable_invoice.status = 'draft'
+    )`;
+    const queries: BatchItem<"pg">[] = [
+      db.execute(sql`
+        select ${invoices.id}
+        from ${invoices}
+        where ${invoices.id} = ${id} and ${invoices.status} = 'draft'
+        for update
+      `),
+      db
+        .update(invoices)
+        .set({
+          amountDue: String(totals.amountDue),
+          depositAmount: String(totals.depositAmount),
+          generatedAt: now,
+          generatedBy: user.id,
+          netAmount: String(totals.netAmount),
+          netPayable: String(totals.netPayable),
+          pphAmount: String(totals.pphAmount),
+          pphBaseAmount: String(totals.pphBaseAmount),
+          pphRate: String(totals.pphRate),
+          subtotal: String(totals.subtotal),
+          total: String(totals.total),
+          totalPengurangan: String(totals.totalPengurangan),
+          vatAmount: String(totals.vatAmount),
+          vatRate: String(totals.vatRate),
+        })
+        .where(and(eq(invoices.id, id), eq(invoices.status, "draft"))),
+      ...updatedLines.map((line) =>
+        db
+          .update(invoiceLineItems)
+          .set({
+            billingBasis: line.billingBasis,
+            chargeableWeight: line.chargeableWeight === null ? null : String(line.chargeableWeight),
+            description: line.description,
+            flatAmount: line.flatAmount === null ? null : String(line.flatAmount),
+            lineTotal: String(line.lineTotal),
+            pricePerKg: line.pricePerKg === null ? null : String(line.pricePerKg),
+          })
+          .where(and(
+            eq(invoiceLineItems.id, line.id),
+            eq(invoiceLineItems.invoiceId, id),
+            draftStillExists,
+          )),
+      ),
+      db.execute(sql`
+        insert into ${invoiceAuditLog} (action, entity_type, entity_id, performed_by, performed_at, metadata)
+        select
+          'invoice.draft_charges_updated',
+          'invoice',
+          ${id},
+          ${user.id},
+          ${now},
+          ${JSON.stringify({ chargeCount: updatedLines.length, netPayable: totals.netPayable })}::jsonb
+        from ${invoices} editable_invoice
+        where editable_invoice.id = ${id} and editable_invoice.status = 'draft'
+      `),
+    ];
+
+    await db.batch(queries as [BatchItem<"pg">, ...BatchItem<"pg">[]]);
+  } catch (error) {
+    return {
+      formError: error instanceof Error ? error.message : "Draft invoice could not be updated.",
+    };
+  }
+
+  revalidatePath("/invoices");
+  revalidatePath(`/invoices/${id}`);
+  revalidatePath(`/invoices/${id}/edit`);
+  redirect(`/invoices/${id}`);
+}
+
 export async function markDraftInvoiceSentFromForm(id: string, formData: FormData) {
   const user = await requireInvoiceUser();
   const confirmed = text(formData.get("confirmed"));
@@ -1376,7 +1611,7 @@ export async function voidInvoicePaymentFromForm(
           'paymentDate', voided_payment.payment_date,
           'paymentId', voided_payment.id,
           'paymentReference', voided_payment.reference,
-          'reason', ${reason}
+          'reason', ${reason}::text
         )
       from voided_payment
       returning id

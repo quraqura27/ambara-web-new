@@ -15,11 +15,11 @@ export const invoiceBankAccounts: Record<string, InvoiceBankAccount> = {
     title: "Bank BCA",
   },
   MANDIRI: {
-    accountNo: "124-00-1124-1735",
-    branch: "KCP Tebet - Jakarta Selatan",
-    name: "Quraisy Abdurrahman",
-    swift: "BMRIIDJAXXX",
-    title: "BANK MANDIRI",
+    accountNo: "127-00-99797779",
+    branch: "KCP PHE Tower",
+    name: "PT AMBARA ARTHA GLOBALTRANS",
+    swift: "BMRIIDJA",
+    title: "Bank Mandiri",
   },
   OCBC: {
     accountNo: "5458-0012-2586",
@@ -31,8 +31,8 @@ export const invoiceBankAccounts: Record<string, InvoiceBankAccount> = {
 };
 
 export function normalizeInvoiceBankAccountCode(code: string | null | undefined) {
-  const normalized = (code || "OCBC").trim().toUpperCase();
-  return invoiceBankAccounts[normalized] ? normalized : "OCBC";
+  const normalized = (code || "MANDIRI").trim().toUpperCase();
+  return invoiceBankAccounts[normalized] ? normalized : "MANDIRI";
 }
 
 export function getInvoiceBankAccount(code: string | null | undefined) {

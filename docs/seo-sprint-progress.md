@@ -169,3 +169,36 @@ Next priority:
 - Retry the second GA4 report set and complete the week-over-week traffic-quality analysis once extraction works.
 - Review the deployed draft preview for the quote funnel, contextual article CTAs, and sitemap availability.
 - Hold further legacy-content indexing changes until landing-page evidence is readable.
+
+## Batch 6 — Contact-form conversion coverage
+
+Status: ready for review
+
+Evidence:
+
+- The second weekly GA4 report set remained the newest available set, and the connected extractor again rejected all four CSV attachments; no report values or traffic classifications were used.
+- Successful quotation submissions emitted `generate_lead`, but successful English and Indonesian contact-form submissions did not.
+- The Indonesian contact page still mixed English headings, field labels, choices, states, and feedback into the Indonesian journey.
+- Both contact forms lacked autocomplete hints and an announced, focusable submission status.
+
+Implemented:
+
+- Added `generate_lead` after a successful contact API response, distinguished by `lead_source: contact_form`, without sending names, contact details, topics, or message contents to GA4.
+- Fully localized the visible Indonesian contact journey and metadata.
+- Added autocomplete hints and accessible submission status to both forms.
+- Preserved entered details after errors and added trackable email and WhatsApp recovery actions.
+- Refreshed the sprint branch with the current `main`; the CRM and invoice changes merged without source conflicts.
+
+Verification:
+
+- Contact-form source and inline JavaScript assertions: passed.
+- Business-event source assertions: passed.
+- Automated SEO audit: passed.
+- The current repository test suite completed 233 tests successfully; three dependency-backed tests could not load because the package registry repeatedly returned corrupted tarballs during installation.
+- ESLint and the local Next.js build could not run because the same transient registry failure left their binaries unavailable; the draft preview build remains the independent build check.
+
+Next priority:
+
+- Retry the next GA4 report delivery and complete traffic-quality analysis once extraction works.
+- After this draft is merged and events accumulate, confirm contact-form `generate_lead` activity in GA4 by `lead_source`.
+- Use readable landing-page evidence to choose the next commercial service-page change instead of altering more customer-facing copy without data.

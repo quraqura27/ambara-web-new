@@ -35,6 +35,7 @@ const portalPaths = [
   "/mawbs/:path*",
   "/invoices/:path*",
   "/quotes/:path*",
+  "/crm/:path*",
   "/documents/:path*",
   "/accounts/:path*",
   "/search/:path*",
