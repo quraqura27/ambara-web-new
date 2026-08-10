@@ -202,3 +202,36 @@ Next priority:
 - Retry the next GA4 report delivery and complete traffic-quality analysis once extraction works.
 - After this draft is merged and events accumulate, confirm contact-form `generate_lead` activity in GA4 by `lead_source`.
 - Use readable landing-page evidence to choose the next commercial service-page change instead of altering more customer-facing copy without data.
+
+## Batch 7 — Social metadata coverage and localized trust copy
+
+Status: ready for review
+
+Evidence:
+
+- No third weekly GA4 report set had arrived, and the connected extractor continued to reject all four attachments from the second set; no report values or traffic classifications were used.
+- Sixteen canonical, indexable pages had no Open Graph title, description, URL, type, or image metadata.
+- The Indonesian About and FAQ pages still contained predominantly English copy despite declaring `lang="id"`.
+- The About pages included absolute PPJK-license, network-size, availability, and service-performance claims that were not supported by verifiable repository evidence.
+
+Implemented:
+
+- Added localized Open Graph metadata to the 16 affected English and Indonesian pages.
+- Extended `npm run seo:audit` to require complete Open Graph metadata and enforce `og:url` alignment with the canonical URL.
+- Localized the Indonesian About and FAQ journeys, including FAQ structured-data field selection.
+- Replaced unsupported About-page credentials and scale claims with conditional customs coordination, document review, CGK operating focus, and partner-selection language.
+- Removed fixed response, transit, network-size, and acceptance promises from the Indonesian FAQ while preserving practical next steps.
+
+Verification:
+
+- Automated SEO audit: passed across 79 HTML files, 73 canonical indexable pages, 51 sitemap URLs, 190 hreflang links, and 73 complete Open Graph metadata sets.
+- Repository source assertions and `git diff --check`: passed.
+- Dependency-independent repository tests: 258 passed; six dependency-backed files could not load after the package registry repeatedly returned corrupted or incomplete archives.
+- Local ESLint, Next.js build, and browser rendering remain unavailable because dependency installation did not complete and the browser CLI is absent.
+- The Vercel draft preview is the independent build and visual-review surface for this batch.
+
+Next priority:
+
+- Retry the next GA4 report delivery and complete traffic-quality analysis once the CSV extractor works.
+- Confirm the draft preview renders the localized About and FAQ pages and their social metadata correctly.
+- Use readable landing-page data before selecting another commercial-page conversion change.
