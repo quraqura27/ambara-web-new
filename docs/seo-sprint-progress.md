@@ -235,3 +235,35 @@ Next priority:
 - Retry the next GA4 report delivery and complete traffic-quality analysis once the CSV extractor works.
 - Confirm the draft preview renders the localized About and FAQ pages and their social metadata correctly.
 - Use readable landing-page data before selecting another commercial-page conversion change.
+
+## Batch 8 — Internal-link and new-tab regression protection
+
+Status: ready for review
+
+Evidence:
+
+- The third weekly GA4 report set arrived, but the connected extractor rejected all four new CSV attachments; no report values or traffic classifications were used.
+- A repository-wide scan found that all 756 static references from indexable pages resolved through the site's EN/ID rewrite structure or to an existing public asset.
+- Four WhatsApp links opened a new tab without `rel="noopener"`.
+- The automated SEO audit did not yet protect internal crawl paths or new-tab link isolation.
+
+Implemented:
+
+- Added `rel="noopener"` to the affected English FAQ, Indonesian FAQ, and two Indonesian homepage WhatsApp links.
+- Extended `npm run seo:audit` to resolve EN/ID marketing routes and fail on missing local page or asset targets.
+- Added a check requiring `rel="noopener"` for every static `target="_blank"` link on indexable pages.
+- Left conversion copy and page selection unchanged because GA4 evidence remains unreadable.
+
+Verification:
+
+- Automated SEO audit: passed across 79 HTML files, 73 canonical indexable pages, 51 sitemap URLs, 190 hreflang links, 73 Open Graph sets, 756 local references, and 54 new-tab links.
+- `git diff --check`: passed.
+- SEO audit script syntax check: passed.
+- The changes are static link attributes and audit logic; no API payload, analytics event, routing configuration, or customer data changed.
+- Local ESLint, TypeScript/build, repository tests, and browser automation could not run because dependency installation again returned corrupted or incomplete archives and the browser CLI is absent; the Vercel draft preview remains the independent build check.
+
+Next priority:
+
+- Retry the third GA4 report set and complete traffic-quality analysis once extraction works.
+- Use readable landing-page and event evidence to choose the next commercial-page conversion change.
+- Continue holding unreviewed legacy sitemap additions until traffic and content-quality evidence is available.

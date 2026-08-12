@@ -10,6 +10,15 @@ function walk(directory) {
   });
 }
 
+function resolvePublicTarget(target) {
+  const pathname = target.split(/[?#]/)[0];
+  if (pathname === '/en' || pathname === '/en/') return 'index.html';
+  if (pathname === '/id' || pathname === '/id/') return 'id/index.html';
+  if (pathname.startsWith('/en/')) return `${pathname.slice(4)}.html`;
+  if (pathname.startsWith('/id/')) return `id/${pathname.slice(4)}.html`;
+  return pathname.slice(1);
+}
+
 const pages = walk(publicRoot)
   .filter((file) => file.endsWith('.html'))
   .map((file) => {
@@ -33,6 +42,11 @@ const pages = walk(publicRoot)
     const schemas = [...html.matchAll(/<script\s+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)]
       .map((match) => match[1].trim())
       .filter(Boolean);
+    const publicReferences = [...html.matchAll(/(?:href|src)=["']([^"']+)["']/gi)]
+      .map((match) => match[1])
+      .filter((target) => target.startsWith('/') && !target.startsWith('//') && !target.includes('${'));
+    const newTabLinks = [...html.matchAll(/<a\b[^>]*target=["']_blank["'][^>]*>/gi)]
+      .map((match) => match[0]);
 
     return {
       file: path.relative(publicRoot, file),
@@ -43,7 +57,9 @@ const pages = walk(publicRoot)
       description,
       openGraph,
       alternates,
-      schemas
+      schemas,
+      publicReferences,
+      newTabLinks
     };
   });
 
@@ -55,6 +71,8 @@ const canonicalCounts = new Map();
 const pagesByCanonical = new Map(canonicalPages.map((page) => [page.canonical, page]));
 let hreflangLinksChecked = 0;
 let openGraphSetsChecked = 0;
+let publicReferencesChecked = 0;
+let newTabLinksChecked = 0;
 
 for (const page of canonicalPages) {
   canonicalCounts.set(page.canonical, (canonicalCounts.get(page.canonical) ?? 0) + 1);
@@ -67,6 +85,21 @@ for (const page of indexablePages) {
   if (!page.description) failures.push(`${page.file}: missing meta description`);
   if (!page.canonical) failures.push(`${page.file}: missing canonical URL`);
   if (!page.language) failures.push(`${page.file}: missing html lang attribute`);
+
+  for (const target of page.publicReferences) {
+    publicReferencesChecked += 1;
+    const resolvedTarget = resolvePublicTarget(target);
+    if (!fs.existsSync(path.join(publicRoot, resolvedTarget))) {
+      failures.push(`${page.file}: local reference does not resolve (${target})`);
+    }
+  }
+
+  for (const link of page.newTabLinks) {
+    newTabLinksChecked += 1;
+    if (!/\brel=["'][^"']*\bnoopener\b[^"']*["']/i.test(link)) {
+      failures.push(`${page.file}: target="_blank" link is missing rel="noopener"`);
+    }
+  }
 
   const missingOpenGraph = Object.entries(page.openGraph)
     .filter(([, value]) => !value)
@@ -129,6 +162,8 @@ const omittedCanonicalPages = canonicalPages.filter((page) => !sitemapUrls.has(p
 console.log(`SEO audit: ${pages.length} HTML files, ${canonicalPages.length} canonical indexable pages, ${sitemapUrls.size} sitemap URLs.`);
 console.log(`Hreflang links checked: ${hreflangLinksChecked}.`);
 console.log(`Complete Open Graph metadata sets checked: ${openGraphSetsChecked}.`);
+console.log(`Local page and asset references checked: ${publicReferencesChecked}.`);
+console.log(`New-tab links checked: ${newTabLinksChecked}.`);
 console.log(`Canonical pages intentionally or currently omitted from sitemap: ${omittedCanonicalPages.length}.`);
 
 if (failures.length) {
