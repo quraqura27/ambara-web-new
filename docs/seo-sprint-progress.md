@@ -267,3 +267,35 @@ Next priority:
 - Retry the third GA4 report set and complete traffic-quality analysis once extraction works.
 - Use readable landing-page and event evidence to choose the next commercial-page conversion change.
 - Continue holding unreviewed legacy sitemap additions until traffic and content-quality evidence is available.
+
+## Batch 9 — Indonesian blog metadata and duplicate protection
+
+Status: ready for review
+
+Evidence:
+
+- No newer GA4 report set had arrived; the third weekly set remained newest and all four CSV attachments again failed at the connected extractor.
+- The Indonesian blog hub declared `lang="id"` but retained an English meta description, social description, hero introduction, and category-filter labels.
+- The English and Indonesian weight articles used the same document title, and the EN/ID blog hubs shared the same meta description.
+- No analytics values or traffic classifications were inferred from the unavailable attachments.
+
+Implemented:
+
+- Localized the Indonesian blog hub title, description, Open Graph copy, hero copy, and category labels.
+- Gave the Indonesian gross/volumetric/chargeable-weight article a distinct localized document title.
+- Extended `npm run seo:audit` to fail when canonical pages reuse a title or meta description.
+- Left commercial copy, event behavior, sitemap selection, and GA4 configuration unchanged.
+
+Verification:
+
+- Automated SEO audit: passed across 79 HTML files, 73 canonical indexable pages, 51 sitemap URLs, 190 hreflang links, 73 Open Graph sets, 756 local references, and 54 new-tab links.
+- Duplicate canonical-page titles and meta descriptions: none remain.
+- SEO audit script syntax and `git diff --check`: passed.
+- This batch changes static Indonesian copy and dependency-free audit logic only; no API, form, analytics payload, or routing behavior changed.
+- Dependency-backed lint, TypeScript/build, and browser checks remain pending in the local environment; the draft preview remains the independent build and visual-review surface.
+
+Next priority:
+
+- Retry the next complete GA4 report set and perform traffic-quality and conversion analysis once CSV extraction works.
+- Review the deployed draft preview for Indonesian blog metadata, filter labels, and mobile rendering.
+- Use readable landing-page and event evidence before selecting another commercial-page change.

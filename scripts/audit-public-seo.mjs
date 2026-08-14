@@ -68,6 +68,8 @@ const canonicalPages = indexablePages.filter((page) => page.canonical);
 const sitemap = fs.readFileSync(path.join(publicRoot, 'sitemap.xml'), 'utf8');
 const sitemapUrls = new Set([...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]));
 const canonicalCounts = new Map();
+const titleCounts = new Map();
+const descriptionCounts = new Map();
 const pagesByCanonical = new Map(canonicalPages.map((page) => [page.canonical, page]));
 let hreflangLinksChecked = 0;
 let openGraphSetsChecked = 0;
@@ -76,6 +78,8 @@ let newTabLinksChecked = 0;
 
 for (const page of canonicalPages) {
   canonicalCounts.set(page.canonical, (canonicalCounts.get(page.canonical) ?? 0) + 1);
+  titleCounts.set(page.title, [...(titleCounts.get(page.title) ?? []), page.file]);
+  descriptionCounts.set(page.description, [...(descriptionCounts.get(page.description) ?? []), page.file]);
 }
 
 const failures = [];
@@ -149,6 +153,18 @@ for (const page of canonicalPages) {
 
 for (const [canonical, count] of canonicalCounts) {
   if (count > 1) failures.push(`${canonical}: used as the canonical URL by ${count} pages`);
+}
+
+for (const [title, files] of titleCounts) {
+  if (title && files.length > 1) {
+    failures.push(`duplicate title used by ${files.join(', ')} (${title})`);
+  }
+}
+
+for (const [description, files] of descriptionCounts) {
+  if (description && files.length > 1) {
+    failures.push(`duplicate meta description used by ${files.join(', ')} (${description})`);
+  }
 }
 
 for (const url of sitemapUrls) {
