@@ -299,3 +299,37 @@ Next priority:
 - Retry the next complete GA4 report set and perform traffic-quality and conversion analysis once CSV extraction works.
 - Review the deployed draft preview for Indonesian blog metadata, filter labels, and mobile rendering.
 - Use readable landing-page and event evidence before selecting another commercial-page change.
+
+## Batch 10 — Visible FAQ and structured-data consistency
+
+Status: ready for review
+
+Evidence:
+
+- The fourth weekly GA4 delivery had not arrived; the third weekly set remained newest and all four CSV attachments again failed at the connected extractor even with freshly returned attachment identifiers.
+- Two commercial pages contained ten FAQ schema questions or answer extensions that were not present verbatim in the visible FAQ content.
+- Existing JSON-LD validation checked syntax only, so hidden FAQ differences and page-identity URL drift could recur unnoticed.
+- No analytics values, visitor classifications, or commercial performance assumptions were inferred.
+
+Implemented:
+
+- Aligned the freight-forwarding and overseas-agent FAQ schemas to their visible question and answer copy.
+- Removed three schema-only FAQ entries rather than adding unsupported customer-facing claims.
+- Extended `npm run seo:audit` to verify FAQ questions and answers occur in visible source content.
+- Added JSON-LD checks for WebPage, Article, BlogPosting, and Service URL identity against canonical URLs.
+- Added final-breadcrumb alignment checks and structured-data entity reporting.
+- Left visible commercial copy, tracking events, forms, sitemap selection, and GA4 configuration unchanged.
+
+Verification:
+
+- Automated SEO audit: passed across 79 HTML files, 73 canonical indexable pages, 51 sitemap URLs, 190 hreflang links, 73 Open Graph sets, 756 local references, 54 new-tab links, and 479 structured-data entities.
+- All 82 remaining FAQ questions and answers are represented in visible page content.
+- JSON-LD page identities and final breadcrumb targets align with canonical URLs.
+- SEO audit script syntax and `git diff --check`: passed.
+- Dependency-backed lint, TypeScript/build, and browser checks remain pending locally; the Vercel draft preview remains the independent build and visual-review surface.
+
+Next priority:
+
+- Read the fourth complete GA4 report set after delivery and perform traffic-quality and conversion analysis once CSV extraction works.
+- Confirm the draft preview builds the two adjusted structured-data pages successfully.
+- Use readable landing-page and event evidence before selecting another commercial-page conversion change.

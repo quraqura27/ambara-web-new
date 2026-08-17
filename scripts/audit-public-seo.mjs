@@ -19,6 +19,12 @@ function resolvePublicTarget(target) {
   return pathname.slice(1);
 }
 
+function collectSchemaNodes(value) {
+  if (Array.isArray(value)) return value.flatMap(collectSchemaNodes);
+  if (!value || typeof value !== 'object') return [];
+  return [value, ...Object.values(value).flatMap(collectSchemaNodes)];
+}
+
 const pages = walk(publicRoot)
   .filter((file) => file.endsWith('.html'))
   .map((file) => {
@@ -42,6 +48,7 @@ const pages = walk(publicRoot)
     const schemas = [...html.matchAll(/<script\s+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)]
       .map((match) => match[1].trim())
       .filter(Boolean);
+    const visibleSource = html.replace(/<script\s+type=["']application\/ld\+json["'][^>]*>[\s\S]*?<\/script>/gi, '');
     const publicReferences = [...html.matchAll(/(?:href|src)=["']([^"']+)["']/gi)]
       .map((match) => match[1])
       .filter((target) => target.startsWith('/') && !target.startsWith('//') && !target.includes('${'));
@@ -58,6 +65,7 @@ const pages = walk(publicRoot)
       openGraph,
       alternates,
       schemas,
+      visibleSource,
       publicReferences,
       newTabLinks
     };
@@ -75,6 +83,9 @@ let hreflangLinksChecked = 0;
 let openGraphSetsChecked = 0;
 let publicReferencesChecked = 0;
 let newTabLinksChecked = 0;
+let structuredDataEntitiesChecked = 0;
+let faqQuestionsChecked = 0;
+let faqAnswersChecked = 0;
 
 for (const page of canonicalPages) {
   canonicalCounts.set(page.canonical, (canonicalCounts.get(page.canonical) ?? 0) + 1);
@@ -120,7 +131,36 @@ for (const page of indexablePages) {
 
   page.schemas.forEach((schema, index) => {
     try {
-      JSON.parse(schema);
+      const parsedSchema = JSON.parse(schema);
+      for (const node of collectSchemaNodes(parsedSchema)) {
+        structuredDataEntitiesChecked += 1;
+        const types = Array.isArray(node['@type']) ? node['@type'] : [node['@type']].filter(Boolean);
+
+        if (types.some((type) => ['WebPage', 'Article', 'BlogPosting', 'Service'].includes(type))) {
+          if (typeof node.url === 'string' && node.url !== page.canonical) {
+            failures.push(`${page.file}: JSON-LD ${types.join('/')} url does not match canonical URL`);
+          }
+          if (typeof node.mainEntityOfPage === 'string' && node.mainEntityOfPage !== page.canonical) {
+            failures.push(`${page.file}: JSON-LD ${types.join('/')} mainEntityOfPage does not match canonical URL`);
+          }
+        }
+
+        if (types.includes('BreadcrumbList') && Array.isArray(node.itemListElement) && node.itemListElement.length) {
+          const finalItem = node.itemListElement.at(-1)?.item;
+          if (typeof finalItem === 'string' && finalItem !== page.canonical) {
+            failures.push(`${page.file}: final JSON-LD breadcrumb does not match canonical URL`);
+          }
+        }
+
+        if (types.includes('Question') && typeof node.name === 'string' && !page.visibleSource.includes(node.name)) {
+          failures.push(`${page.file}: JSON-LD FAQ question is not present in visible page content (${node.name})`);
+        }
+        if (types.includes('Question') && typeof node.name === 'string') faqQuestionsChecked += 1;
+        if (types.includes('Answer') && typeof node.text === 'string' && !page.visibleSource.includes(node.text)) {
+          failures.push(`${page.file}: JSON-LD FAQ answer is not present in visible page content (${node.text})`);
+        }
+        if (types.includes('Answer') && typeof node.text === 'string') faqAnswersChecked += 1;
+      }
     } catch (error) {
       failures.push(`${page.file}: invalid JSON-LD block ${index + 1} (${error.message})`);
     }
@@ -180,6 +220,8 @@ console.log(`Hreflang links checked: ${hreflangLinksChecked}.`);
 console.log(`Complete Open Graph metadata sets checked: ${openGraphSetsChecked}.`);
 console.log(`Local page and asset references checked: ${publicReferencesChecked}.`);
 console.log(`New-tab links checked: ${newTabLinksChecked}.`);
+console.log(`Structured-data entities checked: ${structuredDataEntitiesChecked}.`);
+console.log(`Visible FAQ questions and answers checked: ${faqQuestionsChecked} questions, ${faqAnswersChecked} answers.`);
 console.log(`Canonical pages intentionally or currently omitted from sitemap: ${omittedCanonicalPages.length}.`);
 
 if (failures.length) {
