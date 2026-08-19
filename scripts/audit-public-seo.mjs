@@ -95,6 +95,12 @@ for (const page of canonicalPages) {
 
 const failures = [];
 
+for (const page of pages) {
+  if (/\bwithin 2 hours\b|\bdalam 2 jam\b/i.test(page.visibleSource)) {
+    failures.push(`${page.file}: contains an unsupported fixed response-time claim`);
+  }
+}
+
 for (const page of indexablePages) {
   if (!page.title) failures.push(`${page.file}: missing title`);
   if (!page.description) failures.push(`${page.file}: missing meta description`);

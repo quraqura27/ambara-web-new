@@ -333,3 +333,35 @@ Next priority:
 - Read the fourth complete GA4 report set after delivery and perform traffic-quality and conversion analysis once CSV extraction works.
 - Confirm the draft preview builds the two adjusted structured-data pages successfully.
 - Use readable landing-page and event evidence before selecting another commercial-page conversion change.
+
+## Batch 11 — Runtime blog localization and claim protection
+
+Status: ready for review
+
+Evidence:
+
+- A complete fourth weekly GA4 report set arrived, but the connected Gmail attachment service rejected all four freshly returned CSV attachment identifiers; no report values or traffic classifications were used.
+- Both runtime blog-post templates and four legacy page locations promised a quote response "within 2 hours" / "dalam 2 jam" without repository evidence supporting that service level.
+- The Indonesian dynamic blog interfaces retained English empty-state, loading, category-fallback, and article-link labels.
+- Dynamic blog-card images lacked deferred decoding/loading hints, while article hero images lacked high-priority decoding hints.
+
+Implemented:
+
+- Replaced all remaining fixed two-hour response promises with neutral review-oriented language, including quote metadata, homepage/contact copy, a success message, and an article statement.
+- Added a repository-wide SEO audit failure for that unsupported fixed response-time wording.
+- Completed the remaining Indonesian runtime-blog interface and fallback metadata localization.
+- Added lazy loading and asynchronous decoding to below-fold blog-card covers.
+- Added asynchronous decoding and high fetch priority to article hero covers without lazy-loading the likely largest-contentful image.
+- Left analytics events, forms, routing, sitemap selection, and GA4 configuration unchanged.
+
+Verification:
+
+- Automated SEO audit, inline JavaScript compilation checks, localized-source assertions, unsupported-claim assertions, and `git diff --check`: passed.
+- The changes affect static templates and dependency-free audit logic only; no API payload, customer data, deployment configuration, or analytics values changed.
+- Dependency-backed lint, TypeScript/build, and browser checks remain pending in the local environment; the draft preview remains the independent build and visual-review surface.
+
+Next priority:
+
+- Retry the fourth GA4 report set and complete bot-versus-prospect, landing-page, and event analysis when attachment extraction works.
+- Review the draft preview for Indonesian empty states, blog-card images, article hero behavior, and mobile rendering.
+- Use readable landing-page and event evidence before choosing another commercial-page conversion change.

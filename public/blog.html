@@ -236,7 +236,7 @@ function renderPosts(posts, append = false) {
     const postUrl = '/en/blog/' + encodeURIComponent(p.slug || '');
     return `
     <div class="card animate-on-scroll">
-      ${p.cover_image_url ? `<img src="${p.cover_image_url || '/og-image.jpg'}" alt="${p.title_en}" style="width:100%;height:200px;object-fit:cover;border-radius:12px;margin-bottom:20px">` : ''}
+      ${p.cover_image_url ? `<img src="${p.cover_image_url || '/og-image.jpg'}" alt="${p.title_en}" loading="lazy" decoding="async" style="width:100%;height:200px;object-fit:cover;border-radius:12px;margin-bottom:20px">` : ''}
       <div class="badge badge-blue" style="margin-bottom:16px">${p.category||'Guide'}</div>
       <h3 style="font-size:1.125rem;margin-bottom:12px">${p.title_en}</h3>
       <p style="font-size:0.875rem;margin-bottom:20px">${p.excerpt_en||''}</p>

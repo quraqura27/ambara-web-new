@@ -184,20 +184,20 @@ const staticPostCount = parseInt(grid.dataset.staticCount || '0', 10);
 function renderPosts(posts, append = false) {
   const grid = document.getElementById('blog-grid');
   if (!posts.length && !append) {
-    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--text-muted)">No posts found.</div>';
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--text-muted)">Artikel tidak ditemukan.</div>';
     return;
   }
   const html = posts.map(p => {
     const postUrl = '/id/blog/' + encodeURIComponent(p.slug || '');
     return `
     <div class="card animate-on-scroll">
-      ${p.cover_image_url ? `<img src="${p.cover_image_url || '/og-image.jpg'}" alt="${p.title_id || p.title_en}" style="width:100%;height:200px;object-fit:cover;border-radius:12px;margin-bottom:20px">` : ''}
-      <div class="badge badge-blue" style="margin-bottom:16px">${p.category||'Guide'}</div>
+      ${p.cover_image_url ? `<img src="${p.cover_image_url || '/og-image.jpg'}" alt="${p.title_id || p.title_en}" loading="lazy" decoding="async" style="width:100%;height:200px;object-fit:cover;border-radius:12px;margin-bottom:20px">` : ''}
+      <div class="badge badge-blue" style="margin-bottom:16px">${p.category||'Panduan'}</div>
       <h3 style="font-size:1.125rem;margin-bottom:12px">${p.title_id || p.title_en}</h3>
       <p style="font-size:0.875rem;margin-bottom:20px">${p.excerpt_id || p.excerpt_en || ''}</p>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto">
         <span style="font-size:0.8125rem;color:var(--text-muted)">${new Date(p.published_at).toLocaleDateString('id-ID',{month:'short',day:'numeric',year:'numeric'})}</span>
-        <a ${'href'}="${postUrl}" class="btn btn-sm btn-outline">Read →</a>
+        <a ${'href'}="${postUrl}" class="btn btn-sm btn-outline">Baca →</a>
       </div>
     </div>`;
   }).join('');
