@@ -31,7 +31,7 @@
     <div style="text-align:center;margin-bottom:48px">
       <div class="section-label">Free Quote</div>
       <h1 style="font-size:clamp(2rem,4vw,3rem);margin-bottom:16px">Request a Freight Quote</h1>
-      <p>Fill in your shipment details and we'll respond within 2 business hours with a competitive rate.</p>
+      <p>Share your shipment details so our team can review the requirements and available options.</p>
     </div>
 
     <div class="card">
@@ -190,7 +190,7 @@ document.getElementById('quote-form').addEventListener('submit', async (e) => {
     const json = await res.json().catch(() => ({}));
     if (res.ok) {
       const reference = escapeQuoteResult(json.reference || 'Pending');
-      result.innerHTML = `<div class="card" style="background:rgba(0,229,160,0.1);border-color:rgba(0,229,160,0.2);text-align:center;padding:24px"><div style="font-size:1.5rem;margin-bottom:8px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue-accent)"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div><div style="font-weight:700;color:var(--green);margin-bottom:8px">Quote Received!</div><div style="font-size:0.875rem;color:var(--text-muted)">Reference: <strong style="color:var(--blue-accent)">${reference}</strong><br>We'll reply within 2 business hours.</div></div>`;
+      result.innerHTML = `<div class="card" style="background:rgba(0,229,160,0.1);border-color:rgba(0,229,160,0.2);text-align:center;padding:24px"><div style="font-size:1.5rem;margin-bottom:8px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue-accent)"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div><div style="font-weight:700;color:var(--green);margin-bottom:8px">Quote Received!</div><div style="font-size:0.875rem;color:var(--text-muted)">Reference: <strong style="color:var(--blue-accent)">${reference}</strong><br>Our team will review your shipment details.</div></div>`;
       window.trackQuoteLead?.('en');
       e.target.reset();
     } else { throw new Error('quote_submission_failed'); }

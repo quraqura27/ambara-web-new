@@ -86,6 +86,7 @@ let newTabLinksChecked = 0;
 let structuredDataEntitiesChecked = 0;
 let faqQuestionsChecked = 0;
 let faqAnswersChecked = 0;
+let unsupportedClaimPatternsChecked = 0;
 
 for (const page of canonicalPages) {
   canonicalCounts.set(page.canonical, (canonicalCounts.get(page.canonical) ?? 0) + 1);
@@ -94,10 +95,25 @@ for (const page of canonicalPages) {
 }
 
 const failures = [];
+const unsupportedClaimPatterns = [
+  /\bwithin \d+(?: business)? hours?\b/i,
+  /\bdalam \d+ jam\b/i,
+  /\bavailable 24\/7\b/i,
+  /\btersedia 24\/7\b/i,
+  /\b24\/7 operations(?: team)?\b/i,
+  /\btim operasional 24\/7\b/i,
+  /\b40\+ years?\b/i,
+  /\b40\+ tahun\b/i,
+  /\blicensed PPJK\b/i,
+  /\bberlisensi PPJK\b/i
+];
 
 for (const page of pages) {
-  if (/\bwithin 2 hours\b|\bdalam 2 jam\b/i.test(page.visibleSource)) {
-    failures.push(`${page.file}: contains an unsupported fixed response-time claim`);
+  for (const pattern of unsupportedClaimPatterns) {
+    unsupportedClaimPatternsChecked += 1;
+    if (pattern.test(page.visibleSource)) {
+      failures.push(`${page.file}: contains an unsupported service-level or credential claim (${pattern.source})`);
+    }
   }
 }
 
@@ -228,6 +244,7 @@ console.log(`Local page and asset references checked: ${publicReferencesChecked}
 console.log(`New-tab links checked: ${newTabLinksChecked}.`);
 console.log(`Structured-data entities checked: ${structuredDataEntitiesChecked}.`);
 console.log(`Visible FAQ questions and answers checked: ${faqQuestionsChecked} questions, ${faqAnswersChecked} answers.`);
+console.log(`Unsupported service-level and credential claim checks: ${unsupportedClaimPatternsChecked}.`);
 console.log(`Canonical pages intentionally or currently omitted from sitemap: ${omittedCanonicalPages.length}.`);
 
 if (failures.length) {

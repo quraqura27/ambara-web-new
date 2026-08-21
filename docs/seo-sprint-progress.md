@@ -365,3 +365,35 @@ Next priority:
 - Retry the fourth GA4 report set and complete bot-versus-prospect, landing-page, and event analysis when attachment extraction works.
 - Review the draft preview for Indonesian empty states, blog-card images, article hero behavior, and mobile rendering.
 - Use readable landing-page and event evidence before choosing another commercial-page conversion change.
+
+## Batch 12 — Service-level and credential claim hardening
+
+Status: ready for review
+
+Evidence:
+
+- The fourth weekly GA4 set remained the newest available delivery; all four freshly returned attachment identifiers again failed at the connected Gmail attachment service, so no analytics values or traffic classifications were used.
+- Indexable quote, contact, services, FAQ, network, and legacy launch pages still contained fixed response-time, always-available, 40-plus-years, or PPJK-license wording missed by the earlier exact-phrase check.
+- Several success messages repeated the fixed response promise after a visitor completed a form.
+- The network and legacy launch pages presented unsupported numeric experience and availability statements as trust signals.
+
+Implemented:
+
+- Replaced fixed response-time and always-available statements with shipment-review and contact guidance that does not promise a service level.
+- Replaced unsupported network availability and experience statistics with factual CGK and bilingual-support positioning.
+- Rewrote two EN/ID legacy launch article pairs and their hub excerpts to describe coordination scope without experience, license, real-time, capacity, or acceptance guarantees.
+- Added ten reusable audit patterns covering fixed response times, always-available operations, 40-plus-years experience, and PPJK-license claims in English and Indonesian.
+- Left analytics events, API payloads, forms, routing, sitemap selection, and GA4 configuration unchanged.
+
+Verification:
+
+- Automated SEO audit: passed across 79 HTML files, 73 canonical indexable pages, 51 sitemap URLs, 190 hreflang links, 73 Open Graph sets, 756 local references, 54 new-tab links, and 479 structured-data entities.
+- All 790 service-level and credential claim checks passed.
+- Visible FAQ validation, SEO audit script syntax, source assertions, and `git diff --check`: passed.
+- Dependency-backed lint, TypeScript/build, and browser checks remain pending locally; the draft preview is the independent build and visual-review surface.
+
+Next priority:
+
+- Retry GA4 extraction and complete traffic-quality, landing-page, and event analysis when a report becomes readable.
+- Review the draft preview for the revised contact, quote, network, FAQ, and legacy article copy in both languages.
+- Use readable GA4 evidence before selecting another commercial-page conversion change.
