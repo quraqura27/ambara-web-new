@@ -397,3 +397,33 @@ Next priority:
 - Retry GA4 extraction and complete traffic-quality, landing-page, and event analysis when a report becomes readable.
 - Review the draft preview for the revised contact, quote, network, FAQ, and legacy article copy in both languages.
 - Use readable GA4 evidence before selecting another commercial-page conversion change.
+
+## Batch 13 — Quote and contact form label accessibility
+
+Status: ready for review
+
+Evidence:
+
+- No fifth weekly GA4 report set had arrived; the fourth set remained newest and all four attachments again failed at the connected Gmail attachment service even with newly returned identifiers.
+- All 52 controls across the English and Indonesian quote/contact forms had visible labels, but none of those labels was programmatically associated with its control.
+- This made label clicks ineffective and left assistive-technology association dependent on placeholders or browser heuristics.
+- No analytics values or traffic classifications were inferred from the unavailable reports.
+
+Implemented:
+
+- Added stable control IDs and matching label `for` attributes to all EN/ID quote and contact fields, including the hidden anti-spam fields.
+- Preserved existing field names, validation, autocomplete, API payloads, analytics behavior, and form layout.
+- Extended `npm run seo:audit` to fail when a quote/contact control lacks an ID, when a label lacks a `for` attribute, or when a label target does not resolve within its form.
+
+Verification:
+
+- Automated SEO audit: passed across 79 HTML files, including 52 labels and 52 controls across four conversion forms.
+- The existing 790 service-level/credential checks, 190 hreflang checks, 756 local-reference checks, 479 structured-data checks, and 82 visible FAQ pairs continue to pass.
+- Executable inline JavaScript compilation checks for all four conversion pages, SEO audit script syntax, and `git diff --check`: passed.
+- Dependency-backed lint, TypeScript/build, and local browser checks remain unavailable; the draft preview is the independent build and visual-review surface.
+
+Next priority:
+
+- Retry the next complete GA4 delivery and complete bot-versus-prospect, landing-page, and conversion-event analysis when extraction works.
+- Review the draft preview for keyboard, label-click, screen-reader naming, mobile layout, and successful form submission behavior.
+- Use readable analytics evidence to define the next 30–90 day optimization cycle.

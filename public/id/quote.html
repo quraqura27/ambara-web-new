@@ -37,29 +37,29 @@
     <div class="card">
       <form id="quote-form">
         <div aria-hidden="true" style="position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden">
-          <label>Website URL</label>
-          <input type="text" name="website_url" tabindex="-1" autocomplete="off">
+          <label for="quote-website-url">Website URL</label>
+          <input id="quote-website-url" type="text" name="website_url" tabindex="-1" autocomplete="off">
         </div>
         <!-- Shipment Details -->
         <div style="font-family:var(--font-head);font-weight:800;font-size:1.125rem;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)">Detail Pengiriman</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
           <div class="form-group">
-            <label class="form-label">Asal *</label>
-            <input type="text" class="form-control" name="origin" required placeholder="Kota, Negara">
+            <label class="form-label" for="quote-origin">Asal *</label>
+            <input id="quote-origin" type="text" class="form-control" name="origin" required placeholder="Kota, Negara">
           </div>
           <div class="form-group">
-            <label class="form-label">Tujuan *</label>
-            <input type="text" class="form-control" name="destination" required placeholder="Kota, Negara">
+            <label class="form-label" for="quote-destination">Tujuan *</label>
+            <input id="quote-destination" type="text" class="form-control" name="destination" required placeholder="Kota, Negara">
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
           <div class="form-group">
-            <label class="form-label">Tanggal Kargo Siap *</label>
-            <input type="date" class="form-control" name="readyDate" required>
+            <label class="form-label" for="quote-ready-date">Tanggal Kargo Siap *</label>
+            <input id="quote-ready-date" type="date" class="form-control" name="readyDate" required>
           </div>
           <div class="form-group">
-            <label class="form-label">Incoterms</label>
-            <select class="form-control" name="incoterms">
+            <label class="form-label" for="quote-incoterms">Incoterms</label>
+            <select id="quote-incoterms" class="form-control" name="incoterms">
               <option value="">Pilih Incoterms</option>
               <option>EXW</option><option>FCA</option><option>CPT</option><option>CIP</option>
               <option>DAP</option><option>DPU</option><option>DDP</option>
@@ -71,7 +71,7 @@
         <div style="font-family:var(--font-head);font-weight:800;font-size:1.125rem;margin:24px 0 20px;padding-bottom:16px;border-bottom:1px solid var(--border)">🏷️ Informasi Kargo</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
           <div class="form-group">
-            <label class="form-label">Jenis Kargo *</label>
+            <label class="form-label" for="cargo-type-select">Jenis Kargo *</label>
             <select class="form-control" name="cargoType" required id="cargo-type-select">
               <option value="">Pilih jenis</option>
               <option value="general">Kargo Umum</option>
@@ -81,36 +81,36 @@
             </select>
           </div>
           <div class="form-group" id="commodity-group">
-            <label class="form-label">Komoditas</label>
-            <input type="text" class="form-control" name="commodity" placeholder="Contoh: Elektronik, tekstil">
+            <label class="form-label" for="quote-commodity">Komoditas</label>
+            <input id="quote-commodity" type="text" class="form-control" name="commodity" placeholder="Contoh: Elektronik, tekstil">
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Deskripsi Kargo *</label>
-          <textarea class="form-control" name="cargoDesc" required placeholder="Jelaskan jenis dan karakteristik kargo..." rows="3"></textarea>
+          <label class="form-label" for="quote-cargo-description">Deskripsi Kargo *</label>
+          <textarea id="quote-cargo-description" class="form-control" name="cargoDesc" required placeholder="Jelaskan jenis dan karakteristik kargo..." rows="3"></textarea>
         </div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
           <div class="form-group">
-            <label class="form-label">Berat (kg) *</label>
-            <input type="number" class="form-control" name="weight" required placeholder="0.00" min="0.1" step="0.1">
+            <label class="form-label" for="quote-weight">Berat (kg) *</label>
+            <input id="quote-weight" type="number" class="form-control" name="weight" required placeholder="0.00" min="0.1" step="0.1">
           </div>
           <div class="form-group">
-            <label class="form-label">Volume (CBM)</label>
-            <input type="number" class="form-control" name="volume" placeholder="0.00" step="0.01">
+            <label class="form-label" for="quote-volume">Volume (CBM)</label>
+            <input id="quote-volume" type="number" class="form-control" name="volume" placeholder="0.00" step="0.01">
           </div>
           <div class="form-group">
-            <label class="form-label">Jumlah Koli</label>
-            <input type="number" class="form-control" name="packages" placeholder="1" min="1">
+            <label class="form-label" for="quote-packages">Jumlah Koli</label>
+            <input id="quote-packages" type="number" class="form-control" name="packages" placeholder="1" min="1">
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
           <div class="form-group">
-            <label class="form-label">Nilai Kargo (USD)</label>
-            <input type="number" class="form-control" name="cargoValue" placeholder="0.00" step="0.01">
+            <label class="form-label" for="quote-cargo-value">Nilai Kargo (USD)</label>
+            <input id="quote-cargo-value" type="number" class="form-control" name="cargoValue" placeholder="0.00" step="0.01">
           </div>
           <div class="form-group">
-            <label class="form-label">Asuransi Kargo</label>
-            <select class="form-control" name="insurance">
+            <label class="form-label" for="quote-insurance">Asuransi Kargo</label>
+            <select id="quote-insurance" class="form-control" name="insurance">
               <option value="">Tidak diperlukan</option>
               <option value="all_risk">All Risk</option>
               <option value="basic">Perlindungan Dasar</option>
@@ -118,35 +118,35 @@
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Kebutuhan Khusus</label>
-          <input type="text" class="form-control" name="special" placeholder="Contoh: kontrol suhu, rapuh, ukuran besar">
+          <label class="form-label" for="quote-special">Kebutuhan Khusus</label>
+          <input id="quote-special" type="text" class="form-control" name="special" placeholder="Contoh: kontrol suhu, rapuh, ukuran besar">
         </div>
 
         <!-- Contact Info -->
         <div style="font-family:var(--font-head);font-weight:800;font-size:1.125rem;margin:24px 0 20px;padding-bottom:16px;border-bottom:1px solid var(--border)">👤 Detail Kontak</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
           <div class="form-group">
-            <label class="form-label">Nama Lengkap *</label>
-            <input type="text" class="form-control" name="name" required autocomplete="name" placeholder="Nama Anda">
+            <label class="form-label" for="quote-name">Nama Lengkap *</label>
+            <input id="quote-name" type="text" class="form-control" name="name" required autocomplete="name" placeholder="Nama Anda">
           </div>
           <div class="form-group">
-            <label class="form-label">Perusahaan</label>
-            <input type="text" class="form-control" name="company" autocomplete="organization" placeholder="Nama perusahaan">
+            <label class="form-label" for="quote-company">Perusahaan</label>
+            <input id="quote-company" type="text" class="form-control" name="company" autocomplete="organization" placeholder="Nama perusahaan">
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
           <div class="form-group">
-            <label class="form-label">Email *</label>
-            <input type="email" class="form-control" name="email" required autocomplete="email" placeholder="nama@perusahaan.com">
+            <label class="form-label" for="quote-email">Email *</label>
+            <input id="quote-email" type="email" class="form-control" name="email" required autocomplete="email" placeholder="nama@perusahaan.com">
           </div>
           <div class="form-group">
-            <label class="form-label">Telepon / WhatsApp *</label>
-            <input type="tel" class="form-control" name="phone" required autocomplete="tel" placeholder="+62 812 3456 7890">
+            <label class="form-label" for="quote-phone">Telepon / WhatsApp *</label>
+            <input id="quote-phone" type="tel" class="form-control" name="phone" required autocomplete="tel" placeholder="+62 812 3456 7890">
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Catatan Tambahan</label>
-          <textarea class="form-control" name="notes" placeholder="Informasi lain yang membantu kami menyiapkan penawaran..." rows="3"></textarea>
+          <label class="form-label" for="quote-notes">Catatan Tambahan</label>
+          <textarea id="quote-notes" class="form-control" name="notes" placeholder="Informasi lain yang membantu kami menyiapkan penawaran..." rows="3"></textarea>
         </div>
 
         <button type="submit" class="btn btn-primary btn-lg" style="width:100%;justify-content:center" id="submit-btn">

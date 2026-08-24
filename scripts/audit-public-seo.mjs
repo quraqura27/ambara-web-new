@@ -54,6 +54,8 @@ const pages = walk(publicRoot)
       .filter((target) => target.startsWith('/') && !target.startsWith('//') && !target.includes('${'));
     const newTabLinks = [...html.matchAll(/<a\b[^>]*target=["']_blank["'][^>]*>/gi)]
       .map((match) => match[0]);
+    const conversionForms = [...html.matchAll(/<form\b[^>]*id=["'](?:quote-form|contact-form)["'][^>]*>[\s\S]*?<\/form>/gi)]
+      .map((match) => match[0]);
 
     return {
       file: path.relative(publicRoot, file),
@@ -67,7 +69,8 @@ const pages = walk(publicRoot)
       schemas,
       visibleSource,
       publicReferences,
-      newTabLinks
+      newTabLinks,
+      conversionForms
     };
   });
 
@@ -87,6 +90,8 @@ let structuredDataEntitiesChecked = 0;
 let faqQuestionsChecked = 0;
 let faqAnswersChecked = 0;
 let unsupportedClaimPatternsChecked = 0;
+let conversionFormLabelsChecked = 0;
+let conversionFormControlsChecked = 0;
 
 for (const page of canonicalPages) {
   canonicalCounts.set(page.canonical, (canonicalCounts.get(page.canonical) ?? 0) + 1);
@@ -113,6 +118,32 @@ for (const page of pages) {
     unsupportedClaimPatternsChecked += 1;
     if (pattern.test(page.visibleSource)) {
       failures.push(`${page.file}: contains an unsupported service-level or credential claim (${pattern.source})`);
+    }
+  }
+
+  for (const form of page.conversionForms) {
+    const formId = form.match(/\bid=["']([^"']+)["']/i)?.[1] ?? 'conversion form';
+    const controls = [...form.matchAll(/<(?:input|select|textarea)\b[^>]*>/gi)].map((match) => match[0]);
+    const controlIds = new Set();
+
+    for (const control of controls) {
+      conversionFormControlsChecked += 1;
+      const controlId = control.match(/\bid=["']([^"']+)["']/i)?.[1];
+      if (!controlId) {
+        failures.push(`${page.file}: ${formId} control is missing an id (${control})`);
+      } else {
+        controlIds.add(controlId);
+      }
+    }
+
+    for (const label of form.matchAll(/<label\b[^>]*>/gi)) {
+      conversionFormLabelsChecked += 1;
+      const target = label[0].match(/\bfor=["']([^"']+)["']/i)?.[1];
+      if (!target) {
+        failures.push(`${page.file}: ${formId} label is missing a for attribute (${label[0]})`);
+      } else if (!controlIds.has(target)) {
+        failures.push(`${page.file}: ${formId} label target does not match a control id (${target})`);
+      }
     }
   }
 }
@@ -245,6 +276,7 @@ console.log(`New-tab links checked: ${newTabLinksChecked}.`);
 console.log(`Structured-data entities checked: ${structuredDataEntitiesChecked}.`);
 console.log(`Visible FAQ questions and answers checked: ${faqQuestionsChecked} questions, ${faqAnswersChecked} answers.`);
 console.log(`Unsupported service-level and credential claim checks: ${unsupportedClaimPatternsChecked}.`);
+console.log(`Conversion form associations checked: ${conversionFormLabelsChecked} labels, ${conversionFormControlsChecked} controls.`);
 console.log(`Canonical pages intentionally or currently omitted from sitemap: ${omittedCanonicalPages.length}.`);
 
 if (failures.length) {

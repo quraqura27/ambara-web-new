@@ -37,29 +37,29 @@
     <div class="card">
       <form id="quote-form">
         <div aria-hidden="true" style="position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden">
-          <label>Website URL</label>
-          <input type="text" name="website_url" tabindex="-1" autocomplete="off">
+          <label for="quote-website-url">Website URL</label>
+          <input id="quote-website-url" type="text" name="website_url" tabindex="-1" autocomplete="off">
         </div>
         <!-- Shipment Details -->
         <div style="font-family:var(--font-head);font-weight:800;font-size:1.125rem;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)">Shipment Details</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
           <div class="form-group">
-            <label class="form-label">Origin *</label>
-            <input type="text" class="form-control" name="origin" required placeholder="City, Country">
+            <label class="form-label" for="quote-origin">Origin *</label>
+            <input id="quote-origin" type="text" class="form-control" name="origin" required placeholder="City, Country">
           </div>
           <div class="form-group">
-            <label class="form-label">Destination *</label>
-            <input type="text" class="form-control" name="destination" required placeholder="City, Country">
+            <label class="form-label" for="quote-destination">Destination *</label>
+            <input id="quote-destination" type="text" class="form-control" name="destination" required placeholder="City, Country">
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
           <div class="form-group">
-            <label class="form-label">Cargo Ready Date *</label>
-            <input type="date" class="form-control" name="readyDate" required>
+            <label class="form-label" for="quote-ready-date">Cargo Ready Date *</label>
+            <input id="quote-ready-date" type="date" class="form-control" name="readyDate" required>
           </div>
           <div class="form-group">
-            <label class="form-label">Incoterms</label>
-            <select class="form-control" name="incoterms">
+            <label class="form-label" for="quote-incoterms">Incoterms</label>
+            <select id="quote-incoterms" class="form-control" name="incoterms">
               <option value="">Select Incoterms</option>
               <option>EXW</option><option>FCA</option><option>CPT</option><option>CIP</option>
               <option>DAP</option><option>DPU</option><option>DDP</option>
@@ -71,7 +71,7 @@
         <div style="font-family:var(--font-head);font-weight:800;font-size:1.125rem;margin:24px 0 20px;padding-bottom:16px;border-bottom:1px solid var(--border)">🏷️ Cargo Information</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
           <div class="form-group">
-            <label class="form-label">Cargo Type *</label>
+            <label class="form-label" for="cargo-type-select">Cargo Type *</label>
             <select class="form-control" name="cargoType" required id="cargo-type-select">
               <option value="">Select type</option>
               <option value="general">General Cargo</option>
@@ -81,36 +81,36 @@
             </select>
           </div>
           <div class="form-group" id="commodity-group">
-            <label class="form-label">Commodity</label>
-            <input type="text" class="form-control" name="commodity" placeholder="e.g. Electronics, Textiles">
+            <label class="form-label" for="quote-commodity">Commodity</label>
+            <input id="quote-commodity" type="text" class="form-control" name="commodity" placeholder="e.g. Electronics, Textiles">
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Cargo Description *</label>
-          <textarea class="form-control" name="cargoDesc" required placeholder="Describe your cargo in detail..." rows="3"></textarea>
+          <label class="form-label" for="quote-cargo-description">Cargo Description *</label>
+          <textarea id="quote-cargo-description" class="form-control" name="cargoDesc" required placeholder="Describe your cargo in detail..." rows="3"></textarea>
         </div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
           <div class="form-group">
-            <label class="form-label">Weight (kg) *</label>
-            <input type="number" class="form-control" name="weight" required placeholder="0.00" min="0.1" step="0.1">
+            <label class="form-label" for="quote-weight">Weight (kg) *</label>
+            <input id="quote-weight" type="number" class="form-control" name="weight" required placeholder="0.00" min="0.1" step="0.1">
           </div>
           <div class="form-group">
-            <label class="form-label">Volume (CBM)</label>
-            <input type="number" class="form-control" name="volume" placeholder="0.00" step="0.01">
+            <label class="form-label" for="quote-volume">Volume (CBM)</label>
+            <input id="quote-volume" type="number" class="form-control" name="volume" placeholder="0.00" step="0.01">
           </div>
           <div class="form-group">
-            <label class="form-label">Packages</label>
-            <input type="number" class="form-control" name="packages" placeholder="1" min="1">
+            <label class="form-label" for="quote-packages">Packages</label>
+            <input id="quote-packages" type="number" class="form-control" name="packages" placeholder="1" min="1">
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
           <div class="form-group">
-            <label class="form-label">Cargo Value (USD)</label>
-            <input type="number" class="form-control" name="cargoValue" placeholder="0.00" step="0.01">
+            <label class="form-label" for="quote-cargo-value">Cargo Value (USD)</label>
+            <input id="quote-cargo-value" type="number" class="form-control" name="cargoValue" placeholder="0.00" step="0.01">
           </div>
           <div class="form-group">
-            <label class="form-label">Cargo Insurance</label>
-            <select class="form-control" name="insurance">
+            <label class="form-label" for="quote-insurance">Cargo Insurance</label>
+            <select id="quote-insurance" class="form-control" name="insurance">
               <option value="">Not required</option>
               <option value="all_risk">All Risk</option>
               <option value="basic">Basic Coverage</option>
@@ -118,35 +118,35 @@
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Special Requirements</label>
-          <input type="text" class="form-control" name="special" placeholder="e.g. Temperature control, fragile, oversized">
+          <label class="form-label" for="quote-special">Special Requirements</label>
+          <input id="quote-special" type="text" class="form-control" name="special" placeholder="e.g. Temperature control, fragile, oversized">
         </div>
 
         <!-- Contact Info -->
         <div style="font-family:var(--font-head);font-weight:800;font-size:1.125rem;margin:24px 0 20px;padding-bottom:16px;border-bottom:1px solid var(--border)">👤 Your Details</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
           <div class="form-group">
-            <label class="form-label">Full Name *</label>
-            <input type="text" class="form-control" name="name" required autocomplete="name" placeholder="John Smith">
+            <label class="form-label" for="quote-name">Full Name *</label>
+            <input id="quote-name" type="text" class="form-control" name="name" required autocomplete="name" placeholder="John Smith">
           </div>
           <div class="form-group">
-            <label class="form-label">Company</label>
-            <input type="text" class="form-control" name="company" autocomplete="organization" placeholder="Company Name">
+            <label class="form-label" for="quote-company">Company</label>
+            <input id="quote-company" type="text" class="form-control" name="company" autocomplete="organization" placeholder="Company Name">
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
           <div class="form-group">
-            <label class="form-label">Email *</label>
-            <input type="email" class="form-control" name="email" required autocomplete="email" placeholder="john@company.com">
+            <label class="form-label" for="quote-email">Email *</label>
+            <input id="quote-email" type="email" class="form-control" name="email" required autocomplete="email" placeholder="john@company.com">
           </div>
           <div class="form-group">
-            <label class="form-label">Phone / WhatsApp *</label>
-            <input type="tel" class="form-control" name="phone" required autocomplete="tel" placeholder="+1 234 567 890">
+            <label class="form-label" for="quote-phone">Phone / WhatsApp *</label>
+            <input id="quote-phone" type="tel" class="form-control" name="phone" required autocomplete="tel" placeholder="+1 234 567 890">
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Additional Notes</label>
-          <textarea class="form-control" name="notes" placeholder="Any other information that helps us prepare an accurate quote..." rows="3"></textarea>
+          <label class="form-label" for="quote-notes">Additional Notes</label>
+          <textarea id="quote-notes" class="form-control" name="notes" placeholder="Any other information that helps us prepare an accurate quote..." rows="3"></textarea>
         </div>
 
         <button type="submit" class="btn btn-primary btn-lg" style="width:100%;justify-content:center" id="submit-btn">
