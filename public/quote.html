@@ -3,8 +3,13 @@
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Get Air Freight Quote — PT Ambara Artha Globaltrans</title>
-  <meta name="description" content="Request a free air freight quote from Indonesia. Fast response within 2 hours. CGK-based freight forwarder serving 52+ countries.">
+  <meta name="description" content="Share your air freight requirements for review by a CGK-based freight forwarding team in Indonesia.">
   <link rel="canonical" href="https://www.ambaraartha.com/en/quote">
+  <meta property="og:title" content="Request an Indonesia Air Freight Quote">
+  <meta property="og:description" content="Send cargo details to Ambara Artha for an air freight and shipment coordination review.">
+  <meta property="og:url" content="https://www.ambaraartha.com/en/quote">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://www.ambaraartha.com/og-image.jpg">
   <link rel="alternate" hreflang="en" href="https://www.ambaraartha.com/en/quote">
   <link rel="alternate" hreflang="id" href="https://www.ambaraartha.com/id/quote">
   <link rel="alternate" hreflang="x-default" href="https://www.ambaraartha.com/en/quote">
@@ -12,6 +17,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/styles.css">
+  <style>
+    @media (max-width: 640px) {
+      #quote-form [style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
+    }
+  </style>
 </head>
 <body>
 <div id="navbar-mount"></div>
@@ -21,35 +31,35 @@
     <div style="text-align:center;margin-bottom:48px">
       <div class="section-label">Free Quote</div>
       <h1 style="font-size:clamp(2rem,4vw,3rem);margin-bottom:16px">Request a Freight Quote</h1>
-      <p>Fill in your shipment details and we'll respond within 2 business hours with a competitive rate.</p>
+      <p>Share your shipment details so our team can review the requirements and available options.</p>
     </div>
 
     <div class="card">
       <form id="quote-form">
         <div aria-hidden="true" style="position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden">
-          <label>Website URL</label>
-          <input type="text" name="website_url" tabindex="-1" autocomplete="off">
+          <label for="quote-website-url">Website URL</label>
+          <input id="quote-website-url" type="text" name="website_url" tabindex="-1" autocomplete="off">
         </div>
         <!-- Shipment Details -->
         <div style="font-family:var(--font-head);font-weight:800;font-size:1.125rem;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)">Shipment Details</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
           <div class="form-group">
-            <label class="form-label">Origin *</label>
-            <input type="text" class="form-control" name="origin" required placeholder="City, Country">
+            <label class="form-label" for="quote-origin">Origin *</label>
+            <input id="quote-origin" type="text" class="form-control" name="origin" required placeholder="City, Country">
           </div>
           <div class="form-group">
-            <label class="form-label">Destination *</label>
-            <input type="text" class="form-control" name="destination" required placeholder="City, Country">
+            <label class="form-label" for="quote-destination">Destination *</label>
+            <input id="quote-destination" type="text" class="form-control" name="destination" required placeholder="City, Country">
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
           <div class="form-group">
-            <label class="form-label">Cargo Ready Date *</label>
-            <input type="date" class="form-control" name="readyDate" required>
+            <label class="form-label" for="quote-ready-date">Cargo Ready Date *</label>
+            <input id="quote-ready-date" type="date" class="form-control" name="readyDate" required>
           </div>
           <div class="form-group">
-            <label class="form-label">Incoterms</label>
-            <select class="form-control" name="incoterms">
+            <label class="form-label" for="quote-incoterms">Incoterms</label>
+            <select id="quote-incoterms" class="form-control" name="incoterms">
               <option value="">Select Incoterms</option>
               <option>EXW</option><option>FCA</option><option>CPT</option><option>CIP</option>
               <option>DAP</option><option>DPU</option><option>DDP</option>
@@ -61,7 +71,7 @@
         <div style="font-family:var(--font-head);font-weight:800;font-size:1.125rem;margin:24px 0 20px;padding-bottom:16px;border-bottom:1px solid var(--border)">🏷️ Cargo Information</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
           <div class="form-group">
-            <label class="form-label">Cargo Type *</label>
+            <label class="form-label" for="cargo-type-select">Cargo Type *</label>
             <select class="form-control" name="cargoType" required id="cargo-type-select">
               <option value="">Select type</option>
               <option value="general">General Cargo</option>
@@ -71,36 +81,36 @@
             </select>
           </div>
           <div class="form-group" id="commodity-group">
-            <label class="form-label">Commodity</label>
-            <input type="text" class="form-control" name="commodity" placeholder="e.g. Electronics, Textiles">
+            <label class="form-label" for="quote-commodity">Commodity</label>
+            <input id="quote-commodity" type="text" class="form-control" name="commodity" placeholder="e.g. Electronics, Textiles">
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Cargo Description *</label>
-          <textarea class="form-control" name="cargoDesc" required placeholder="Describe your cargo in detail..." rows="3"></textarea>
+          <label class="form-label" for="quote-cargo-description">Cargo Description *</label>
+          <textarea id="quote-cargo-description" class="form-control" name="cargoDesc" required placeholder="Describe your cargo in detail..." rows="3"></textarea>
         </div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
           <div class="form-group">
-            <label class="form-label">Weight (kg) *</label>
-            <input type="number" class="form-control" name="weight" required placeholder="0.00" min="0.1" step="0.1">
+            <label class="form-label" for="quote-weight">Weight (kg) *</label>
+            <input id="quote-weight" type="number" class="form-control" name="weight" required placeholder="0.00" min="0.1" step="0.1">
           </div>
           <div class="form-group">
-            <label class="form-label">Volume (CBM)</label>
-            <input type="number" class="form-control" name="volume" placeholder="0.00" step="0.01">
+            <label class="form-label" for="quote-volume">Volume (CBM)</label>
+            <input id="quote-volume" type="number" class="form-control" name="volume" placeholder="0.00" step="0.01">
           </div>
           <div class="form-group">
-            <label class="form-label">Packages</label>
-            <input type="number" class="form-control" name="packages" placeholder="1" min="1">
+            <label class="form-label" for="quote-packages">Packages</label>
+            <input id="quote-packages" type="number" class="form-control" name="packages" placeholder="1" min="1">
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
           <div class="form-group">
-            <label class="form-label">Cargo Value (USD)</label>
-            <input type="number" class="form-control" name="cargoValue" placeholder="0.00" step="0.01">
+            <label class="form-label" for="quote-cargo-value">Cargo Value (USD)</label>
+            <input id="quote-cargo-value" type="number" class="form-control" name="cargoValue" placeholder="0.00" step="0.01">
           </div>
           <div class="form-group">
-            <label class="form-label">Cargo Insurance</label>
-            <select class="form-control" name="insurance">
+            <label class="form-label" for="quote-insurance">Cargo Insurance</label>
+            <select id="quote-insurance" class="form-control" name="insurance">
               <option value="">Not required</option>
               <option value="all_risk">All Risk</option>
               <option value="basic">Basic Coverage</option>
@@ -108,41 +118,41 @@
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Special Requirements</label>
-          <input type="text" class="form-control" name="special" placeholder="e.g. Temperature control, fragile, oversized">
+          <label class="form-label" for="quote-special">Special Requirements</label>
+          <input id="quote-special" type="text" class="form-control" name="special" placeholder="e.g. Temperature control, fragile, oversized">
         </div>
 
         <!-- Contact Info -->
         <div style="font-family:var(--font-head);font-weight:800;font-size:1.125rem;margin:24px 0 20px;padding-bottom:16px;border-bottom:1px solid var(--border)">👤 Your Details</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
           <div class="form-group">
-            <label class="form-label">Full Name *</label>
-            <input type="text" class="form-control" name="name" required placeholder="John Smith">
+            <label class="form-label" for="quote-name">Full Name *</label>
+            <input id="quote-name" type="text" class="form-control" name="name" required autocomplete="name" placeholder="John Smith">
           </div>
           <div class="form-group">
-            <label class="form-label">Company</label>
-            <input type="text" class="form-control" name="company" placeholder="Company Name">
+            <label class="form-label" for="quote-company">Company</label>
+            <input id="quote-company" type="text" class="form-control" name="company" autocomplete="organization" placeholder="Company Name">
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
           <div class="form-group">
-            <label class="form-label">Email *</label>
-            <input type="email" class="form-control" name="email" required placeholder="john@company.com">
+            <label class="form-label" for="quote-email">Email *</label>
+            <input id="quote-email" type="email" class="form-control" name="email" required autocomplete="email" placeholder="john@company.com">
           </div>
           <div class="form-group">
-            <label class="form-label">Phone / WhatsApp *</label>
-            <input type="tel" class="form-control" name="phone" required placeholder="+1 234 567 890">
+            <label class="form-label" for="quote-phone">Phone / WhatsApp *</label>
+            <input id="quote-phone" type="tel" class="form-control" name="phone" required autocomplete="tel" placeholder="+1 234 567 890">
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Additional Notes</label>
-          <textarea class="form-control" name="notes" placeholder="Any other information that helps us prepare an accurate quote..." rows="3"></textarea>
+          <label class="form-label" for="quote-notes">Additional Notes</label>
+          <textarea id="quote-notes" class="form-control" name="notes" placeholder="Any other information that helps us prepare an accurate quote..." rows="3"></textarea>
         </div>
 
         <button type="submit" class="btn btn-primary btn-lg" style="width:100%;justify-content:center" id="submit-btn">
           Submit Quote Request →
         </button>
-        <div id="form-result" style="margin-top:16px"></div>
+        <div id="form-result" role="status" aria-live="polite" tabindex="-1" style="margin-top:16px"></div>
       </form>
     </div>
   </div>
@@ -160,24 +170,38 @@ document.getElementById('cargo-type-select').addEventListener('change', function
   document.getElementById('commodity-group').style.opacity = this.value === 'consolidated' ? '0.4' : '1';
 });
 
+function escapeQuoteResult(value) {
+  const span = document.createElement('span');
+  span.textContent = String(value ?? '');
+  return span.innerHTML;
+}
+
 document.getElementById('quote-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const btn = document.getElementById('submit-btn');
   const result = document.getElementById('form-result');
+  result.innerHTML = '';
+  result.setAttribute('aria-busy', 'true');
   btn.disabled = true; btn.textContent = 'Submitting...';
 
   const data = Object.fromEntries(new FormData(e.target));
   try {
     const res = await fetch('/api/submit-quote', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-    const json = await res.json();
+    const json = await res.json().catch(() => ({}));
     if (res.ok) {
-      result.innerHTML = `<div class="card" style="background:rgba(0,229,160,0.1);border-color:rgba(0,229,160,0.2);text-align:center;padding:24px"><div style="font-size:1.5rem;margin-bottom:8px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue-accent)"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div><div style="font-weight:700;color:var(--green);margin-bottom:8px">Quote Received!</div><div style="font-size:0.875rem;color:var(--text-muted)">Reference: <strong style="color:var(--blue-accent)">${json.reference}</strong><br>We'll reply within 2 business hours.</div></div>`;
+      const reference = escapeQuoteResult(json.reference || 'Pending');
+      result.innerHTML = `<div class="card" style="background:rgba(0,229,160,0.1);border-color:rgba(0,229,160,0.2);text-align:center;padding:24px"><div style="font-size:1.5rem;margin-bottom:8px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue-accent)"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div><div style="font-weight:700;color:var(--green);margin-bottom:8px">Quote Received!</div><div style="font-size:0.875rem;color:var(--text-muted)">Reference: <strong style="color:var(--blue-accent)">${reference}</strong><br>Our team will review your shipment details.</div></div>`;
+      window.trackQuoteLead?.('en');
       e.target.reset();
-    } else { throw new Error(json.error); }
-  } catch (err) {
-    result.innerHTML = `<div class="card" style="background:rgba(255,68,102,0.1);border-color:rgba(255,68,102,0.2);color:var(--red);text-align:center;padding:16px">❌ ${err.message || 'Failed to submit. Please email cs@ambaraartha.com'}</div>`;
+    } else { throw new Error('quote_submission_failed'); }
+  } catch {
+    result.innerHTML = `<div class="card" style="background:rgba(255,68,102,0.1);border-color:rgba(255,68,102,0.2);color:var(--red);text-align:center;padding:16px">We couldn't submit the form. Your details remain on this page—please try again, email <a href="mailto:cs@ambaraartha.com">cs@ambaraartha.com</a>, or <a href="https://wa.me/6282125452800" target="_blank" rel="noopener">contact us on WhatsApp</a>.</div>`;
+  } finally {
+    result.setAttribute('aria-busy', 'false');
+    result.focus({ preventScroll: true });
+    result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    btn.disabled = false; btn.textContent = 'Submit Quote Request →';
   }
-  btn.disabled = false; btn.textContent = 'Submit Quote Request →';
 });
 </script>
 </body>

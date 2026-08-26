@@ -3,8 +3,13 @@
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Contact Us — PT Ambara Artha Globaltrans | Air Freight Indonesia</title>
-  <meta name="description" content="Contact PT Ambara Artha Globaltrans for air freight inquiries. Based at CGK Cargo Terminal, Jakarta. Available 24/7 for urgent shipments.">
+  <meta name="description" content="Contact PT Ambara Artha Globaltrans for air freight inquiries and shipment coordination from our CGK Cargo Terminal base in Jakarta.">
   <link rel="canonical" href="https://www.ambaraartha.com/en/contact">
+  <meta property="og:title" content="Contact PT Ambara Artha Globaltrans">
+  <meta property="og:description" content="Contact Ambara Artha Globaltrans about air freight and shipment coordination in Indonesia.">
+  <meta property="og:url" content="https://www.ambaraartha.com/en/contact">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://www.ambaraartha.com/og-image.jpg">
   <link rel="alternate" hreflang="en" href="https://www.ambaraartha.com/en/contact">
   <link rel="alternate" hreflang="id" href="https://www.ambaraartha.com/id/contact">
   <link rel="alternate" hreflang="x-default" href="https://www.ambaraartha.com/en/contact">
@@ -21,7 +26,7 @@
     <div style="text-align:center;max-width:640px;margin:0 auto">
       <div class="section-label">Contact</div>
       <h1 style="font-size:clamp(2rem,4vw,3rem);margin-bottom:16px">Get In Touch</h1>
-      <p>Our team is available 24/7 for all freight inquiries. We typically respond within 2 business hours.</p>
+      <p>Share your shipment details so our team can review your requirements.</p>
     </div>
   </div>
 </section>
@@ -41,16 +46,16 @@
             <div style="font-size:1.5rem;margin-bottom:12px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue-accent)"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg></div>
             <div style="font-weight:700;margin-bottom:8px">Phone / WhatsApp</div>
             <a href="tel:+6282125452800" style="font-size:0.9375rem;color:var(--blue-accent)">+62 821-2545-2800</a>
-            <p style="font-size:0.8125rem;margin-top:4px">Available 24/7 for urgent shipments</p>
+            <p style="font-size:0.8125rem;margin-top:4px">For shipment details and urgent inquiries</p>
           </div>
           <div class="card">
             <div style="font-size:1.5rem;margin-bottom:12px">✉️</div>
             <div style="font-weight:700;margin-bottom:8px">Email</div>
             <a href="mailto:cs@ambaraartha.com" style="font-size:0.9375rem;color:var(--blue-accent)">cs@ambaraartha.com</a>
-            <p style="font-size:0.8125rem;margin-top:4px">Response within 2 business hours</p>
+            <p style="font-size:0.8125rem;margin-top:4px">For inquiries and supporting documents</p>
           </div>
         </div>
-        <a href="https://wa.me/6282125452800" target="_blank" class="btn btn-primary" style="width:100%;justify-content:center">
+        <a href="https://wa.me/6282125452800" target="_blank" rel="noopener" data-cta-location="contact_details" data-service-category="general_inquiry" class="btn btn-primary" style="width:100%;justify-content:center">
           💬 Chat on WhatsApp
         </a>
       </div>
@@ -60,32 +65,32 @@
         <h2 style="font-size:1.5rem;margin-bottom:24px">Send Us a Message</h2>
         <form id="contact-form">
           <div aria-hidden="true" style="position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden">
-            <label>Website URL</label>
-            <input type="text" name="website_url" tabindex="-1" autocomplete="off">
+            <label for="contact-website-url">Website URL</label>
+            <input id="contact-website-url" type="text" name="website_url" tabindex="-1" autocomplete="off">
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label">Your Name *</label>
-              <input type="text" class="form-control" name="name" required placeholder="John Smith">
+              <label class="form-label" for="contact-name">Your Name *</label>
+              <input id="contact-name" type="text" class="form-control" name="name" required autocomplete="name" placeholder="John Smith">
             </div>
             <div class="form-group">
-              <label class="form-label">Company</label>
-              <input type="text" class="form-control" name="company" placeholder="Your Company">
+              <label class="form-label" for="contact-company">Company</label>
+              <input id="contact-company" type="text" class="form-control" name="company" autocomplete="organization" placeholder="Your Company">
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label">Email *</label>
-              <input type="email" class="form-control" name="email" required placeholder="john@company.com">
+              <label class="form-label" for="contact-email">Email *</label>
+              <input id="contact-email" type="email" class="form-control" name="email" required autocomplete="email" placeholder="john@company.com">
             </div>
             <div class="form-group">
-              <label class="form-label">Phone</label>
-              <input type="tel" class="form-control" name="phone" placeholder="+1 234 567 890">
+              <label class="form-label" for="contact-phone">Phone</label>
+              <input id="contact-phone" type="tel" class="form-control" name="phone" autocomplete="tel" placeholder="+1 234 567 890">
             </div>
           </div>
           <div class="form-group">
-            <label class="form-label">Topic *</label>
-            <select class="form-control" name="topic" required>
+            <label class="form-label" for="contact-topic">Topic *</label>
+            <select id="contact-topic" class="form-control" name="topic" required>
               <option value="">Select a topic</option>
               <option>Air Freight Inquiry</option>
               <option>Customs Clearance</option>
@@ -96,13 +101,13 @@
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">Message *</label>
-            <textarea class="form-control" name="message" required placeholder="Tell us about your shipment or inquiry..." rows="5"></textarea>
+            <label class="form-label" for="contact-message">Message *</label>
+            <textarea id="contact-message" class="form-control" name="message" required placeholder="Tell us about your shipment or inquiry..." rows="5"></textarea>
           </div>
           <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center" id="submit-btn">
             Send Message →
           </button>
-          <div id="form-result" style="margin-top:16px"></div>
+          <div id="form-result" role="status" aria-live="polite" tabindex="-1" style="margin-top:16px"></div>
         </form>
       </div>
     </div>
@@ -120,18 +125,26 @@ document.getElementById('contact-form').addEventListener('submit', async (e) => 
   e.preventDefault();
   const btn = document.getElementById('submit-btn');
   const result = document.getElementById('form-result');
+  result.innerHTML = '';
+  result.setAttribute('aria-busy', 'true');
   btn.disabled = true; btn.textContent = 'Sending...';
 
   const data = Object.fromEntries(new FormData(e.target));
   try {
     const res = await fetch('/api/submit-contact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
     if (res.ok) {
-      result.innerHTML = '<div class="card" style="background:rgba(0,229,160,0.1);border-color:rgba(0,229,160,0.2);color:var(--green);text-align:center;padding:16px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue-accent)"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Message sent! We\'ll reply within 2 business hours.</div>';
+      result.innerHTML = '<div class="card" style="background:rgba(0,229,160,0.1);border-color:rgba(0,229,160,0.2);color:var(--green);text-align:center;padding:16px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue-accent)"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Message sent! Our team will review your details.</div>';
+      window.trackContactLead?.('en');
       e.target.reset();
     } else { throw new Error('Failed'); }
   } catch {
-    result.innerHTML = '<div class="card" style="background:rgba(255,68,102,0.1);border-color:rgba(255,68,102,0.2);color:var(--red);text-align:center;padding:16px">❌ Failed to send. Please email us directly at cs@ambaraartha.com</div>';
+    result.innerHTML = '<div class="card" style="background:rgba(255,68,102,0.1);border-color:rgba(255,68,102,0.2);color:var(--red);text-align:center;padding:16px">We couldn\'t send the message. Your details remain on this page—please try again, email <a href="mailto:cs@ambaraartha.com">cs@ambaraartha.com</a>, or <a href="https://wa.me/6282125452800" target="_blank" rel="noopener">contact us on WhatsApp</a>.</div>';
+    window.bindWhatsAppTracking?.(result);
+    window.bindContactTracking?.(result);
   }
+  result.setAttribute('aria-busy', 'false');
+  result.focus({ preventScroll: true });
+  result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   btn.disabled = false; btn.textContent = 'Send Message →';
 });
 </script>
